@@ -2,13 +2,17 @@ import os
 import pandas as pd
 from psd_tools import PSDImage
 from PIL import Image, ImageDraw, ImageFont
+import sys
+from datetime import datetime
 
 # 设置项
-num = 1  # 使用第几套数据和模版
+# num = 1  # 手动选择使用第几套数据和模版
+num = int(sys.argv[1])  # 从命令行参数获取使用第几套数据和模版
 image_format = 'jpg'  ##jpg/png
 quality = 95
 optimize = False
 font_file = 'AlibabaPuHuiTi-2-85-Bold.ttf'
+current_datetime = ''
 
 # 文件路径
 output_path = 'export'
@@ -65,6 +69,9 @@ def update_image_layer(layer, new_image_path, pil_image):
 
 # 保存PIL图片
 def save_image(output_dir, output_filename, image_format, pil_image):
+    output_dir = os.path.join(output_dir, f'{current_datetime}_{num}')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     final_output_path = os.path.join(output_dir, f'{output_filename}.{image_format}')
     if image_format.lower() == 'png':
         pil_image.save(final_output_path, format='PNG', optimize=True)
@@ -126,4 +133,5 @@ if __name__ == "__main__":
     os.chdir(script_dir)
 
     # 批量输出图片
+    current_datetime = datetime.now().strftime('%Y%0m%d_%H%M%S')
     batch_export_images()

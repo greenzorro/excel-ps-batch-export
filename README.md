@@ -4,6 +4,9 @@
 
 Python script for reading a PSD template and applying contents in a spreadsheet to export plenty of images. It's an alternative to Photoshop Image > Variables > Define.
 
+📺 Manual export: [example video](https://www.bilibili.com/video/BV1nqxGe4ETf)  
+📺 Auto export: [example video](https://www.bilibili.com/video/BV1qmx5etEY8)
+
 This is what you do using Photoshop:
 
 1. Edit content in a spreadsheet.
@@ -44,6 +47,7 @@ For the first time usage, you'll need some basic setup:
     - `#t` to replace a text layer content with spreadsheet data
     - `#t-c` or `#t-r` for text align center or right while replacing
     - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet
+    - One thing to note: Do not use cmd/ctrl+T to scale changeable text layers. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
 4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first sheet to read and calculate everything. It's especially useful when you want to toggle layer visibility.
 5. Put everything else the template needs in `assets` folder, including fonts, background images, etc.
 
@@ -56,7 +60,7 @@ When it comes to exporting. Things become a piece of cake:
 1. Paste content in the spreadsheet.
 2. Run batch_export.py
 
-If you know Python well, you could even edit the code to make the script moniter the spreadsheet and export images automatically once the spreadsheet is modified.
+I even made another script to moniter the spreadsheet and export images automatically once the spreadsheets are modified.
 
 ## Prerequisite
 
