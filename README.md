@@ -4,7 +4,7 @@
 
 Python script for reading a PSD template and applying contents in a spreadsheet to export plenty of images. It's an alternative to Photoshop Image > Variables > Define.
 
-📺 Watch example video [here](https://github.com/greenzorro/excel-ps-batch-export/blob/main/example/example.mp4).
+📺 Watch example video [here](https://www.bilibili.com/video/BV1nqxGe4ETf/?vd_source=3f66f490544e113da990974c21aeadfc).
 
 This is what you do using Photoshop:
 
