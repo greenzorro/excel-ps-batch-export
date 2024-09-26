@@ -4,6 +4,8 @@
 
 这是一个Python脚本，用于读取PSD模板并将电子表格中的内容应用于模板，导出大量图像，替代Photoshop的变量定义功能。
 
+📺 查看[演示视频](https://github.com/greenzorro/excel-ps-batch-export/blob/main/example/example.mp4).
+
 在Photoshop你得这么干：
 
 1. 在电子表格中编辑内容。
