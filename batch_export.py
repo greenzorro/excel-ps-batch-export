@@ -1,3 +1,12 @@
+'''
+File: batch_export.py
+Project: excel-ps-batch-export
+Created: 2024-09-25 02:07:52
+Author: Victor Cheng
+Email: greenzorromail@gmail.com
+Description: 单次批量输出图片
+'''
+
 import os
 import pandas as pd
 from psd_tools import PSDImage
@@ -22,15 +31,31 @@ text_font = f'assets/{num}_fonts/{font_file}'
 
 # 读取Excel文件
 def read_excel_file(file_path):
+    """读取Excel文件
+
+    :param str file_path: Excel文件路径
+    :return pd.DataFrame: 包含Excel数据的DataFrame
+    """
     df = pd.read_excel(file_path, sheet_name=0)
     return df
 
 # 修改图层可见性
 def set_layer_visibility(layer, visibility):
+    """设置图层可见性
+
+    :param PSDLayer layer: PSD图层对象
+    :param bool visibility: 是否可见
+    """
     layer.visible = visibility
 
 # 修改文字图层内容
 def update_text_layer(layer, text_content, pil_image):
+    """更新文字图层内容
+
+    :param PSDLayer layer: PSD文字图层
+    :param str text_content: 新的文字内容
+    :param PIL.Image pil_image: PIL图像对象
+    """
     layer.visible = False  # 防止PSD原始图层被输出到PIL
     font_info = layer.engine_dict
     font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
@@ -59,6 +84,12 @@ def update_text_layer(layer, text_content, pil_image):
 
 # 修改图片图层内容
 def update_image_layer(layer, new_image_path, pil_image):
+    """更新图片图层内容
+
+    :param PSDLayer layer: PSD图片图层
+    :param str new_image_path: 新图片路径
+    :param PIL.Image pil_image: PIL图像对象
+    """
     layer.visible = False  # 防止PSD原始图层被输出到PIL
     if os.path.exists(new_image_path):
         new_image = Image.open(new_image_path).convert('RGBA')
@@ -69,6 +100,13 @@ def update_image_layer(layer, new_image_path, pil_image):
 
 # 保存PIL图片
 def save_image(output_dir, output_filename, image_format, pil_image):
+    """保存处理后的图像
+
+    :param str output_dir: 输出目录
+    :param str output_filename: 输出文件名
+    :param str image_format: 图像格式
+    :param PIL.Image pil_image: PIL图像对象
+    """
     output_dir = os.path.join(output_dir, f'{current_datetime}_{num}')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -82,6 +120,10 @@ def save_image(output_dir, output_filename, image_format, pil_image):
 
 # 输出单张图片
 def export_single_image(row):
+    """处理单行数据并导出图像
+
+    :param pd.Series row: 包含单行数据的Series
+    """
     psd = PSDImage.open(psd_file_path)
     pil_image = Image.new('RGBA', psd.size)
 
