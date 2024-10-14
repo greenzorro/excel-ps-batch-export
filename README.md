@@ -4,8 +4,14 @@
 
 Python script for reading a PSD template and applying contents in a spreadsheet to export plenty of images. It's an alternative to Photoshop Image > Variables > Define.
 
-📺 Manual export: [example video](https://www.bilibili.com/video/BV1nqxGe4ETf)  
-📺 Auto export: [example video](https://www.bilibili.com/video/BV1qmx5etEY8)
+📺 Example - Create spreadsheet
+https://github.com/user-attachments/assets/a21f8b2d-310f-4f28-a873-6bd166c07955
+
+📺 Example - Manual export
+https://github.com/user-attachments/assets/c52c6e05-1bc9-4a2b-ae4c-b283a25067f6
+
+📺 Example - Auto export
+https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 This is what you do using Photoshop:
 
@@ -28,16 +34,15 @@ That's it. Images will be just there for you. All you need is a Python environme
 
 Two ways of downloading:
 
-1. `git pull` this repo
+1. `git clone https://github.com/greenzorro/excel-ps-batch-export.git`
 2. click the button Code, then Download ZIP
 
 ## Setup
 
-For the first time usage, you'll need some basic setup:
+For the first time, you'll need some basic setup:
 
-1. Place your PSD template here, rename it to `{num}_template.psd`. Default num is 1. Increase num for extra working template-data pairs. Switch pairs in the script file.
-2. Create a `{num}_data.xlsx` file here. Default num is 1. This will be your data template.
-3. Edit PSD template file. Rename all changeable layers or groups with this pattern:
+1. Place your PSD template files here.
+2. Edit PSD template file. Rename all changeable layers or groups with this pattern:
     - Format: `@Variable_name#Operation_type`
     - A layer name may be like this: `@badge#v`
     - `@` tells the script that this layer is changeable, go and get content from the spreadsheet
@@ -48,8 +53,9 @@ For the first time usage, you'll need some basic setup:
     - `#t-c` or `#t-r` for text align center or right while replacing
     - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet
     - One thing to note: Do not use cmd/ctrl+T to scale changeable text layers. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
-4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first sheet to read and calculate everything. It's especially useful when you want to toggle layer visibility.
-5. Put everything else the template needs in `assets` folder, including fonts, background images, etc.
+3. Run `create_xlsx.py`. Your XLSX files will appear, with columns ready.
+4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first one to read and calculate everything. It's especially useful when you want to toggle layer visibility. DO NOT delete the first `File_name` column, leave it blank to use the default file name format(image_1, image_2, etc).
+5. Put everything else the templates need in `assets` folder, including fonts, background images, etc. Make sure the path to image assets match the data in the spreadsheet.
 
 Looks complicated huh? Trust me, it's way more complicated doing the same thing using Photoshop. And once you've done setting up, this would be your life saver.
 

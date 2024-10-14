@@ -7,37 +7,51 @@ Email: greenzorromail@gmail.com
 Description: 监控数据文件并自动执行批量图片输出
 '''
 
+# 设置项
+font_file = 'AlibabaPuHuiTi-2-85-Bold.ttf'
+image_format = 'jpg'  # jpg/png
+
 import os
+import sys
 import subprocess
 import asyncio
+import create_xlsx
 
-# 自动获取当前文件夹中所有以数字+"_"开头的.xlsx文件，提取数据集编号
-nums = [int(file.split('_')[0]) for file in os.listdir() if file.endswith('.xlsx') and file[0].isdigit()]
-
-async def monitor_excel_file(file_path, num):
+async def monitor_excel_file(excel_file_path):
     """监控Excel文件变化
 
-    :param str file_path: Excel文件路径
-    :param int num: 数据集编号
+    :param str excel_file_path: Excel文件路径
     """
-    print(f"正在监控数据文件 {file_path}……")
-    last_modified_time = os.path.getmtime(file_path)
+    print(f"正在监控数据文件 {excel_file_path}……")
+    last_modified_time = os.path.getmtime(excel_file_path)
     while True:
         await asyncio.sleep(5)  # 每5秒检查一次
-        current_modified_time = os.path.getmtime(file_path)
+        current_modified_time = os.path.getmtime(excel_file_path)
         if current_modified_time != last_modified_time:
-            print(f"{file_path} 文件已被修改，正在执行 batch_export.py...")
-            subprocess.run(['python', 'batch_export.py', str(num)])
+            print(f"{excel_file_path} 文件已被修改，正在执行 batch_export.py...")
+            print(f'test: {os.path.splitext(excel_file_path)[0]}')
+            subprocess.run([sys.executable, 'batch_export.py', str(os.path.splitext(excel_file_path)[0]), font_file, image_format])
             last_modified_time = current_modified_time
             print(f"正在监控数据文件……")
 
 async def main():
     """主函数"""
     tasks = []
-    for num in nums:
-        excel_file_path = f'{num}_data.xlsx'
-        tasks.append(monitor_excel_file(excel_file_path, num))
+    for excel_file, psd_file in excel_psd_pairs:
+        tasks.append(monitor_excel_file(excel_file))
     await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
+    create_xlsx.main()
+    
+    # 自动获取当前文件夹中所有.xlsx或.xls文件，并检查是否有同名的.psd文件
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    excel_psd_pairs = []
+    for file in os.listdir():
+        if file.endswith(('.xlsx', '.xls')):
+            base_name = os.path.splitext(file)[0]
+            psd_file = f'{base_name}.psd'
+            if os.path.exists(psd_file):
+                excel_psd_pairs.append((file, psd_file))
+
     asyncio.run(main())
