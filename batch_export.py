@@ -15,19 +15,22 @@ import sys
 from datetime import datetime
 
 # 设置项
-# num = 1  # 手动选择使用第几套数据和模版
-num = int(sys.argv[1])  # 从命令行参数获取使用第几套数据和模版
-image_format = 'jpg'  ##jpg/png
+file_name = sys.argv[1]  # 从命令行参数获取使用第几套数据和模版
+font_file = sys.argv[2]  # 从命令行参数获取字体文件
+image_format = sys.argv[3]  # 从命令行参数获取输出图片格式
+
+# file_name = '1'  # 手动选择使用哪套数据和模版
+# font_file = 'AlibabaPuHuiTi-2-85-Bold.ttf'
+# image_format = 'jpg'  # jpg/png
 quality = 95
 optimize = False
-font_file = 'AlibabaPuHuiTi-2-85-Bold.ttf'
 current_datetime = ''
 
 # 文件路径
 output_path = 'export'
-excel_file_path = f'{num}_data.xlsx'
-psd_file_path = f'{num}_template.psd'
-text_font = f'assets/{num}_fonts/{font_file}'
+excel_file_path = f'{file_name}.xlsx'
+psd_file_path = f'{file_name}.psd'
+text_font = f'assets/fonts/{font_file}'
 
 # 读取Excel文件
 def read_excel_file(file_path):
@@ -107,7 +110,7 @@ def save_image(output_dir, output_filename, image_format, pil_image):
     :param str image_format: 图像格式
     :param PIL.Image pil_image: PIL图像对象
     """
-    output_dir = os.path.join(output_dir, f'{current_datetime}_{num}')
+    output_dir = os.path.join(output_dir, f'{current_datetime}_{file_name}')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     final_output_path = os.path.join(output_dir, f'{output_filename}.{image_format}')
@@ -119,10 +122,11 @@ def save_image(output_dir, output_filename, image_format, pil_image):
     print(f"已导出图片: {final_output_path}")
 
 # 输出单张图片
-def export_single_image(row):
+def export_single_image(row, index):
     """处理单行数据并导出图像
 
     :param pd.Series row: 包含单行数据的Series
+    :param int index: 当前行索引
     """
     psd = PSDImage.open(psd_file_path)
     pil_image = Image.new('RGBA', psd.size)
@@ -158,14 +162,15 @@ def export_single_image(row):
     process_layers(psd)
     
     # 输出图片
-    save_image(output_path, f"{row['文件名']}", image_format, pil_image)
+    output_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
+    save_image(output_path, output_filename, image_format, pil_image)
 
 # 批量输出图片
 def batch_export_images():
     df = read_excel_file(excel_file_path)
     for index, row in df.iterrows():
         print(f"正在处理第 {index + 1} 行数据...")
-        export_single_image(row)
+        export_single_image(row, index)
     print("批量导出完成！")
 
 
