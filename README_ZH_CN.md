@@ -5,12 +5,15 @@
 这是一个Python脚本，用于读取PSD模板并将电子表格中的内容应用于模板，导出大量图像，替代Photoshop的变量定义功能。
 
 📺 示例：从PSD模板创建Excel文件
+
 https://github.com/user-attachments/assets/a21f8b2d-310f-4f28-a873-6bd166c07955
 
 📺 示例：手动批量出图
+
 https://github.com/user-attachments/assets/c52c6e05-1bc9-4a2b-ae4c-b283a25067f6
 
 📺 示例：监控Excel文件变化自动出图
+
 https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 在Photoshop你得这么干：

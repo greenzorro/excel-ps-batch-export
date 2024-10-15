@@ -5,12 +5,15 @@
 Python script for reading a PSD template and applying contents in a spreadsheet to export plenty of images. It's an alternative to Photoshop Image > Variables > Define.
 
 📺 Example - Create spreadsheet
+
 https://github.com/user-attachments/assets/a21f8b2d-310f-4f28-a873-6bd166c07955
 
 📺 Example - Manual export
+
 https://github.com/user-attachments/assets/c52c6e05-1bc9-4a2b-ae4c-b283a25067f6
 
 📺 Example - Auto export
+
 https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 This is what you do using Photoshop:
