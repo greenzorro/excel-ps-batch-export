@@ -29,7 +29,6 @@ async def monitor_excel_file(excel_file_path):
         current_modified_time = os.path.getmtime(excel_file_path)
         if current_modified_time != last_modified_time:
             print(f"{excel_file_path} 文件已被修改，正在执行 batch_export.py...")
-            print(f'test: {os.path.splitext(excel_file_path)[0]}')
             subprocess.run([sys.executable, 'batch_export.py', str(os.path.splitext(excel_file_path)[0]), font_file, image_format])
             last_modified_time = current_modified_time
             print(f"正在监控数据文件……")
