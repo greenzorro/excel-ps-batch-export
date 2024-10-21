@@ -62,13 +62,18 @@ def update_text_layer(layer, text_content, pil_image):
     layer.visible = False  # 防止PSD原始图层被输出到PIL
     font_info = layer.engine_dict
     font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
-    argb_color = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FillColor']['Values']
-    r = argb_color[1]
-    g = argb_color[2]
-    b = argb_color[3]
-    a = argb_color[0]
-    font_color = (r, g, b, a)
-    font_color = tuple(int(c * 255) for c in font_color)  # 确保颜色值为整数
+    # 检查是否存在 'FillColor' 键
+    if 'FillColor' in font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']:
+        argb_color = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FillColor']['Values']
+        r = argb_color[1]
+        g = argb_color[2]
+        b = argb_color[3]
+        a = argb_color[0]
+        font_color = (r, g, b, a)
+        font_color = tuple(int(c * 255) for c in font_color)  # 确保颜色值为整数
+    else:
+        # 如果没有 'FillColor'，使用默认颜色
+        font_color = (0, 0, 0, 255)  # 默认黑色
     font = ImageFont.truetype(text_font, int(font_size))
     draw = ImageDraw.Draw(pil_image)
     layer_width = layer.size[0]
