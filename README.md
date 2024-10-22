@@ -49,11 +49,13 @@ For the first time, you'll need some basic setup:
     - Format: `@Variable_name#Operation_type`
     - A layer name may be like this: `@badge#v`
     - `@` tells the script that this layer is changeable, go and get content from the spreadsheet
-    - `Variable_name` should appear in the spreadsheet as column head.
+    - `Variable_name` should appear in the spreadsheet as column head
     - `#Operation_type` tells the script what to do with the layer
     - `#v` to set visibility according to TRUE/FALSE in the spreadsheet
     - `#t` to replace a text layer content with spreadsheet data
-    - `#t-c` or `#t-r` for text align center or right while replacing
+    - `#t_c` or `#t_r` for text align center or right
+    - `#t_p` for paragraph layers with text wraping, fill the layer with at least one line in PSD
+    - `#t`, `#t_c` and `#t_r` work together with `#t_p`, like `#t_p_c`
     - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet
     - One thing to note: Do not use cmd/ctrl+T to scale changeable text layers. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
 3. Run `create_xlsx.py`. Your XLSX files will appear, with columns ready.

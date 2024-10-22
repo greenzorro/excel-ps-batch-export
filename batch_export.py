@@ -11,6 +11,7 @@ import os
 import pandas as pd
 from psd_tools import PSDImage
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
 import sys
 from datetime import datetime
 
@@ -32,7 +33,6 @@ excel_file_path = f'{file_name}.xlsx'
 psd_file_path = f'{file_name}.psd'
 text_font = f'assets/fonts/{font_file}'
 
-# 读取Excel文件
 def read_excel_file(file_path):
     """读取Excel文件
 
@@ -42,7 +42,6 @@ def read_excel_file(file_path):
     df = pd.read_excel(file_path, sheet_name=0)
     return df
 
-# 修改图层可见性
 def set_layer_visibility(layer, visibility):
     """设置图层可见性
 
@@ -51,18 +50,12 @@ def set_layer_visibility(layer, visibility):
     """
     layer.visible = visibility
 
-# 修改文字图层内容
-def update_text_layer(layer, text_content, pil_image):
-    """更新文字图层内容
+def get_font_color(font_info):
+    """获取文字颜色
 
-    :param PSDLayer layer: PSD文字图层
-    :param str text_content: 新的文字内容
-    :param PIL.Image pil_image: PIL图像对象
+    :param dict font_info: 字体信息字典
+    :return tuple: 文字颜色 (r, g, b, a)
     """
-    layer.visible = False  # 防止PSD原始图层被输出到PIL
-    font_info = layer.engine_dict
-    font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
-    # 检查是否存在 'FillColor' 键
     if 'FillColor' in font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']:
         argb_color = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FillColor']['Values']
         r = argb_color[1]
@@ -74,23 +67,73 @@ def update_text_layer(layer, text_content, pil_image):
     else:
         # 如果没有 'FillColor'，使用默认颜色
         font_color = (0, 0, 0, 255)  # 默认黑色
-    font = ImageFont.truetype(text_font, int(font_size))
-    draw = ImageDraw.Draw(pil_image)
-    layer_width = layer.size[0]
-    text_width = draw.textbbox((0, 0), text_content, font=font)[2] - draw.textbbox((0, 0), text_content, font=font)[0]
-    # 从图层名读取文字对齐方向
-    if layer.name.endswith('t_c'):  # 计算居中位置
-        x_position = (layer.offset[0] + (layer_width - text_width) / 2)
-    elif layer.name.endswith('t_r'):  # 计算右对齐位置
-        x_position = layer.offset[0] + layer_width - text_width
+    return font_color
+
+def calculate_text_position(text, layer_width, font_size, alignment):
+    """计算单行文字位置
+
+    :param str text: 文字内容
+    :param int layer_width: 图层宽度
+    :param int font_size: 字体大小
+    :param str alignment: 对齐方式 ('left', 'center', 'right')
+    :return tuple: 文字位置 (x, y)
+    """
+    # 计算文字宽度，考虑中文和英文字符占的宽度不同
+    text_width = 0
+    for char in text:
+        if '\u4e00' <= char <= '\u9fff':  # 判断是否为中文字符
+            text_width += font_size  # 中文字符宽度为字体大小
+        else:
+            text_width += font_size * 0.5  # 英文字符宽度为字体大小的一半
+    if alignment == 'center':  # 计算居中位置
+        x_position = (layer_width - text_width) / 2
+    elif alignment == 'right':  # 计算右对齐位置
+        x_position = layer_width - text_width
     else:  # 计算左对齐位置
-        x_position = layer.offset[0]
+        x_position = 0
     # 修正文字位置偏移
     x_offset = font_size * 0.04
     y_offset = font_size * 0.25
-    draw.text((x_position - x_offset, layer.offset[1] - y_offset), text_content, fill=font_color, font=font)
+    return x_position - x_offset, -y_offset
 
-# 修改图片图层内容
+def update_text_layer(layer, text_content, pil_image):
+    """更新文字图层内容
+
+    :param PSDLayer layer: PSD文字图层
+    :param str text_content: 新的文字内容
+    :param PIL.Image pil_image: PIL图像对象
+    """
+    layer.visible = False  # 防止PSD原始图层被输出到PIL
+    font_info = layer.engine_dict
+    font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
+    font_color = get_font_color(font_info)
+    font = ImageFont.truetype(text_font, int(font_size))
+    draw = ImageDraw.Draw(pil_image)
+    layer_width = layer.size[0]
+    # 判断对齐方向
+    alignment = 'left'
+    if '_c' in layer.name:
+        alignment = 'center'
+    elif '_r' in layer.name:
+        alignment = 'right'
+    if '_p' in layer.name:
+        # 段落文本处理
+        if any('\u4e00' <= char <= '\u9fff' for char in text_content):
+            wrapped_text = textwrap.fill(text_content, width=round(layer_width / font_size))
+        else:
+            wrapped_text = textwrap.fill(text_content, width=round(layer_width / font_size) * 2)
+        lines = wrapped_text.split('\n')
+        x_position, y_position_line = calculate_text_position(text_content, layer_width, font_size, alignment)
+        y_position_line += layer.offset[1]
+        for line in lines:
+            x_position, y_position = calculate_text_position(line, layer_width, font_size, alignment)
+            draw.text((layer.offset[0] + x_position, y_position_line), line, fill=font_color, font=font)
+            y_position_line += font_size * 1.2  # 1.2倍行距
+    else:
+        # 单行文本处理
+        x_position, y_position = calculate_text_position(text_content, layer_width, font_size, alignment)
+        draw.text((layer.offset[0] + x_position, layer.offset[1] + y_position), text_content, fill=font_color, font=font)
+
 def update_image_layer(layer, new_image_path, pil_image):
     """更新图片图层内容
 
@@ -106,9 +149,8 @@ def update_image_layer(layer, new_image_path, pil_image):
     else:
         print(f"警告：图片文件 {new_image_path} 不存在")
 
-# 保存PIL图片
 def save_image(output_dir, output_filename, image_format, pil_image):
-    """保存处理后的图像
+    """保存PIL图片
 
     :param str output_dir: 输出目录
     :param str output_filename: 输出文件名
@@ -126,7 +168,6 @@ def save_image(output_dir, output_filename, image_format, pil_image):
         rgb_image.save(final_output_path, quality=quality, optimize=optimize)
     print(f"已导出图片: {final_output_path}")
 
-# 输出单张图片
 def export_single_image(row, index):
     """处理单行数据并导出图像
 
@@ -170,8 +211,9 @@ def export_single_image(row, index):
     output_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
     save_image(output_path, output_filename, image_format, pil_image)
 
-# 批量输出图片
 def batch_export_images():
+    """批量输出图片
+    """
     df = read_excel_file(excel_file_path)
     for index, row in df.iterrows():
         print(f"正在处理第 {index + 1} 行数据...")
