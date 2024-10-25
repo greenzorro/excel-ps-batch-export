@@ -92,8 +92,8 @@ def calculate_text_position(text, layer_width, font_size, alignment):
     else:  # 计算左对齐位置
         x_position = 0
     # 修正文字位置偏移
-    x_offset = font_size * 0.04
-    y_offset = font_size * 0.25
+    x_offset = font_size * 0.01
+    y_offset = font_size * 0.26
     return x_position - x_offset, -y_offset
 
 def update_text_layer(layer, text_content, pil_image):
@@ -125,6 +125,14 @@ def update_text_layer(layer, text_content, pil_image):
         lines = wrapped_text.split('\n')
         x_position, y_position_line = calculate_text_position(text_content, layer_width, font_size, alignment)
         y_position_line += layer.offset[1]
+        # 计算段落文本的总高度
+        total_height = len(lines) * font_size * 1.2 - font_size * 0.2
+        # 根据垂直对齐方式调整y_position_line
+        if '_pm' in layer.name:
+            y_position_line += (layer.size[1] - total_height) / 2
+        elif '_pb' in layer.name:
+            y_position_line += layer.size[1] - total_height
+        # 逐行绘制
         for line in lines:
             x_position, y_position = calculate_text_position(line, layer_width, font_size, alignment)
             draw.text((layer.offset[0] + x_position, y_position_line), line, fill=font_color, font=font)

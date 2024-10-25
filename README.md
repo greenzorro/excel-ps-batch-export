@@ -46,16 +46,21 @@ For the first time, you'll need some basic setup:
 
 1. Place your PSD template files here.
 2. Edit PSD template file. Rename all changeable layers or groups with this pattern:
-    - Format: `@Variable_name#Operation_type`
-    - A layer name may be like this: `@badge#v`
+    - Format: `@Variable_name#Operation_Parameter`
+    - A layer name may be like: `@badge#v`, `@description#t_p` or `@bg#i`
     - `@` tells the script that this layer is changeable, go and get content from the spreadsheet
     - `Variable_name` should appear in the spreadsheet as column head
-    - `#Operation_type` tells the script what to do with the layer
+    - `#Operation_Parameter` tells the script what to do with the layer
     - `#v` to set visibility according to TRUE/FALSE in the spreadsheet
-    - `#t` to replace a text layer content with spreadsheet data
-    - `#t_c` or `#t_r` for text align center or right
-    - `#t_p` for paragraph layers with text wraping, fill the layer with at least one line in PSD
-    - `#t`, `#t_c` and `#t_r` work together with `#t_p`, like `#t_p_c`
+    - `#t` to replace a text layer content with spreadsheet data, parameters including:
+        - Text align left top by default
+        - `_c` for horizontally center alignment
+        - `_r` for horizontally right alignment
+        - `_p` for paragraph with text wraping, fill the paragraph text layer in PSD with at least one line
+        - `_pm` for vertically middle alignment
+        - `_pb` for vertically bottom alignment
+        - All these parameters work together, like `#t_c_p`, `#t_r_pb`
+        - Alignment set in PSD will not affect the result, the program only checks layer names
     - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet
     - One thing to note: Do not use cmd/ctrl+T to scale changeable text layers. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
 3. Run `create_xlsx.py`. Your XLSX files will appear, with columns ready.
