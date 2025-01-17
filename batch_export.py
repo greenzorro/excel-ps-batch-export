@@ -227,6 +227,9 @@ def batch_export_images():
         print(f"正在处理第 {index + 1} 行数据...")
         export_single_image(row, index)
     print("批量导出完成！")
+    
+    # 打开输出文件夹
+    os.system(f'open {output_path}')
 
 
 if __name__ == "__main__":
