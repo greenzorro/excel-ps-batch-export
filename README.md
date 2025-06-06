@@ -87,3 +87,7 @@ pip install pillow pandas openpyxl psd-tools
 ## Thanks
 
 Special thanks to [psd-tools](https://github.com/psd-tools/psd-tools) for providing such powerful APIs to interact with PSD files. Therefore I could ultilize the power of Photoshop at image editing and Excel/Python at data processing.
+
+---
+
+Created by [Victor_42](https://victor42.work/)
