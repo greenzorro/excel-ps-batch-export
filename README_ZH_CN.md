@@ -87,3 +87,7 @@ pip install pillow pandas openpyxl psd-tools
 ## 感谢
 
 特别感谢 [psd-tools](https://github.com/psd-tools/psd-tools) 提供强大的API，使我能够结合Photoshop的图像编辑能力，同时发挥Excel/Python在数据处理方面的优势。
+
+---
+
+由 [Victor_42](https://victor42.work/) 创造
