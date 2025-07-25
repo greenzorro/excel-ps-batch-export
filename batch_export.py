@@ -13,6 +13,7 @@ from psd_tools import PSDImage
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import sys
+import csv
 from datetime import datetime
 
 # 设置项
@@ -176,13 +177,14 @@ def save_image(output_dir, output_filename, image_format, pil_image):
         rgb_image.save(final_output_path, quality=quality, optimize=optimize)
     print(f"已导出图片: {final_output_path}")
 
-def export_single_image(row, index):
+def export_single_image(row, index, current_psd_path):
     """处理单行数据并导出图像
 
     :param pd.Series row: 包含单行数据的Series
     :param int index: 当前行索引
+    :param str current_psd_path: 当前处理的PSD文件路径
     """
-    psd = PSDImage.open(psd_file_path)
+    psd = PSDImage.open(current_psd_path)
     pil_image = Image.new('RGBA', psd.size)
 
     def process_layers(layers):
@@ -216,20 +218,97 @@ def export_single_image(row, index):
     process_layers(psd)
     
     # 输出图片
-    output_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
+    # 生成带PSD后缀的输出文件名
+    psd_base = os.path.splitext(os.path.basename(current_psd_path))[0]
+    excel_base = os.path.splitext(os.path.basename(excel_file_path))[0]
+    suffix = psd_base.replace(excel_base, "")  # 提取PSD特有后缀
+    
+    # 处理空后缀情况
+    if suffix:
+        suffix = f"_{suffix}" if not suffix.startswith("_") else suffix
+    else:
+        suffix = ""
+    
+    base_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
+    output_filename = f"{base_filename}{suffix}"
     save_image(output_path, output_filename, image_format, pil_image)
+
+def get_matching_psds(excel_file):
+    """获取匹配的PSD文件列表
+    
+    :param str excel_file: Excel文件名（不带扩展名）
+    :return list: 匹配的PSD文件列表
+    """
+    base_name = os.path.splitext(excel_file)[0]
+    matching_psds = []
+    for f in os.listdir():
+        if f.endswith('.psd'):
+            # 提取文件名前缀（第一个井号前的部分）
+            name_without_ext = os.path.splitext(f)[0]
+            if '#' in name_without_ext:
+                prefix = name_without_ext.split('#', 1)[0]
+            else:
+                prefix = name_without_ext
+            if prefix == base_name:
+                matching_psds.append(f)
+    return matching_psds
+
+def log_export_activity(excel_file, image_count):
+    """记录导出活动到日志文件
+    
+    :param str excel_file: 使用的Excel文件名
+    :param int image_count: 导出的图片数量
+    """
+    log_file = 'log.csv'
+    log_entry = {
+        '生成时间': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        '图片数量': image_count,
+        '所用Excel文件': excel_file
+    }
+    
+    # 检查日志文件是否存在
+    file_exists = os.path.exists(log_file)
+    
+    # 写入日志
+    with open(log_file, 'a', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=['生成时间', '图片数量', '所用Excel文件'])
+        
+        # 如果文件不存在，写入表头
+        if not file_exists:
+            writer.writeheader()
+        
+        # 写入日志记录
+        writer.writerow(log_entry)
 
 def batch_export_images():
     """批量输出图片
     """
+    # ========== 调试代码开始 ==========
+    print("="*50)
+    print(f"📁 Excel文件: {excel_file_path}")
+    matching_psds = get_matching_psds(excel_file_path)
+    print(f"🔍 匹配PSD: {matching_psds}")
+    # ========== 调试代码结束 ==========
+    
     df = read_excel_file(excel_file_path)
-    for index, row in df.iterrows():
-        print(f"正在处理第 {index + 1} 行数据...")
-        export_single_image(row, index)
+    total_images = 0
+    
+    # 处理所有匹配的PSD文件
+    for psd_file in matching_psds:
+        print(f"\n处理PSD文件: {psd_file}")
+        for index, row in df.iterrows():
+            print(f"  正在处理第 {index + 1} 行数据...")
+            export_single_image(row, index, psd_file)
+            total_images += 1
+    
+    # 记录日志
+    log_export_activity(excel_file_path, total_images)
     print("批量导出完成！")
     
     # 打开输出文件夹
-    os.system(f'open {output_path}')
+    # 在第一次保存图片后获取准确的输出目录
+    first_image_output_dir = os.path.join(output_path, f'{current_datetime}_{file_name}')
+    os.system(f'open "{first_image_output_dir}"')
 
 
 if __name__ == "__main__":

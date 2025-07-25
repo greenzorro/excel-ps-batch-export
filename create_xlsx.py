@@ -12,16 +12,72 @@ import pandas as pd
 from psd_tools import PSDImage
 
 def init_xlsx(file):
-    """初始化Excel文件
-
-    :param str file: PSD文件名
-    """
-    base_name = os.path.splitext(file)[0]
-    excel_file_xlsx = f'{base_name}.xlsx'
-    psd_file_path = f'{base_name}.psd'
+    """初始化Excel文件 (已弃用)
     
-    # 读取PSD文件
-    psd = PSDImage.open(psd_file_path)
+    保留函数声明避免导入错误，实际功能已被重构
+    """
+    pass
+
+# 原create_xlsx函数已弃用
+
+def main():
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    
+    # 按前缀分组PSD文件
+    psd_groups = {}
+    for file in os.listdir():
+        if file.endswith('.psd'):
+            base_name = os.path.splitext(file)[0]
+            # 提取前缀（第一个井号前的部分）
+            if '#' in base_name:
+                prefix = base_name.split('#', 1)[0]
+            else:
+                prefix = base_name
+            
+            if prefix not in psd_groups:
+                psd_groups[prefix] = []
+            psd_groups[prefix].append(file)
+    
+    # 为每组创建共享Excel文件
+    for prefix, psd_files in psd_groups.items():
+        excel_file = f"{prefix}.xlsx"
+        # 跳过已存在Excel的情况
+        if not os.path.exists(excel_file):
+            # 收集所有PSD的变量
+            all_text_columns = []
+            all_visibility_columns = []
+            all_image_columns = []
+            
+            for psd_file in psd_files:
+                psd = PSDImage.open(psd_file)
+                text_columns, visibility_columns, image_columns = extract_variables(psd)
+                all_text_columns.extend([c for c in text_columns if c not in all_text_columns])
+                all_visibility_columns.extend([c for c in visibility_columns if c not in all_visibility_columns])
+                all_image_columns.extend([c for c in image_columns if c not in all_image_columns])
+            
+            # 创建DataFrame
+            columns = ['File_name'] + all_text_columns + all_visibility_columns + all_image_columns
+            df = pd.DataFrame(columns=columns)
+            
+            # 添加示例行
+            example_data = {'File_name': "文件名"}
+            for col in all_text_columns:
+                example_data[col] = "示例文字"
+            for col in all_visibility_columns:
+                example_data[col] = "TRUE"
+            for col in all_image_columns:
+                example_data[col] = "文件/路径/图片.jpg"
+            
+            df.loc[0] = example_data
+            df.to_excel(excel_file, index=False)
+            print(f"已创建共享Excel文件: {excel_file}")
+
+def extract_variables(psd):
+    """从PSD提取所有变量图层
+    
+    :param PSDImage psd: PSD文件对象
+    :return tuple: (文本列, 可见性列, 图片列)
+    """
     text_columns = []
     visibility_columns = []
     image_columns = []
@@ -40,52 +96,11 @@ def init_xlsx(file):
                     elif category == 'i' and field_name not in image_columns:
                         image_columns.append(field_name)
             if layer.is_group():
-                # 如果是组，递归处理其子图层
+                # 递归处理组内图层
                 process_layers(layer)
     
-    # 处理所有图层
     process_layers(psd)
-    
-    # 按文本、可见性、图片的顺序排列列名，并在前面增加"File_name"列
-    columns = ['File_name'] + text_columns + visibility_columns + image_columns
-    
-    # 创建DataFrame并写入Excel文件
-    df = pd.DataFrame(columns=columns)
-    
-    # 增加一行示例数据
-    example_data = {'File_name': "文件名"}
-    for col in text_columns:
-        example_data[col] = "示例文字"
-    for col in visibility_columns:
-        example_data[col] = "TRUE"
-    for col in image_columns:
-        example_data[col] = "文件/路径/图片.jpg"
-    
-    df.loc[0] = example_data
-    df.to_excel(excel_file_xlsx, index=False)
-    print(f"已初始化文件: {excel_file_xlsx}")
-
-def create_xlsx(file):
-    """创建Excel文件
-
-    :param str file: PSD文件名
-    """
-    base_name = os.path.splitext(file)[0]
-    excel_file_xlsx = f'{base_name}.xlsx'
-    excel_file_xls = f'{base_name}.xls'
-    if not os.path.exists(excel_file_xlsx) and not os.path.exists(excel_file_xls):
-        # 创建空的DataFrame
-        df = pd.DataFrame()
-        # 保存为Excel文件
-        df.to_excel(excel_file_xlsx, index=False)
-        init_xlsx(file)
-        print(f"已创建文件: {excel_file_xlsx}")
-
-def main():
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    for file in os.listdir():
-        if file.endswith('.psd'):
-            create_xlsx(file)
+    return text_columns, visibility_columns, image_columns
 
 if __name__ == "__main__":
     main()

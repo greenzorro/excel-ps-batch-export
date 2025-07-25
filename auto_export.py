@@ -17,12 +17,13 @@ import subprocess
 import asyncio
 import create_xlsx
 
-async def monitor_excel_file(excel_file_path):
+async def monitor_excel_file(excel_file_path, psd_files):
     """监控Excel文件变化
 
     :param str excel_file_path: Excel文件路径
+    :param list psd_files: 关联的PSD模板文件列表
     """
-    print(f"正在监控数据文件 {excel_file_path}……")
+    print(f"正在监控数据文件 {excel_file_path} (关联PSD: {', '.join(psd_files)})……")
     last_modified_time = os.path.getmtime(excel_file_path)
     while True:
         await asyncio.sleep(5)  # 每5秒检查一次
@@ -36,21 +37,29 @@ async def monitor_excel_file(excel_file_path):
 async def main():
     """主函数"""
     tasks = []
-    for excel_file, psd_file in excel_psd_pairs:
-        tasks.append(monitor_excel_file(excel_file))
+    for excel_file, psd_files in excel_psd_pairs:
+        tasks.append(monitor_excel_file(excel_file, psd_files))
     await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     create_xlsx.main()
     
-    # 自动获取当前文件夹中所有.xlsx或.xls文件，并检查是否有同名的.psd文件
+    # 自动获取当前文件夹中所有.xlsx或.xls文件，并匹配对应的PSD模板（支持多个模板）
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     excel_psd_pairs = []
     for file in os.listdir():
         if file.endswith(('.xlsx', '.xls')):
             base_name = os.path.splitext(file)[0]
-            psd_file = f'{base_name}.psd'
-            if os.path.exists(psd_file):
-                excel_psd_pairs.append((file, psd_file))
+            # 匹配所有 base_name#*.psd 文件
+            matching_psds = [f for f in os.listdir() 
+                            if f.startswith(f"{base_name}#") and f.endswith('.psd')]
+            # 如果没有带#的PSD，尝试匹配 base_name.psd
+            if not matching_psds:
+                single_psd = f"{base_name}.psd"
+                if os.path.exists(single_psd):
+                    matching_psds = [single_psd]
+            
+            if matching_psds:
+                excel_psd_pairs.append((file, matching_psds))
 
     asyncio.run(main())
