@@ -78,6 +78,21 @@ When it comes to exporting. Things become a piece of cake:
 
 I even made another script to moniter the spreadsheet and export images automatically once the spreadsheets are modified.
 
+## Multi-file Processing
+
+This tool supports processing multiple PSD templates with one Excel file. Here's how it works:
+
+- **Grouping by Prefix**: All PSD files in the same directory are grouped by their prefix. The prefix is defined as the part of the filename before the first hash (`#`). For example:
+  - `product_intro#templateA.psd` and `product_intro#templateB.psd` share the same prefix `product_intro`
+- **Shared Excel**: For each group, a single Excel file (named `[prefix].xlsx`) is created. This Excel file contains variables from all PSDs in the group.
+- **Batch Export**: When running `batch_export.py [prefix] ...`, the script will process all PSDs in the group. Each row in the Excel will generate one image for every PSD in the group. The output image filenames include the PSD's suffix (e.g., `row1_templateA.jpg`).
+
+Example:
+  - PSD files: `campaign#summer.psd`, `campaign#winter.psd`
+  - Excel file: `campaign.xlsx`
+  - Command: `python batch_export.py campaign AlibabaPuHuiTi-2-85-Bold.ttf jpg`
+  - Output: For each row in `campaign.xlsx`, two images are generated: `row1_summer.jpg`, `row1_winter.jpg`, etc.
+
 ## Prerequisite
 
 ```
