@@ -302,7 +302,7 @@ def batch_export_images():
             total_images += 1
     
     # 记录日志
-    log_export_activity(excel_file_path, total_images)
+    log_export_activity(file_name, total_images)
     print("批量导出完成！")
     
     # 打开输出文件夹
