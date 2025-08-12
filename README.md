@@ -95,8 +95,41 @@ Example:
 
 ## Prerequisite
 
+### Install Dependencies
+
+It's recommended to use the `requirements.txt` file to install all dependencies:
+
+```bash
+pip install pillow pandas openpyxl psd-tools tqdm
 ```
-pip install pillow pandas openpyxl psd-tools
+
+### Testing
+
+The project includes a comprehensive test suite to ensure code quality and functionality:
+
+```bash
+# Run all tests (recommended)
+python test/run_tests.py all
+
+# Run specific test file
+python -m pytest test/test_simple.py -v
+
+# Generate coverage report
+python test/run_tests.py coverage
+```
+
+**Test Coverage**: 67 tests covering core functionality, business logic, error handling, boundary conditions, and performance scenarios with strict validation standards.
+
+## Usage Guide
+
+### Basic Usage
+
+```bash
+# Basic command format
+python batch_export.py [Excel_file_prefix] [font_file] [output_format]
+
+# Example
+python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
 ```
 
 ## Thanks
