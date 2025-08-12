@@ -95,8 +95,24 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 ## 使用前提
 
+### 安装依赖
+
+推荐使用 `requirements.txt` 文件安装所有依赖：
+
+```bash
+pip install pillow pandas openpyxl psd-tools tqdm
 ```
-pip install pillow pandas openpyxl psd-tools
+
+## 使用说明
+
+### 基本用法
+
+```bash
+# 基本命令格式
+python batch_export.py [Excel文件前缀] [字体文件] [输出格式]
+
+# 示例
+python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
 ```
 
 ## 感谢

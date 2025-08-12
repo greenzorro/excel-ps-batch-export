@@ -11,14 +11,6 @@ import os
 import pandas as pd
 from psd_tools import PSDImage
 
-def init_xlsx(file):
-    """初始化Excel文件 (已弃用)
-    
-    保留函数声明避免导入错误，实际功能已被重构
-    """
-    pass
-
-# 原create_xlsx函数已弃用
 
 def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
