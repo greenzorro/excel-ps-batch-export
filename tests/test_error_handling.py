@@ -50,30 +50,44 @@ class TestExcelFileErrors:
     
     def test_read_corrupted_excel_file(self):
         """测试读取损坏的Excel文件"""
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
-            # 写入一些无效数据
-            tmp.write(b"This is not a valid Excel file")
-            tmp.flush()
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+                # 写入一些无效数据
+                tmp.write(b"This is not a valid Excel file")
+                tmp.flush()
+                tmp_path = tmp.name
             
             with pytest.raises(Exception):
-                read_excel_file(tmp.name)
-            
-            os.unlink(tmp.name)
+                read_excel_file(tmp_path)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except PermissionError:
+                    pass  # 忽略权限错误，Windows下可能发生
     
     def test_read_empty_excel_file(self):
         """测试读取空Excel文件"""
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
-            # 创建空的DataFrame
-            df = pd.DataFrame()
-            df.to_excel(tmp.name, index=False)
-            tmp.flush()
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+                # 创建空的DataFrame
+                df = pd.DataFrame()
+                df.to_excel(tmp.name, index=False)
+                tmp.flush()
+                tmp_path = tmp.name
             
             # 应该能读取，但返回空DataFrame
-            result = read_excel_file(tmp.name)
+            result = read_excel_file(tmp_path)
             assert isinstance(result, pd.DataFrame)
             assert len(result) == 0
-            
-            os.unlink(tmp.name)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except PermissionError:
+                    pass  # 忽略权限错误，Windows下可能发生
     
     def test_excel_file_with_missing_columns(self):
         """测试Excel文件缺失必需列"""
@@ -83,16 +97,23 @@ class TestExcelFileErrors:
         }
         df = pd.DataFrame(test_data)
         
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
-            df.to_excel(tmp.name, index=False)
-            tmp.flush()
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+                df.to_excel(tmp.name, index=False)
+                tmp.flush()
+                tmp_path = tmp.name
             
             # 读取应该成功，但后续验证会失败
-            result = read_excel_file(tmp.name)
+            result = read_excel_file(tmp_path)
             assert isinstance(result, pd.DataFrame)
             assert "File_name" not in result.columns
-            
-            os.unlink(tmp.name)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except PermissionError:
+                    pass  # 忽略权限错误，Windows下可能发生
 
 
 class TestImageDataErrors:
@@ -118,17 +139,24 @@ class TestImageDataErrors:
         mock_layer.size = (100, 100)
         mock_layer.offset = (0, 0)
         
-        with tempfile.NamedTemporaryFile(suffix='.xyz', delete=False) as tmp:
-            # Write invalid image data
-            tmp.write(b"Not an image")
-            tmp.flush()
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.xyz', delete=False) as tmp:
+                # Write invalid image data
+                tmp.write(b"Not an image")
+                tmp.flush()
+                tmp_path = tmp.name
             
             with patch('os.path.exists', return_value=True):
                 # Test unsupported format will throw exception
                 with pytest.raises(Exception):
-                    update_image_layer(mock_layer, tmp.name, mock_image)
-            
-            os.unlink(tmp.name)
+                    update_image_layer(mock_layer, tmp_path, mock_image)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except PermissionError:
+                    pass  # 忽略权限错误，Windows下可能发生
     
     def test_update_image_layer_with_corrupted_image(self):
         """Test corrupted image file"""
@@ -137,17 +165,24 @@ class TestImageDataErrors:
         mock_layer.size = (100, 100)
         mock_layer.offset = (0, 0)
         
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-            # Write corrupted image data
-            tmp.write(b"Corrupted image data")
-            tmp.flush()
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                # Write corrupted image data
+                tmp.write(b"Corrupted image data")
+                tmp.flush()
+                tmp_path = tmp.name
             
             with patch('os.path.exists', return_value=True):
                 # Test corrupted image will throw exception
                 with pytest.raises(Exception):
-                    update_image_layer(mock_layer, tmp.name, mock_image)
-            
-            os.unlink(tmp.name)
+                    update_image_layer(mock_layer, tmp_path, mock_image)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except PermissionError:
+                    pass  # 忽略权限错误，Windows下可能发生
 
 
 class TestTextRenderingErrors:
@@ -242,12 +277,16 @@ class TestPSDTemplateErrors:
     
     def test_get_matching_psds_with_nonexistent_excel(self):
         """测试不存在的Excel文件"""
+        original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
-            os.chdir(tmp_dir)
-            
-            # 没有对应的Excel文件
-            matching = get_matching_psds("nonexistent.xlsx")
-            assert matching == []
+            try:
+                os.chdir(tmp_dir)
+                
+                # 没有对应的Excel文件
+                matching = get_matching_psds("nonexistent.xlsx")
+                assert matching == []
+            finally:
+                os.chdir(original_cwd)
     
     def test_preload_psd_templates_with_missing_files(self):
         """测试预加载缺失的PSD文件"""
@@ -266,22 +305,26 @@ class TestPSDTemplateErrors:
     
     def test_preload_psd_templates_with_corrupted_files(self):
         """测试预加载损坏的PSD文件"""
+        original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
-            os.chdir(tmp_dir)
-            
-            # 创建损坏的PSD文件
-            corrupted_psd = "corrupted.psd"
-            with open(corrupted_psd, 'w') as f:
-                f.write("Corrupted PSD data")
-            
-            with patch('builtins.print') as mock_print:
-                result = preload_psd_templates([corrupted_psd])
+            try:
+                os.chdir(tmp_dir)
                 
-                # 应该返回None
-                assert result[corrupted_psd] is None
+                # 创建损坏的PSD文件
+                corrupted_psd = "corrupted.psd"
+                with open(corrupted_psd, 'w') as f:
+                    f.write("Corrupted PSD data")
                 
-                # 应该打印错误信息
-                assert mock_print.called
+                with patch('builtins.print') as mock_print:
+                    result = preload_psd_templates([corrupted_psd])
+                    
+                    # 应该返回None
+                    assert result[corrupted_psd] is None
+                    
+                    # 应该打印错误信息
+                    assert mock_print.called
+            finally:
+                os.chdir(original_cwd)
 
 
 class TestValidationErrorHandling:
@@ -368,7 +411,10 @@ class TestExportTaskErrors:
         # Ensure Mock object is iterable
         task_data['psd_object'].__iter__ = Mock(return_value=iter([]))
         
-        with tempfile.TemporaryDirectory() as tmp_dir:
+        original_cwd = os.getcwd()
+        tmp_dir = None
+        try:
+            tmp_dir = tempfile.mkdtemp()
             os.chdir(tmp_dir)
             
             # Should handle errors gracefully - either by returning an error result or raising an exception
@@ -379,6 +425,13 @@ class TestExportTaskErrors:
             except Exception as e:
                 # If exception is raised, it should be meaningful
                 assert "PSD" in str(e).lower() or "topil" in str(e).lower() or "error" in str(e).lower(), f"Unexpected error: {e}"
+        finally:
+            os.chdir(original_cwd)
+            if tmp_dir and os.path.exists(tmp_dir):
+                try:
+                    shutil.rmtree(tmp_dir)
+                except (PermissionError, OSError):
+                    pass  # 忽略权限错误，Windows下可能发生
     
     def test_export_single_image_task_with_permission_error(self):
         """Test permission error handling"""
@@ -389,7 +442,7 @@ class TestExportTaskErrors:
             'psd_object': Mock(),
             'psd_file_name': "test.psd",
             'excel_file_path': "test.xlsx",
-            'output_path': "/root/no_permission",  # No permission directory
+            'output_path': "C:/Windows/System32/no_permission",  # Windows系统目录，通常无写入权限
             'image_format': "jpg",
             'text_font': "test.ttf",
             'quality': 95,

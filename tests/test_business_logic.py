@@ -21,6 +21,9 @@ from PIL import Image, ImageDraw, ImageFont
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 导入业务代码函数
+from batch_export import get_matching_psds, read_excel_file
+
 # 定义parse_layer_name函数（从test_simple.py复制）
 def parse_layer_name(layer_name):
     """解析图层名称，提取变量信息"""
@@ -401,41 +404,50 @@ class TestPSDFileMatching:
     
     def test_get_matching_psds_single_file(self):
         """测试单个PSD文件匹配"""
+        original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             os.chdir(tmp_dir)
             
-            # 创建测试文件
-            Path("test.xlsx").touch()
-            Path("test.psd").touch()
-            
-            matching = get_matching_psds("test.xlsx")
-            assert matching == ["test.psd"]
+            try:
+                # 创建测试文件
+                Path("test.psd").touch()
+                
+                matching = get_matching_psds("test")
+                assert matching == ["test.psd"]
+            finally:
+                os.chdir(original_cwd)
     
     def test_get_matching_psds_multiple_files(self):
         """测试多个PSD文件匹配"""
+        original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             os.chdir(tmp_dir)
             
-            # 创建测试文件
-            Path("test.xlsx").touch()
-            Path("test#1.psd").touch()
-            Path("test#2.psd").touch()
-            Path("other.psd").touch()
-            
-            matching = get_matching_psds("test.xlsx")
-            assert set(matching) == {"test#1.psd", "test#2.psd"}
+            try:
+                # 创建测试文件
+                Path("test#1.psd").touch()
+                Path("test#2.psd").touch()
+                Path("other.psd").touch()
+                
+                matching = get_matching_psds("test")
+                assert set(matching) == {"test#1.psd", "test#2.psd"}
+            finally:
+                os.chdir(original_cwd)
     
     def test_get_matching_psds_no_match(self):
         """测试无匹配PSD文件"""
+        original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             os.chdir(tmp_dir)
             
-            # 创建测试文件
-            Path("test.xlsx").touch()
-            Path("other.psd").touch()
-            
-            matching = get_matching_psds("test.xlsx")
-            assert matching == []
+            try:
+                # 创建测试文件
+                Path("other.psd").touch()
+                
+                matching = get_matching_psds("test")
+                assert matching == []
+            finally:
+                os.chdir(original_cwd)
 
 
 class TestValidationReporting:

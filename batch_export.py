@@ -26,20 +26,17 @@ import copy
 validation_errors = []
 validation_warnings = []
 
-# 设置项
-file_name = sys.argv[1]  # 从命令行参数获取使用第几套数据和模版
-font_file = sys.argv[2]  # 从命令行参数获取字体文件
-image_format = sys.argv[3]  # 从命令行参数获取输出图片格式
-
+# 作为模块导入时的默认值
+file_name = None
+font_file = None
+image_format = None
 quality = 95
 optimize = False
 current_datetime = ''
-
-# 文件路径
 output_path = 'export'
-excel_file_path = f'{file_name}.xlsx'
-psd_file_path = f'{file_name}.psd'
-text_font = f'assets/fonts/{font_file}'
+excel_file_path = None
+psd_file_path = None
+text_font = None
 
 def read_excel_file(file_path):
     """读取Excel文件
@@ -630,6 +627,25 @@ if __name__ == "__main__":
     # 切换到脚本所在目录
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
+    
+    # 设置项
+    if len(sys.argv) < 4:
+        print("用法: python batch_export.py [Excel文件前缀] [字体文件] [输出格式]")
+        print("示例: python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg")
+        sys.exit(1)
+    
+    file_name = sys.argv[1]  # 从命令行参数获取使用第几套数据和模版
+    font_file = sys.argv[2]  # 从命令行参数获取字体文件
+    image_format = sys.argv[3]  # 从命令行参数获取输出图片格式
+    
+    quality = 95
+    optimize = False
+    
+    # 文件路径
+    output_path = 'export'
+    excel_file_path = f'{file_name}.xlsx'
+    psd_file_path = f'{file_name}.psd'
+    text_font = f'assets/fonts/{font_file}'
 
     # 批量输出图片
     current_datetime = datetime.now().strftime('%Y%0m%d_%H%M%S')

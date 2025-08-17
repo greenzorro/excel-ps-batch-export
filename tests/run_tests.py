@@ -15,7 +15,7 @@ from pathlib import Path
 def run_command(cmd, description):
     """Run command and display results"""
     print(f"\n{'='*60}")
-    print(f"🚀 {description}")
+    print(f"Running {description}")
     print(f"{'='*60}")
     print(f"Command: {' '.join(cmd)}")
     print(f"{'-'*60}")
@@ -87,7 +87,7 @@ def run_with_html_report():
 
 def main():
     """Main function"""
-    print("🧪 Excel-PS Batch Export Test Suite")
+    print("Excel-PS Batch Export Test Suite")
     print("=" * 60)
     
     if len(sys.argv) < 2:
@@ -133,15 +133,15 @@ def main():
     elif mode == "html":
         success = run_with_html_report()
     else:
-        print(f"❌ Unknown mode: {mode}")
+        print(f"Unknown mode: {mode}")
         return 1
     
     print(f"\n{'='*60}")
     if success:
-        print("✅ Tests completed!")
+        print("Tests completed!")
         return 0
     else:
-        print("❌ Tests failed!")
+        print("Tests failed!")
         return 1
 
 if __name__ == "__main__":

@@ -86,15 +86,21 @@ class TestRealBoundaryConditions:
     def test_read_excel_file_invalid_format_should_raise_error(self):
         """测试：读取不支持的文件格式应该抛出异常"""
         # 创建一个存在但格式不正确的文件
-        with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as tmp:
-            tmp.write(b"This is not an Excel file")
-            tmp.flush()
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as tmp:
+                tmp.write(b"This is not an Excel file")
+                tmp.flush()
+                tmp_path = tmp.name
             
-            try:
-                # 现在业务代码应该抛出ValueError
-                with pytest.raises(ValueError, match="不支持的文件格式"):
-                    read_excel_file(tmp.name)
-            finally:
-                os.unlink(tmp.name)
+            # 现在业务代码应该抛出ValueError
+            with pytest.raises(ValueError, match="不支持的文件格式"):
+                read_excel_file(tmp_path)
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except PermissionError:
+                    pass  # 忽略权限错误，Windows下可能发生
 
 
