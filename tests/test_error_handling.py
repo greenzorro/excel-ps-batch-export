@@ -208,8 +208,10 @@ class TestTextRenderingErrors:
         
         mock_image = Mock()
         
-        # Mock font file doesn't exist - mock global variable text_font instead
-        with patch('batch_export.text_font', 'nonexistent_font.ttf'):
+        # Mock ImageFont.truetype to raise OSError
+        with patch('batch_export.ImageFont.truetype') as mock_font:
+            mock_font.side_effect = OSError("Font not found")
+            
             # Test invalid font will throw exception
             with pytest.raises(OSError):
                 update_text_layer(mock_layer, "Test text", mock_image)
@@ -442,7 +444,7 @@ class TestExportTaskErrors:
             'psd_object': Mock(),
             'psd_file_name': "test.psd",
             'excel_file_path': "test.xlsx",
-            'output_path': "C:/Windows/System32/no_permission",  # Windows系统目录，通常无写入权限
+            'output_path': "/root/no_permission",  # Unix系统目录，通常无写入权限
             'image_format': "jpg",
             'text_font': "test.ttf",
             'quality': 95,
@@ -456,9 +458,13 @@ class TestExportTaskErrors:
         task_data['psd_object'].topil.return_value = Image.new('RGB', (100, 100))
         task_data['psd_object'].__iter__ = Mock(return_value=iter([]))
         
-        # Should handle permission errors specifically
-        with pytest.raises((PermissionError, OSError)) as exc_info:
-            result = export_single_image_task(task_data)
+        # Mock os.makedirs to raise PermissionError
+        with patch('batch_export.os.makedirs') as mock_makedirs:
+            mock_makedirs.side_effect = PermissionError("Permission denied")
+            
+            # Should handle permission errors specifically
+            with pytest.raises((PermissionError, OSError)) as exc_info:
+                result = export_single_image_task(task_data)
         # Verify it's a permission-related error
         error_msg = str(exc_info.value).lower()
         assert any(term in error_msg for term in ["permission", "denied", "read-only", "access"])

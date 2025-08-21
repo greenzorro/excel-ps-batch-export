@@ -1,25 +1,17 @@
-# Excel-PS Batch Export Dependencies
-# For batch exporting Excel+PSD template images
+# 自动生成的依赖文件
+# 生成时间: 2025-08-18 11:22:14
+# Python环境: projects (全局)
+# 扫描文件数: 4
+# 推荐使用 uv 进行包管理
 
-# Core data processing
-pandas==2.2.2
-openpyxl==3.1.3
-
-# PSD file processing
-psd-tools==1.9.23
-
-# Image processing
+# 核心依赖
 Pillow==10.3.0
-
-# Parallel processing and progress display
+pandas==2.2.2
+psd-tools==1.9.23
 tqdm==4.66.4
 
-# Concurrent processing (Python standard library)
-# concurrent.futures is included in Python standard library
-# multiprocessing is included in Python standard library
-
-# Testing dependencies
-pytest==8.4.1
-pytest-html==4.1.1
-pytest-xdist==3.8.0
-psutil==6.1.1
+#
+# 使用说明:
+# 1. 安装 uv: curl -LsSf https://astral.sh/uv/install.sh | sh
+# 2. 安装依赖: uv pip install -r requirements.txt
+# 3. 同步环境: uv sync
