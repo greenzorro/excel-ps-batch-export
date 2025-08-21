@@ -65,8 +65,14 @@ def set_layer_visibility(layer, visibility):
     :param bool visibility: 是否可见
     :raises TypeError: 当visibility不是布尔值时抛出异常
     """
-    if not isinstance(visibility, bool):
-        raise TypeError(f"visibility必须是布尔值，收到类型: {type(visibility).__name__}")
+    # 处理numpy布尔类型
+    if hasattr(visibility, 'item'):
+        visibility = visibility.item()
+    # 处理pandas布尔类型
+    if hasattr(visibility, 'bool'):
+        visibility = visibility.bool()
+    # 确保是Python原生bool类型
+    visibility = bool(visibility)
     layer.visible = visibility
 
 def get_font_color(font_info):
@@ -129,13 +135,20 @@ def calculate_text_position(text, layer_width, font_size, alignment):
     y_offset = font_size * 0.26
     return x_position - x_offset, -y_offset
 
-def update_text_layer(layer, text_content, pil_image):
+def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf'):
     """更新文字图层内容
 
     :param PSDLayer layer: PSD文字图层
     :param str text_content: 新的文字内容
     :param PIL.Image pil_image: PIL图像对象
+    :param str text_font: 字体文件路径
     """
+    import os
+    # 确保字体路径相对于脚本所在目录
+    if not os.path.isabs(text_font):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        text_font = os.path.join(script_dir, text_font)
+    
     layer.visible = False  # 防止PSD原始图层被输出到PIL
     font_info = layer.engine_dict
     font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
@@ -215,6 +228,8 @@ def export_single_image_task(task_data):
     :param dict task_data: 任务数据包含 row, index, psd_object, psd_file_name, excel_file_path, output_path, image_format, text_font, quality, optimize, current_datetime
     :return str: 输出的文件路径
     """
+    import os
+    
     row = task_data['row']
     index = task_data['index']
     psd_object = task_data['psd_object']
@@ -226,6 +241,11 @@ def export_single_image_task(task_data):
     quality = task_data['quality']
     optimize = task_data['optimize']
     current_datetime = task_data['current_datetime']
+    
+    # 确保字体路径相对于脚本所在目录
+    if text_font and not os.path.isabs(text_font):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        text_font = os.path.join(script_dir, text_font)
     
     # 创建PSD对象的深拷贝，避免并发问题
     psd_copy = copy.deepcopy(psd_object)
@@ -244,7 +264,7 @@ def export_single_image_task(task_data):
                         set_layer_visibility(layer, visibility)
                     # 修改文字图层内容
                     elif operation_type.startswith('t'):
-                        update_text_layer(layer, str(row[field_name]), pil_image)
+                        update_text_layer(layer, str(row[field_name]), pil_image, text_font)
                     # 修改图片图层内容
                     elif operation_type.startswith('i'):
                         update_image_layer(layer, str(row[field_name]), pil_image)
@@ -313,7 +333,7 @@ def export_single_image(row, index, psd_object, psd_file_name):
                         set_layer_visibility(layer, visibility)
                     # 修改文字图层内容
                     elif operation_type.startswith('t'):
-                        update_text_layer(layer, str(row[field_name]), pil_image)
+                        update_text_layer(layer, str(row[field_name]), pil_image, text_font)
                     # 修改图片图层内容
                     elif operation_type.startswith('i'):
                         update_image_layer(layer, str(row[field_name]), pil_image)
