@@ -17,14 +17,17 @@ from unittest.mock import Mock, patch
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Mock sys.argv to avoid command line argument issues
-original_argv = sys.argv.copy()
-sys.argv = ['batch_export.py', '1', 'test_font.ttf', 'jpg']
+# 导入共享测试工具
+from test_utils import TestEnvironment
+
+# 使用测试环境管理器处理sys.argv依赖
+test_env = TestEnvironment()
+test_env.setup_batch_export_args('test', 'test_font.ttf', 'jpg')
 
 from batch_export import calculate_text_position, read_excel_file
 
-# Restore original argv
-sys.argv = original_argv
+# 恢复原始环境
+test_env.cleanup()
 
 
 class TestRealBoundaryConditions:

@@ -24,72 +24,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # 导入业务代码函数
 from batch_export import get_matching_psds, read_excel_file
 
-# 定义parse_layer_name函数（从test_simple.py复制）
-def parse_layer_name(layer_name):
-    """解析图层名称，提取变量信息"""
-    if not layer_name or not layer_name.startswith('@'):
-        return None
-    
-    try:
-        # 提取变量名和操作符
-        parts = layer_name[1:].split('#')
-        if len(parts) != 2:
-            return None
-        
-        var_name = parts[0]
-        operation = parts[1]
-        
-        # 解析操作类型和参数
-        if operation.startswith('t'):
-            # 文本变量
-            result = {
-                "type": "text",
-                "name": var_name,
-                "align": "left",
-                "valign": "top",
-                "paragraph": False
-            }
-            
-            # 解析参数
-            params = operation[2:] if len(operation) > 2 else ''
-            if 'c' in params:
-                result["align"] = "center"
-            elif 'r' in params:
-                result["align"] = "right"
-            
-            if 'p' in params and 'pm' not in params and 'pb' not in params:
-                result["paragraph"] = True
-            
-            if 'pm' in params:
-                result["valign"] = "middle"
-            elif 'pb' in params:
-                result["valign"] = "bottom"
-            
-            return result
-            
-        elif operation.startswith('i'):
-            # 图片变量
-            return {
-                "type": "image",
-                "name": var_name
-            }
-            
-        elif operation.startswith('v'):
-            # 可见性变量
-            return {
-                "type": "visibility",
-                "name": var_name
-            }
-            
-        else:
-            return None
-            
-    except Exception:
-        return None
+# 导入共享测试工具
+from test_utils import (
+    parse_layer_name, validate_layer_name_parsing, create_mock_layer, create_mock_psd,
+    create_test_excel_data, create_temp_excel_file, create_temp_image_file,
+    assert_text_position_accuracy, parse_boolean_value, TestEnvironment,
+    create_complex_test_data
+)
 
-# Mock sys.argv to avoid command line argument issues
-original_argv = sys.argv.copy()
-sys.argv = ['batch_export.py', '1', 'test_font.ttf', 'jpg']
+# 使用测试环境管理器处理sys.argv依赖
+test_env = TestEnvironment()
+test_env.setup_batch_export_args('test', 'test_font.ttf', 'jpg')
 
 # 导入需要测试的函数
 from batch_export import (
@@ -106,8 +51,8 @@ from batch_export import (
     report_validation_results
 )
 
-# Restore original argv
-sys.argv = original_argv
+# 恢复原始环境
+test_env.cleanup()
 
 
 class TestLayerParsingAdvanced:
@@ -115,19 +60,17 @@ class TestLayerParsingAdvanced:
     
     def test_complex_text_variables(self):
         """Test complex text variable parsing"""
-        # Test combination parameters - Note: _pb parameter overrides _p parameter, so paragraph is False
-        result = parse_layer_name("@description#t_c_p_pb")
-        assert result["type"] == "text"
-        assert result["name"] == "description"
-        assert result["align"] == "center"
-        assert result["paragraph"] is False  # _pb overrides _p
-        assert result["valign"] == "bottom"
+        # Test combination parameters - p parameter takes precedence, paragraph is True
+        validate_layer_name_parsing(
+            "@description#t_c_p_pb", "text", "description", 
+            expected_align="center", expected_valign="bottom", expected_paragraph=True
+        )
         
         # Test only vertical alignment
-        result = parse_layer_name("@title#t_pm")
-        assert result["valign"] == "middle"
-        assert result["align"] == "left"
-        assert result["paragraph"] is False
+        validate_layer_name_parsing(
+            "@title#t_pm", "text", "title", 
+            expected_align="left", expected_valign="middle", expected_paragraph=False
+        )
     
     def test_edge_case_layer_names(self):
         """Test edge case layer names"""
@@ -142,15 +85,10 @@ class TestLayerParsingAdvanced:
         assert parse_layer_name("#") is None
         
         # Test special characters
-        result = parse_layer_name("@special-chars_123#t")
-        assert result["type"] == "text"
-        assert result["name"] == "special-chars_123"
+        validate_layer_name_parsing("@special-chars_123#t", "text", "special-chars_123")
         
         # Test Chinese variable name
-        result = parse_layer_name("@中文标题#t_c")
-        assert result["type"] == "text"
-        assert result["name"] == "中文标题"
-        assert result["align"] == "center"
+        validate_layer_name_parsing("@中文标题#t_c", "text", "中文标题", expected_align="center")
     
     def test_invalid_operation_types(self):
         """Test invalid operation types"""
@@ -502,12 +440,12 @@ class TestLayerVisibility:
         mock_layer = Mock()
         
         # 测试字符串输入转换为布尔值的行为
-        # 在Python中，bool("False") 返回 True，因为非空字符串都为True
+        # 修复后的代码应该正确解析布尔值字符串
         set_layer_visibility(mock_layer, "True")
         assert mock_layer.visible is True
         
         set_layer_visibility(mock_layer, "False")
-        assert mock_layer.visible is True  # 非空字符串都为True
+        assert mock_layer.visible is False  # 修复：现在正确解析False
         
         # 空字符串应该为False
         set_layer_visibility(mock_layer, "")
@@ -518,7 +456,7 @@ class TestLayerVisibility:
         assert mock_layer.visible is True
         
         set_layer_visibility(mock_layer, "0")
-        assert mock_layer.visible is True  # 非空字符串都为True
+        assert mock_layer.visible is False  # 修复：现在正确解析0
 
 
 if __name__ == "__main__":

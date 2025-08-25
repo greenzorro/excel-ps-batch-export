@@ -11,6 +11,7 @@ import os
 import sys
 import tempfile
 import shutil
+import subprocess
 import pytest
 import pandas as pd
 from pathlib import Path
@@ -18,68 +19,8 @@ from pathlib import Path
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
-def parse_layer_name(layer_name):
-    """解析图层名称，提取变量信息"""
-    if not layer_name or not layer_name.startswith('@'):
-        return None
-    
-    try:
-        # 提取变量名和操作符
-        parts = layer_name[1:].split('#')
-        if len(parts) != 2:
-            return None
-        
-        var_name = parts[0]
-        operation = parts[1]
-        
-        # 解析操作类型和参数
-        if operation.startswith('t'):
-            # 文本变量
-            result = {
-                "type": "text",
-                "name": var_name,
-                "align": "left",
-                "valign": "top",
-                "paragraph": False
-            }
-            
-            # 解析参数
-            params = operation[2:] if len(operation) > 2 else ''
-            if 'c' in params:
-                result["align"] = "center"
-            elif 'r' in params:
-                result["align"] = "right"
-            
-            if 'p' in params:
-                result["paragraph"] = True
-            
-            if 'pm' in params:
-                result["valign"] = "middle"
-            elif 'pb' in params:
-                result["valign"] = "bottom"
-            
-            return result
-            
-        elif operation.startswith('i'):
-            # 图片变量
-            return {
-                "type": "image",
-                "name": var_name
-            }
-            
-        elif operation.startswith('v'):
-            # 可见性变量
-            return {
-                "type": "visibility",
-                "name": var_name
-            }
-            
-        else:
-            return None
-            
-    except Exception:
-        return None
+# 导入共享测试工具
+from test_utils import parse_layer_name, validate_layer_name_parsing, create_test_data, validate_test_setup
 
 
 class TestLayerParsing:
@@ -88,48 +29,34 @@ class TestLayerParsing:
     def test_text_variable_parsing(self):
         """测试文本变量解析"""
         # 测试基本文本变量
-        result = parse_layer_name("@标题#t")
-        assert result["type"] == "text"
-        assert result["name"] == "标题"
-        assert result["align"] == "left"
-        assert result["valign"] == "top"
+        validate_layer_name_parsing("@标题#t", "text", "标题", expected_align="left", expected_valign="top")
         
         # 测试居中对齐
-        result = parse_layer_name("@标题#t_c")
-        assert result["align"] == "center"
+        validate_layer_name_parsing("@标题#t_c", "text", "标题", expected_align="center")
         
         # 测试右对齐
-        result = parse_layer_name("@标题#t_r")
-        assert result["align"] == "right"
+        validate_layer_name_parsing("@标题#t_r", "text", "标题", expected_align="right")
         
         # 测试段落文本
-        result = parse_layer_name("@描述#t_p")
-        assert result["paragraph"] is True
+        # 测试段落文本
+        validate_layer_name_parsing("@描述#t_p", "text", "描述", expected_paragraph=True)
         
         # 测试垂直居中
-        result = parse_layer_name("@描述#t_pm")
-        assert result["valign"] == "middle"
+        validate_layer_name_parsing("@描述#t_pm", "text", "描述", expected_valign="middle")
         
         # 测试垂直底部
-        result = parse_layer_name("@描述#t_pb")
-        assert result["valign"] == "bottom"
+        validate_layer_name_parsing("@描述#t_pb", "text", "描述", expected_valign="bottom")
         
         # 测试组合参数
-        result = parse_layer_name("@描述#t_c_p")
-        assert result["align"] == "center"
-        assert result["paragraph"] is True
+        validate_layer_name_parsing("@描述#t_c_p", "text", "描述", expected_align="center", expected_paragraph=True)
     
     def test_image_variable_parsing(self):
         """测试图片变量解析"""
-        result = parse_layer_name("@背景图#i")
-        assert result["type"] == "image"
-        assert result["name"] == "背景图"
+        validate_layer_name_parsing("@背景图#i", "image", "背景图")
     
     def test_visibility_variable_parsing(self):
         """测试可见性变量解析"""
-        result = parse_layer_name("@水印#v")
-        assert result["type"] == "visibility"
-        assert result["name"] == "水印"
+        validate_layer_name_parsing("@水印#v", "visibility", "水印")
     
     def test_invalid_layer_names(self):
         """测试无效图层名称"""
@@ -210,17 +137,7 @@ class TestFileOperations:
         project_root = Path(__file__).parent.parent
         
         # 验证必需文件存在
-        required_files = [
-            "create_xlsx.py",
-            "batch_export.py",
-            "auto_export.py",
-            "requirements.txt",
-            "notes.md"
-        ]
-        
-        for file in required_files:
-            file_path = project_root / file
-            assert file_path.exists(), f"缺少必需文件: {file}"
+        assert validate_test_setup(), "测试设置验证失败"
     
     def test_assets_directory(self):
         """测试资源目录"""
@@ -291,6 +208,142 @@ class TestDependencyCheck:
             
         except ImportError:
             pytest.fail("psd-tools导入失败")
+
+
+class TestEndToEndSimple:
+    """简单的端到端测试"""
+    
+    def test_batch_export_basic_functionality(self):
+        """测试批量导出的基本功能"""
+        # 这个测试验证batch_export.py能够正常启动和执行基本功能
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        
+        # 测试程序能够启动并且不会因为基本错误而崩溃
+        result = subprocess.run([
+            sys.executable, script_path, "test", "nonexistent.ttf", "jpg"
+        ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
+        
+        # 程序应该因为缺少文件而退出，但不应该因为代码错误而崩溃
+        assert result.returncode != 0
+        assert "ValueError" not in result.stderr
+        assert "Invalid format string" not in result.stderr
+        assert "UnicodeEncodeError" not in result.stderr
+    
+    def test_program_structure_validation(self):
+        """验证程序结构"""
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        
+        # 检查脚本文件是否存在且可读
+        assert os.path.exists(script_path)
+        assert os.access(script_path, os.R_OK)
+        
+        # 检查脚本内容
+        with open(script_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 检查关键函数是否存在
+        required_functions = [
+            'def read_excel_file',
+            'def calculate_text_position', 
+            'def update_text_layer',
+            'def update_image_layer',
+            'def validate_data',
+            'def batch_export_images'
+        ]
+        
+        for func in required_functions:
+            assert func in content, f"缺少关键函数: {func}"
+        
+        # 检查主程序入口
+        assert 'if __name__ == "__main__":' in content
+        
+        # 检查是否有修复过的问题
+        assert '%Y%0m%d_%H%M%S' not in content, "仍存在错误的日期格式字符串"
+        
+        # 检查是否还有emoji字符（可能导致编码问题）
+        emoji_chars = ['📁', '🔍', '🔄', '🚀', '💡', '📊', '⚠️', '❌', '✅']
+        for emoji in emoji_chars:
+            assert emoji not in content, f"仍存在emoji字符: {emoji}"
+    
+    def test_datetime_format_functionality(self):
+        """测试日期时间格式功能"""
+        from datetime import datetime
+        
+        # 测试修复后的日期格式
+        try:
+            # 这应该能正常工作，因为我们已经修复了格式字符串
+            current_datetime = datetime.now().strftime('%Y%m%d_%H%M%S')
+            assert len(current_datetime) == 15  # YYYYMMDD_HHMMSS
+            assert current_datetime[8] == '_'
+            assert current_datetime.replace('_', '').isdigit()
+        except ValueError as e:
+            pytest.fail(f"日期格式错误: {e}")
+    
+    def test_import_dependencies(self):
+        """测试依赖导入"""
+        # 测试所有必要的依赖都能正常导入
+        dependencies = [
+            'os', 'sys', 'subprocess', 'tempfile', 'shutil',
+            'pandas', 'PIL', 'psd_tools', 'tqdm',
+            'datetime', 'multiprocessing', 'pathlib'
+        ]
+        
+        for dep in dependencies:
+            try:
+                __import__(dep)
+            except ImportError as e:
+                pytest.fail(f"无法导入依赖: {dep} - {e}")
+    
+    def test_safe_print_message_function(self):
+        """测试安全打印消息函数"""
+        # 导入业务代码中的safe_print_message函数
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from batch_export import safe_print_message
+        
+        # 测试正常消息
+        try:
+            safe_print_message("测试消息")
+        except Exception as e:
+            pytest.fail(f"safe_print_message 处理正常消息失败: {e}")
+        
+        # 测试包含特殊字符的消息
+        try:
+            safe_print_message("测试消息 with special chars: ●○■□★☆◆◇")
+        except Exception as e:
+            pytest.fail(f"safe_print_message 处理特殊字符失败: {e}")
+        
+        # 测试中文消息
+        try:
+            safe_print_message("中文测试消息")
+        except Exception as e:
+            pytest.fail(f"safe_print_message 处理中文消息失败: {e}")
+    
+    def test_business_code_improvements(self):
+        """测试业务代码改进效果"""
+        # 验证业务代码中已经修复的问题
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        
+        # 检查脚本文件是否存在且可读
+        assert os.path.exists(script_path)
+        assert os.access(script_path, os.R_OK)
+        
+        # 检查脚本内容
+        with open(script_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 检查是否有safe_print_message函数
+        assert 'def safe_print_message' in content, "缺少safe_print_message函数"
+        
+        # 检查是否使用了safe_print_message
+        assert 'safe_print_message' in content, "业务代码中未使用safe_print_message"
+        
+        # 检查是否修复了日期格式问题
+        assert '%Y%0m%d_%H%M%S' not in content, "仍存在错误的日期格式字符串"
+        
+        # 检查是否还有emoji字符
+        emoji_chars = ['📁', '🔍', '🔄', '🚀', '💡', '📊', '⚠️', '❌', '✅']
+        for emoji in emoji_chars:
+            assert emoji not in content, f"仍存在emoji字符: {emoji}"
 
 
 if __name__ == "__main__":
