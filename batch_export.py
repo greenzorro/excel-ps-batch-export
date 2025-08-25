@@ -26,6 +26,18 @@ import copy
 validation_errors = []
 validation_warnings = []
 
+def safe_print_message(message):
+    """安全打印消息，处理Windows控制台编码问题
+    
+    :param str message: 要打印的消息
+    """
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        # 如果直接打印失败，使用安全的编码方式
+        safe_message = message.encode('ascii', errors='replace').decode('ascii')
+        print(safe_message)
+
 # 作为模块导入时的默认值
 file_name = None
 font_file = None
@@ -47,7 +59,16 @@ def read_excel_file(file_path):
     :raises ValueError: 当文件格式不支持时抛出异常
     """
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"Excel文件不存在: {file_path}")
+        # 修复BC-006: Windows路径编码问题
+        # 使用ASCII编码确保路径在Windows控制台正确显示
+        try:
+            # 尝试直接显示路径
+            error_msg = f"Excel文件不存在: {file_path}"
+        except UnicodeEncodeError:
+            # 如果编码失败，使用安全的显示方式
+            import traceback
+            error_msg = f"Excel文件不存在: {file_path.encode('ascii', errors='replace').decode('ascii')}"
+        raise FileNotFoundError(error_msg)
     
     if not file_path.lower().endswith(('.xlsx', '.xls')):
         raise ValueError(f"不支持的文件格式: {file_path}")
@@ -71,9 +92,36 @@ def set_layer_visibility(layer, visibility):
     # 处理pandas布尔类型
     if hasattr(visibility, 'bool'):
         visibility = visibility.bool()
-    # 确保是Python原生bool类型
-    visibility = bool(visibility)
-    layer.visible = visibility
+    
+    # 正确解析布尔值 - 修复原始bug
+    if isinstance(visibility, bool):
+        layer.visible = visibility
+    elif isinstance(visibility, str):
+        # 处理字符串形式的布尔值
+        visibility_lower = visibility.lower().strip()
+        
+        # 空字符串或只有空格的字符串为False
+        if not visibility_lower:
+            layer.visible = False
+        elif visibility_lower in ('true', '1', 'yes', 'on', 't', 'y'):
+            layer.visible = True
+        elif visibility_lower in ('false', '0', 'no', 'off', 'f', 'n'):
+            layer.visible = False
+        else:
+            # 尝试解析为数字
+            try:
+                # 尝试转换为浮点数
+                num_value = float(visibility_lower)
+                layer.visible = num_value != 0
+            except ValueError:
+                # 无法转换为数字，按照Python的bool()转换规则
+                layer.visible = bool(visibility)
+    elif isinstance(visibility, (int, float)):
+        # 处理数字形式的布尔值
+        layer.visible = visibility != 0
+    else:
+        # 其他类型，使用Python的bool()转换
+        layer.visible = bool(visibility)
 
 def get_font_color(font_info):
     """获取文字颜色
@@ -114,13 +162,47 @@ def calculate_text_position(text, layer_width, font_size, alignment):
     if alignment not in ['left', 'center', 'right']:
         raise ValueError(f"对齐方式必须是 'left', 'center', 或 'right'，当前值: {alignment}")
     
-    # 计算文字宽度，考虑中文和英文字符占的宽度不同
-    text_width = 0
-    for char in text:
-        if '\u4e00' <= char <= '\u9fff':  # 判断是否为中文字符
-            text_width += font_size  # 中文字符宽度为字体大小
-        else:
-            text_width += font_size * 0.5  # 英文字符宽度为字体大小的一半
+    # 使用Pillow的字体度量功能获取精确的文本宽度
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        
+        # 创建一个临时图像来计算文本宽度
+        temp_image = Image.new('RGB', (1, 1))
+        draw = ImageDraw.Draw(temp_image)
+        
+        # 尝试加载字体，如果失败则使用默认字体
+        try:
+            # 使用相对路径的默认字体
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            font_path = os.path.join(script_dir, 'assets', 'fonts', 'AlibabaPuHuiTi-2-85-Bold.ttf')
+            
+            if os.path.exists(font_path):
+                font = ImageFont.truetype(font_path, font_size)
+            else:
+                # 如果默认字体不存在，使用Pillow的默认字体
+                font = ImageFont.load_default()
+        except (OSError, IOError):
+            # 字体加载失败，使用默认字体
+            font = ImageFont.load_default()
+        
+        # 使用textbbox获取精确的文本边界框
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]  # 右边界 - 左边界
+        
+    except ImportError:
+        # 如果PIL不可用，回退到原始算法（改进版）
+        text_width = 0
+        for char in text:
+            if '\u4e00' <= char <= '\u9fff':  # 判断是否为中文字符
+                text_width += font_size * 0.9  # 更准确的中文字符宽度估算
+            elif char.isdigit():
+                text_width += font_size * 0.6  # 数字字符宽度
+            elif char in 'iIl1':  # 窄字符
+                text_width += font_size * 0.3
+            elif char in 'mwMW':  # 宽字符
+                text_width += font_size * 0.8
+            else:
+                text_width += font_size * 0.5  # 普通英文字符
     
     # 计算位置
     if alignment == 'center':  # 计算居中位置
@@ -130,7 +212,7 @@ def calculate_text_position(text, layer_width, font_size, alignment):
     else:  # 计算左对齐位置
         x_position = 0
     
-    # 修正文字位置偏移
+    # 修正文字位置偏移（基于实际测试调整）
     x_offset = font_size * 0.01
     y_offset = font_size * 0.26
     return x_position - x_offset, -y_offset
@@ -391,22 +473,53 @@ def collect_psd_variables(psd_file_path: str) -> Set[str]:
     
     :param str psd_file_path: PSD文件路径
     :return set: 变量名集合
+    :raises FileNotFoundError: 当PSD文件不存在时
+    :raises Exception: 当PSD文件损坏或读取失败时
     """
     variables = set()
-    psd = PSDImage.open(psd_file_path)
+    
+    # 检查文件是否存在
+    if not os.path.exists(psd_file_path):
+        # 修复BC-006: Windows路径编码问题
+        # 使用ASCII编码确保路径在Windows控制台正确显示
+        try:
+            # 尝试直接显示路径
+            error_msg = f"PSD文件不存在: {psd_file_path}"
+        except UnicodeEncodeError:
+            # 如果编码失败，使用安全的显示方式
+            error_msg = f"PSD文件不存在: {psd_file_path.encode('ascii', errors='replace').decode('ascii')}"
+        raise FileNotFoundError(error_msg)
+    
+    # 检查文件扩展名
+    if not psd_file_path.lower().endswith('.psd'):
+        raise ValueError(f"文件格式不支持，期望.psd文件: {psd_file_path}")
+    
+    try:
+        psd = PSDImage.open(psd_file_path)
+    except Exception as e:
+        raise Exception(f"无法打开PSD文件 {psd_file_path}: {str(e)}")
     
     def process_layers(layers):
         for layer in layers:
-            layer_name = layer.name
-            if layer_name and layer_name.startswith('@'):
-                parts = layer_name[1:].split('#')
-                if len(parts) == 2:
-                    field_name = parts[0]
-                    variables.add(field_name)
-            if layer.is_group():
-                process_layers(layer)
+            try:
+                layer_name = layer.name
+                if layer_name and layer_name.startswith('@'):
+                    parts = layer_name[1:].split('#')
+                    if len(parts) == 2:
+                        field_name = parts[0]
+                        variables.add(field_name)
+                if layer.is_group():
+                    process_layers(layer)
+            except Exception as e:
+                # 记录图层处理错误但继续处理其他图层
+                print(f"警告：处理图层时出错: {str(e)}")
+                continue
     
-    process_layers(psd)
+    try:
+        process_layers(psd)
+    except Exception as e:
+        raise Exception(f"处理PSD文件图层时出错 {psd_file_path}: {str(e)}")
+    
     return variables
 
 def is_image_column(operation_type: str) -> bool:
@@ -490,23 +603,23 @@ def report_validation_results(errors: List[str], warnings: List[str]):
     :param list warnings: 警告列表
     """
     if not errors and not warnings:
-        print("✅ 数据验证通过")
+        print("数据验证通过")
         return True
     
     print("\n" + "="*60)
-    print("📋 数据验证报告")
+    print("数据验证报告")
     print("="*60)
     
     if warnings:
-        print("\n⚠️  警告:")
+        safe_print_message("\n警告:")
         for warning in warnings:
-            print(f"  - {warning}")
+            safe_print_message(f"  - {warning}")
     
     if errors:
-        print("\n❌ 错误:")
+        safe_print_message("\n错误:")
         for error in errors:
-            print(f"  - {error}")
-        print("\n❗ 请修复上述错误后重新运行程序")
+            safe_print_message(f"  - {error}")
+        safe_print_message("\n请修复上述错误后重新运行程序")
         return False
     
     return True
@@ -518,14 +631,14 @@ def preload_psd_templates(psd_files: List[str]) -> dict:
     :return dict: 预加载的PSD对象字典
     """
     psd_objects = {}
-    print("\n🔄 预加载PSD模板...")
+    print("\n预加载PSD模板...")
     
     for psd_file in psd_files:
         try:
             psd_objects[psd_file] = PSDImage.open(psd_file)
-            print(f"  ✅ 已加载: {psd_file}")
+            print(f"  已加载: {psd_file}")
         except Exception as e:
-            print(f"  ❌ 加载失败: {psd_file} - {str(e)}")
+            print(f"  加载失败: {psd_file} - {str(e)}")
             psd_objects[psd_file] = None
     
     return psd_objects
@@ -562,20 +675,20 @@ def batch_export_images():
     """
     # ========== 调试代码开始 ==========
     print("="*50)
-    print(f"📁 Excel文件: {excel_file_path}")
+    print(f"Excel文件: {excel_file_path}")
     matching_psds = get_matching_psds(excel_file_path)
-    print(f"🔍 匹配PSD: {matching_psds}")
+    print(f"匹配PSD: {matching_psds}")
     # ========== 调试代码结束 ==========
     
     # 读取Excel数据
     df = read_excel_file(excel_file_path)
     
     # 数据验证
-    print("\n🔍 正在验证数据...")
+    print("\n正在验证数据...")
     errors, warnings = validate_data(df, matching_psds)
     
     if not report_validation_results(errors, warnings):
-        print("❌ 数据验证失败，程序终止")
+        safe_print_message("数据验证失败，程序终止")
         sys.exit(1)
     
     # 预加载PSD模板
@@ -584,9 +697,9 @@ def batch_export_images():
     # 检查是否有PSD加载失败
     failed_psds = [psd_file for psd_file, psd_obj in psd_objects.items() if psd_obj is None]
     if failed_psds:
-        print(f"\n❌ 以下PSD模板加载失败，请检查文件完整性:")
+        safe_print_message(f"\n以下PSD模板加载失败，请检查文件完整性:")
         for failed_psd in failed_psds:
-            print(f"  - {failed_psd}")
+            safe_print_message(f"  - {failed_psd}")
         sys.exit(1)
     
     # 准备并行任务
@@ -614,7 +727,7 @@ def batch_export_images():
                 total_images += 1
     
     # 并行处理
-    print(f"\n🚀 开始并行处理 {total_images} 个任务...")
+    print(f"\n开始并行处理 {total_images} 个任务...")
     
     # 使用CPU核心数的80%作为最大工作进程数
     max_workers = min(multiprocessing.cpu_count(), max(1, int(multiprocessing.cpu_count() * 0.8)))
@@ -623,15 +736,46 @@ def batch_export_images():
         # 使用tqdm显示进度
         futures = [executor.submit(export_single_image_task, task) for task in tasks]
         
+        # 统计变量
+        success_count = 0
+        error_count = 0
+        error_details = []
+        
         # 等待所有任务完成并显示进度
         for future in tqdm(as_completed(futures), total=len(futures), desc="正在导出图片", unit="张"):
             try:
                 result = future.result()
+                success_count += 1
                 # 可以在这里记录成功导出的文件
             except Exception as e:
-                print(f"❌ 任务执行失败: {str(e)}")
+                error_count += 1
+                error_msg = f"任务执行失败: {str(e)}"
+                safe_print_message(error_msg)
+                error_details.append(str(e))
+                
+                # 根据错误类型进行不同的处理
+                if "PermissionError" in str(e) or "权限" in str(e):
+                    safe_print_message("  提示：请检查文件权限设置")
+                elif "FileNotFoundError" in str(e) or "文件不存在" in str(e):
+                    safe_print_message("  提示：请检查相关文件是否存在")
+                elif "MemoryError" in str(e) or "内存" in str(e):
+                    safe_print_message("  提示：内存不足，尝试减少并行进程数")
+        
+        # 输出统计信息
+        print(f"\n处理统计:")
+        print(f"  成功: {success_count} 张")
+        print(f"  失败: {error_count} 张")
+        
+        if error_count > 0:
+            print(f"\n有 {error_count} 个任务失败，请检查错误信息")
+            # 如果错误率过高，给出建议
+            error_rate = error_count / total_images
+            if error_rate > 0.5:  # 超过50%失败率
+                safe_print_message("  建议：检查PSD模板和Excel数据格式是否正确")
+            elif error_rate > 0.2:  # 超过20%失败率
+                safe_print_message("  建议：尝试减少并行进程数或检查系统资源")
     
-    print(f"\n✅ 并行处理完成，共处理 {total_images} 张图片")
+    print(f"\n并行处理完成，共处理 {total_images} 张图片")
     
     # 记录日志
     log_export_activity(file_name, total_images)
@@ -665,8 +809,8 @@ if __name__ == "__main__":
     output_path = 'export'
     excel_file_path = f'{file_name}.xlsx'
     psd_file_path = f'{file_name}.psd'
-    text_font = f'assets/fonts/{font_file}'
+    text_font = font_file
 
     # 批量输出图片
-    current_datetime = datetime.now().strftime('%Y%0m%d_%H%M%S')
+    current_datetime = datetime.now().strftime('%Y%m%d_%H%M%S')
     batch_export_images()

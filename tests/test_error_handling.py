@@ -21,9 +21,12 @@ from PIL import Image, ImageDraw, ImageFont
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Mock sys.argv to avoid command line argument issues
-original_argv = sys.argv.copy()
-sys.argv = ['batch_export.py', '1', 'test_font.ttf', 'jpg']
+# 导入共享测试工具
+from test_utils import TestEnvironment
+
+# 使用测试环境管理器处理sys.argv依赖
+test_env = TestEnvironment()
+test_env.setup_batch_export_args('test', 'test_font.ttf', 'jpg')
 
 # 导入需要测试的函数
 from batch_export import (
@@ -36,8 +39,8 @@ from batch_export import (
     export_single_image_task
 )
 
-# Restore original argv
-sys.argv = original_argv
+# 恢复原始环境
+test_env.cleanup()
 
 
 class TestExcelFileErrors:
@@ -241,7 +244,8 @@ class TestTextRenderingErrors:
             with patch('batch_export.ImageDraw.Draw') as mock_draw:
                 update_text_layer(mock_layer, "", mock_image)
                 # Should still handle empty string
-                mock_font.assert_called_once()
+                # Note: new algorithm calls font multiple times (calculate_text_position + update_text_layer)
+                assert mock_font.call_count >= 1
                 mock_draw.assert_called_once()
     
     def test_update_text_layer_with_special_characters(self):
@@ -270,7 +274,8 @@ class TestTextRenderingErrors:
                 special_text = "Special chars: @#$%^&*()_+-=[]{}|;':\",./<>?"
                 update_text_layer(mock_layer, special_text, mock_image)
                 # Should handle special characters
-                mock_font.assert_called_once()
+                # Note: new algorithm calls font multiple times (calculate_text_position + update_text_layer)
+                assert mock_font.call_count >= 1
                 mock_draw.assert_called_once()
 
 
@@ -458,8 +463,9 @@ class TestExportTaskErrors:
         task_data['psd_object'].topil.return_value = Image.new('RGB', (100, 100))
         task_data['psd_object'].__iter__ = Mock(return_value=iter([]))
         
-        # Mock os.makedirs to raise PermissionError
-        with patch('batch_export.os.makedirs') as mock_makedirs:
+        # Mock os.path.exists to return False and os.makedirs to raise PermissionError
+        with patch('os.path.exists', return_value=False), \
+             patch('os.makedirs') as mock_makedirs:
             mock_makedirs.side_effect = PermissionError("Permission denied")
             
             # Should handle permission errors specifically
@@ -501,7 +507,8 @@ class TestBoundaryConditionErrors:
             with patch('PIL.ImageDraw.Draw') as mock_draw:
                 update_text_layer(mock_layer, long_text, mock_image)
                 # Should handle long text
-                mock_font.assert_called_once()
+                # Note: new algorithm calls font multiple times (calculate_text_position + update_text_layer)
+                assert mock_font.call_count >= 1
                 mock_draw.assert_called_once()
     
     def test_zero_size_layer(self):
@@ -528,7 +535,8 @@ class TestBoundaryConditionErrors:
             with patch('PIL.ImageDraw.Draw') as mock_draw:
                 update_text_layer(mock_layer, "Test text", mock_image)
                 # Should handle zero size layer
-                mock_font.assert_called_once()
+                # Note: new algorithm calls font multiple times (calculate_text_position + update_text_layer)
+                assert mock_font.call_count >= 1
                 mock_draw.assert_called_once()
     
     def test_negative_offset_layer(self):
@@ -555,7 +563,8 @@ class TestBoundaryConditionErrors:
             with patch('PIL.ImageDraw.Draw') as mock_draw:
                 update_text_layer(mock_layer, "Test text", mock_image)
                 # Should handle negative offset layer
-                mock_font.assert_called_once()
+                # Note: new algorithm calls font multiple times (calculate_text_position + update_text_layer)
+                assert mock_font.call_count >= 1
                 mock_draw.assert_called_once()
 
 
