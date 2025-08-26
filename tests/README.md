@@ -4,7 +4,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## Test Files Description
 
-### Main Test Files
+### Core Test Files
 
 - **test_simple.py** - Core functionality tests (recommended)
   - Layer name parsing tests
@@ -47,6 +47,78 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Test data generation tools
   - Test environment management tools
 
+### Specialized Test Files
+
+- **test_boolean_issues.py** - Boolean value handling tests
+  - Correct boolean parsing tests
+  - Business code boolean conversion bug detection
+  - Excel boolean data scenarios
+  - Layer visibility boolean handling
+  - Boolean parsing performance tests
+
+- **test_fixed_business_code.py** - Fixed business code validation tests
+  - Fixed boolean conversion tests
+  - Fixed vs original comparison tests
+  - Edge cases handling tests
+  - Performance impact tests
+
+- **test_integration.py** - Integration tests
+  - Program startup basic tests
+  - Program initialization tests
+  - Datetime format handling tests
+  - Command line argument parsing tests
+  - File path handling tests
+  - Error handling startup tests
+  - Batch export script existence tests
+  - Required dependencies tests
+  - Program structure tests
+  - Main function logic tests
+
+- **test_platform_compatibility.py** - Platform compatibility tests
+  - Windows console encoding tests
+  - Chinese file path handling tests
+  - Special characters in output tests
+  - File path with spaces tests
+  - Long file paths tests
+  - Different locale settings tests
+  - Error message encoding tests
+  - Progress display encoding tests
+  - System info detection tests
+  - Environment variable handling tests
+  - Unicode in Excel data tests
+  - Console output buffering tests
+
+- **test_precise_text_position.py** - Precise text position tests
+  - Precise right alignment calculation tests
+  - Precise center alignment calculation tests
+  - Precise left alignment calculation tests
+  - Mixed text precise calculation tests
+  - Alignment comparison tests
+  - Extreme values handling tests
+  - Improved text position assertions tests
+
+- **test_real_scenarios.py** - Real scenario tests
+  - Real execution with actual files tests
+  - Large dataset simulation tests
+  - Concurrent execution simulation tests
+  - Error recovery and continuation tests
+  - Resource usage monitoring tests
+  - User workflow simulation tests
+  - Performance benchmark tests
+  - Memory leak detection tests
+
+- **test_text_position_issues.py** - Text position issue tests
+  - Chinese text position calculation tests
+  - English text position calculation tests
+  - Mixed text position calculation tests
+  - Empty text position calculation tests
+  - Special characters position calculation tests
+  - Single character position calculation tests
+  - Algorithm simplification issues tests
+  - Position calculation edge cases tests
+  - Long text position calculation tests
+  - Text position calculation consistency tests
+
 ### Test Coverage
 
 #### Functionality Tests (test_simple.py)
@@ -88,14 +160,15 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 67 (including all test modules)
-- **Passed**: 67 (100%)
-- **Failed**: 0 (All Windows permission issues fixed)
+- **Total Tests**: 130 (including all test modules)
+- **Passed**: 130 (100%)
+- **Failed**: 0 (All text position algorithm issues fixed)
 - **Performance**: Excellent (comprehensive test coverage across all modules)
 - **Languages**: All test output in English
-- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, and edge cases
+- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, and real scenarios
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
+- **Specialized Testing**: Includes boolean value handling, text position precision, platform compatibility, and real-world scenario testing
 
 ## Running Tests
 
@@ -209,17 +282,25 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Results
 
-- **Total Tests**: 67 (including all test modules)
+- **Total Tests**: 130 (including all test modules)
 - **Pass Rate**: 100%
-- **Failed Tests**: 0 (All Windows temporary file permission issues fixed)
+- **Failed Tests**: 0 (All text position algorithm issues fixed)
 - **Test Distribution**: 
-  - Core functionality (11 tests) - 100% pass
+  - Core functionality (17 tests) - 100% pass
   - Business logic (25 tests) - 100% pass
   - Error handling (21 tests) - 100% pass
   - Boundary conditions (6 tests) - 100% pass
-  - Performance testing (4 tests) - Requires psutil dependency
-- **Last Updated**: 2025-08-18
+  - Performance testing (5 tests) - 100% pass
+  - Boolean value handling (9 tests) - 100% pass
+  - Fixed business code (4 tests) - 100% pass
+  - Integration testing (11 tests) - 100% pass
+  - Platform compatibility (13 tests) - 100% pass
+  - Precise text position (7 tests) - 100% pass
+  - Real scenarios (9 tests) - 100% pass
+  - Text position issues (3 tests) - 100% pass
+- **Last Updated**: 2025-08-26
 - **Status**: All tests passing, code production ready
+- **Improvements**: Fixed text position algorithm compatibility with new Pillow-based font metrics
 
 ## Troubleshooting
 
