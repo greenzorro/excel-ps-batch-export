@@ -213,10 +213,10 @@ class TestDependencyCheck:
 class TestEndToEndSimple:
     """简单的端到端测试"""
     
-    def test_batch_export_basic_functionality(self):
+    def test_psd_renderer_basic_functionality(self):
         """测试批量导出的基本功能"""
-        # 这个测试验证batch_export.py能够正常启动和执行基本功能
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        # 这个测试验证psd_renderer.py能够正常启动和执行基本功能
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 测试程序能够启动并且不会因为基本错误而崩溃
         result = subprocess.run([
@@ -231,7 +231,7 @@ class TestEndToEndSimple:
     
     def test_program_structure_validation(self):
         """验证程序结构"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 检查脚本文件是否存在且可读
         assert os.path.exists(script_path)
@@ -248,7 +248,7 @@ class TestEndToEndSimple:
             'def update_text_layer',
             'def update_image_layer',
             'def validate_data',
-            'def batch_export_images'
+            'def psd_renderer_images'
         ]
         
         for func in required_functions:
@@ -298,7 +298,7 @@ class TestEndToEndSimple:
         """测试安全打印消息函数"""
         # 导入业务代码中的safe_print_message函数
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from batch_export import safe_print_message
+        from psd_renderer import safe_print_message
         
         # 测试正常消息
         try:
@@ -321,7 +321,7 @@ class TestEndToEndSimple:
     def test_business_code_improvements(self):
         """测试业务代码改进效果"""
         # 验证业务代码中已经修复的问题
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 检查脚本文件是否存在且可读
         assert os.path.exists(script_path)

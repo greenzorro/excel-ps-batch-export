@@ -1,5 +1,5 @@
 '''
-File: auto_export.py
+File: file_monitor.py
 Project: excel-ps-batch-export
 Created: 2024-09-26 10:36:43
 Author: Victor Cheng
@@ -15,7 +15,7 @@ import os
 import sys
 import subprocess
 import asyncio
-import create_xlsx
+import xlsx_generator
 
 async def monitor_excel_file(excel_file_path, psd_files):
     """监控Excel文件变化
@@ -24,13 +24,14 @@ async def monitor_excel_file(excel_file_path, psd_files):
     :param list psd_files: 关联的PSD模板文件列表
     """
     print(f"正在监控数据文件 {excel_file_path} (关联PSD: {', '.join(psd_files)})……")
+    # 初始化为当前时间，避免启动时的误触发
     last_modified_time = os.path.getmtime(excel_file_path)
     while True:
         await asyncio.sleep(5)  # 每5秒检查一次
         current_modified_time = os.path.getmtime(excel_file_path)
         if current_modified_time != last_modified_time:
-            print(f"{excel_file_path} 文件已被修改，正在执行 batch_export.py...")
-            subprocess.run([sys.executable, 'batch_export.py', str(os.path.splitext(excel_file_path)[0]), font_file, image_format])
+            print(f"{excel_file_path} 文件已被修改，正在执行 psd_renderer.py...")
+            subprocess.run([sys.executable, 'psd_renderer.py', str(os.path.splitext(excel_file_path)[0]), font_file, image_format])
             last_modified_time = current_modified_time
             print(f"正在监控数据文件……")
 
@@ -42,7 +43,7 @@ async def main():
     await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    create_xlsx.main()
+    xlsx_generator.main()
     
     # 自动获取当前文件夹中所有.xlsx或.xls文件，并匹配对应的PSD模板（支持多个模板）
     os.chdir(os.path.dirname(os.path.abspath(__file__)))

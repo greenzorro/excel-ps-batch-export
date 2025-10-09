@@ -59,7 +59,7 @@ class TestPlatformCompatibility:
         print(f"当前系统编码: {current_encoding}")
         
         # 测试程序在Windows环境下的输出
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 运行程序并检查输出编码
         result = subprocess.run([
@@ -81,7 +81,7 @@ class TestPlatformCompatibility:
         with open(f"assets/fonts/{chinese_font_name}", "w", encoding='utf-8') as f:
             f.write("中文字体内容")
         
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 测试中文路径的处理
         result = subprocess.run([
@@ -94,7 +94,7 @@ class TestPlatformCompatibility:
     
     def test_special_characters_in_output(self):
         """测试输出中特殊字符的处理"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 运行程序并检查输出中的特殊字符
         result = subprocess.run([
@@ -115,7 +115,7 @@ class TestPlatformCompatibility:
         with open(f"assets/fonts/{spaced_font_name}", "w") as f:
             f.write("spaced font content")
         
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 测试带空格的路径
         result = subprocess.run([
@@ -138,7 +138,7 @@ class TestPlatformCompatibility:
         with open(long_path / long_font_name, "w") as f:
             f.write("long path font")
         
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 测试超长路径
         result = subprocess.run([
@@ -167,7 +167,7 @@ class TestPlatformCompatibility:
                         pass
             
             # 测试程序在不同区域设置下的行为
-            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
             
             result = subprocess.run([
                 sys.executable, script_path, "test", "assets/fonts/test_font.ttf", "jpg"
@@ -185,7 +185,7 @@ class TestPlatformCompatibility:
     
     def test_error_message_encoding(self):
         """测试错误消息的编码处理"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 故意使用不存在的文件来触发错误
         result = subprocess.run([
@@ -206,7 +206,7 @@ class TestPlatformCompatibility:
     
     def test_progress_display_encoding(self):
         """测试进度显示的编码兼容性"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 运行程序并检查进度显示
         result = subprocess.run([
@@ -255,7 +255,7 @@ class TestPlatformCompatibility:
         test_env["TEST_ENV"] = "测试环境变量"
         test_env["LANG"] = "en_US.UTF-8"
         
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 在特定环境下运行程序
         result = subprocess.run([
@@ -286,7 +286,7 @@ class TestPlatformCompatibility:
     
     def test_console_output_buffering(self):
         """测试控制台输出缓冲问题"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 运行程序并检查输出缓冲
         result = subprocess.run([

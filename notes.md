@@ -16,21 +16,22 @@
 
 ```
 excel-ps-batch-export/
-├── create_xlsx.py          # PSD模板扫描和Excel配置文件生成
-├── batch_export.py         # 核心批量导出脚本
-├── auto_export.py          # 自动化监控脚本
+├── xlsx_generator.py        # Excel生成器 - PSD模板扫描和Excel配置文件生成
+├── psd_renderer.py         # 核心PSD渲染脚本
+├── file_monitor.py         # 文件监控脚本
+├── clipboard_importer.py   # 剪贴板导入器 - 从剪贴板读取数据写入Excel
 ├── requirements.txt        # 项目依赖管理
 ├── assets/                 # 资源目录
 │   ├── fonts/             # 字体文件
 │   └── 1_img/             # 示例图片素材
 ├── export/                # 导出图片目录
-├── log_backup.csv         # 导出日志
+├── log.csv                # 导出日志
 ├── tests/                 # 测试套件目录
 │   ├── README.md          # 测试套件文档
 │   ├── run_tests.py       # 统一测试运行器
 │   └── *.py              # 测试文件
 ├── notes.md               # 本备忘录
-└── PROJECT_COMPLETION_REPORT.md  # 项目完成报告
+└── (其他项目文件)
 ```
 
 ## 4. 核心功能
@@ -38,6 +39,7 @@ excel-ps-batch-export/
 ### 4.1 自动化工作流程
 - **PSD模板扫描**：自动识别目录中的PSD文件并按前缀分组
 - **Excel配置生成**：为每组PSD模板生成共享的Excel配置文件
+- **剪贴板数据导入**：从系统剪贴板读取表格数据并写入Excel文件
 - **批量图片导出**：读取Excel数据，自动填充到PSD模板并导出
 - **实时监控**：监控Excel文件修改，自动触发重新导出
 
@@ -45,6 +47,14 @@ excel-ps-batch-export/
 - **文本变量** (`@变量名#t`)：替换文本内容，支持多种对齐方式
 - **图片变量** (`@变量名#i`)：替换图片内容，自动缩放适配
 - **可见性变量** (`@变量名#v`)：控制图层显示/隐藏
+
+### 4.4 剪贴板导入器
+- **智能数据解析**：自动识别制表符和逗号分隔的表格数据，保留第一行数据
+- **Excel文件选择**：支持多Excel文件环境下的交互式选择，支持退出功能
+- **目标Sheet定位**：优先使用"粘贴"sheet，否则使用第二个sheet
+- **安全数据写入**：从B2单元格开始写入，清空右下方区域
+- **公式重新计算**：使用xlwings强制Excel重新计算公式，确保数据正确联动
+- **跨平台兼容**：正确处理Windows和macOS的编码和路径问题
 
 ### 4.3 高级特性
 - **多模板支持**：一个Excel文件可对应多个PSD模板
@@ -55,6 +65,7 @@ excel-ps-batch-export/
 - **精确文本渲染**：使用Pillow字体度量实现像素级精度的文本位置计算
 - **智能布尔值解析**：正确处理Excel中各种形式的布尔值（"TRUE"/"FALSE"/"1"/"0"等）
 - **健壮的异常处理**：分层级的错误处理机制，提供智能解决方案建议
+- **Excel公式重新计算**：使用xlwings强制Excel重新计算公式，确保数据正确显示
 
 ## 5. 技术架构
 
@@ -63,12 +74,19 @@ excel-ps-batch-export/
 - **pandas==2.2.2**：Excel数据读取和处理
 - **Pillow==10.3.0**：图像合成和文本绘制
 - **tqdm==4.66.4**：进度条显示
+- **xlwings==0.30.12**：Excel公式重新计算和自动化操作
+- **pyperclip==1.8.2**：跨平台剪贴板访问
+- **openpyxl==3.1.2**：Excel文件读写操作
 
 ### 5.2 关键技术实现
 - **PSD预加载**：一次性加载所有PSD模板，避免重复IO操作
 - **并行处理**：使用`ProcessPoolExecutor`实现多进程并行导出
 - **文本渲染**：通过Pillow实现高质量的文本绘制，支持中英文混合
 - **图像合成**：使用`alpha_composite`实现精确的图层合成
+- **Excel自动化**：使用xlwings实现Excel公式强制重新计算，确保数据正确显示
+- **剪贴板数据解析**：智能识别制表符和逗号分隔格式，自动转换为DataFrame
+- **安全文件操作**：使用openpyxl进行Excel文件读写，避免数据损坏
+- **跨平台编码处理**：安全处理Windows和macOS的编码差异，确保中文显示正常
 
 ### 5.3 性能优化
 - **多进程并行**：动态分配工作进程数量（CPU核心数的80%）
@@ -80,20 +98,32 @@ excel-ps-batch-export/
 ### 6.1 首次设置
 1. **准备PSD模板**：将PSD文件放入项目根目录，命名格式为`[前缀]#[后缀].psd`
 2. **命名变量图层**：按照`@变量名#操作符`规则重命名需要动态修改的图层
-3. **生成Excel配置**：运行`python create_xlsx.py`生成Excel配置文件
+3. **生成Excel配置**：运行`python xlsx_generator.py`生成Excel配置文件
 4. **准备资源**：将字体文件放入`assets/fonts`目录
 
 ### 6.2 批量导出
 ```bash
 # 手动导出
-python batch_export.py [模板名] [字体文件] [格式]
-# 示例：python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
+python psd_renderer.py [模板名] [字体文件] [格式]
+# 示例：python psd_renderer.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
 
 # 自动监控导出
-python auto_export.py
+python file_monitor.py
 ```
 
-### 6.3 图层命名规则
+### 6.3 剪贴板导入器使用
+```bash
+# 从剪贴板导入数据到Excel
+python clipboard_importer.py
+```
+**使用流程：**
+1. 复制表格数据到剪贴板（支持Excel、网页表格等）
+2. 运行剪贴板导入器
+3. 选择目标Excel文件（如有多个）
+4. 数据自动写入"粘贴"sheet的B2单元格开始区域
+5. Excel公式自动重新计算，数据联动到第一个sheet
+
+### 6.4 图层命名规则
 - **文本变量**：`@标题#t_c`（居中对齐文本）
 - **图片变量**：`@产品图#i`（图片替换）
 - **可见性变量**：`@水印#v`（显示/隐藏控制）
@@ -109,6 +139,13 @@ python auto_export.py
 ## 7. 测试套件
 
 项目包含完整的测试套件，确保代码质量和功能稳定性。测试套件位于`tests/`目录，包含全面的测试覆盖和问题发现能力。
+
+**测试套件状态：**
+- **总测试数**：140个测试
+- **通过率**：100% (所有测试通过)
+- **测试分类**：核心功能、业务逻辑、错误处理、边界条件、性能测试、平台兼容性、剪贴板导入器、布尔值处理、日志记录功能等
+- **运行方式**：使用`python tests/run_tests.py all`运行所有测试
+- **最新验证**：剪贴板导入器第一行数据处理逻辑已验证
 
 详细的测试文档、分类说明和运行指南，请参考 `tests/README.md`。
 

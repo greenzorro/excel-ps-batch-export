@@ -1,10 +1,10 @@
 '''
-File: create_xlsx.py
+File: xlsx_generator.py
 Project: excel-ps-batch-export
 Created: 2024-10-14 11:41:59
 Author: Victor Cheng
 Email: greenzorromail@gmail.com
-Description: 为PSD模板创建同名Excel文件，并根据PSD里的变量图层初始化Excel列
+Description: Excel生成器 - 为PSD模板创建Excel配置文件，根据变量图层初始化列
 '''
 
 import os
