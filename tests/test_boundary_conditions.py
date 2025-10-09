@@ -22,9 +22,9 @@ from test_utils import TestEnvironment
 
 # 使用测试环境管理器处理sys.argv依赖
 test_env = TestEnvironment()
-test_env.setup_batch_export_args('test', 'test_font.ttf', 'jpg')
+test_env.setup_psd_renderer_args('test', 'test_font.ttf', 'jpg')
 
-from batch_export import calculate_text_position, read_excel_file
+from psd_renderer import calculate_text_position, read_excel_file
 
 # 恢复原始环境
 test_env.cleanup()

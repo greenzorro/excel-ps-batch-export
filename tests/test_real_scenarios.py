@@ -75,7 +75,7 @@ class TestRealScenarios:
         
         if real_files_exist:
             # 使用真实文件测试
-            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
             result = subprocess.run([
                 sys.executable, script_path, "1", "assets/fonts/test_font.ttf", "jpg"
             ], capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
@@ -119,7 +119,7 @@ class TestRealScenarios:
             f.write("dummy psd content")
         
         # 测试大数据集的处理
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         start_time = time.time()
         result = subprocess.run([
@@ -159,7 +159,7 @@ class TestRealScenarios:
             test_tasks.append(f"concurrent_test_{i}")
         
         # 模拟并发执行（实际是串行，但测试程序处理多个任务的能力）
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         for task in test_tasks:
             result = subprocess.run([
@@ -193,7 +193,7 @@ class TestRealScenarios:
             f.write("dummy psd content")
         
         # 测试错误处理
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         result = subprocess.run([
             sys.executable, script_path, "error_test", "assets/fonts/test_font.ttf", "jpg"
         ], capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
@@ -224,7 +224,7 @@ class TestRealScenarios:
         # 监控资源使用
         process = psutil.Process()
         
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 启动子进程监控
         subproc = subprocess.Popen([
@@ -317,7 +317,7 @@ class TestRealScenarios:
     
     def execute_batch_processing(self):
         """执行批量处理"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         result = subprocess.run([
             sys.executable, script_path, "workflow", "assets/fonts/test_font.ttf", "jpg"
@@ -368,7 +368,7 @@ class TestRealScenarios:
                 f.write("dummy psd content")
             
             # 执行性能测试
-            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
             
             start_time = time.time()
             result = subprocess.run([
@@ -399,7 +399,7 @@ class TestRealScenarios:
         with open("empty.psd", "w") as f:
             f.write("dummy psd content")
         
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 测试空数据
         result = subprocess.run([

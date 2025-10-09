@@ -18,9 +18,9 @@ from test_utils import assert_text_position_accuracy, TestEnvironment
 
 # 设置测试环境
 test_env = TestEnvironment()
-test_env.setup_batch_export_args('test', 'test_font.ttf', 'jpg')
+test_env.setup_psd_renderer_args('test', 'test_font.ttf', 'jpg')
 
-from batch_export import calculate_text_position
+from psd_renderer import calculate_text_position
 
 # 恢复环境
 test_env.cleanup()

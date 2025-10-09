@@ -29,7 +29,7 @@ This is what you do using Photoshop:
 Here's what you do using my Python script.
 
 1. Edit content in a spreadsheet.
-2. Run batch_export.py
+2. Run psd_renderer.py
 
 That's it. Images will be just there for you. All you need is a Python environment with a few packages.
 
@@ -63,7 +63,7 @@ For the first time, you'll need some basic setup:
         - Alignment set in PSD will not affect the result, the program only checks layer names
     - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet
     - One thing to note: Do not use cmd/ctrl+T to scale changeable text layers. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
-3. Run `create_xlsx.py`. Your XLSX files will appear, with columns ready.
+3. Run `xlsx_generator.py`. Your XLSX files will appear, with columns ready.
 4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first one to read and calculate everything. It's especially useful when you want to toggle layer visibility. DO NOT delete the first `File_name` column, leave it blank to use the default file name format(image_1, image_2, etc).
 5. Put everything else the templates need in `assets` folder, including fonts, background images, etc. Make sure the path to image assets match the data in the spreadsheet.
 
@@ -74,9 +74,9 @@ Looks complicated huh? Trust me, it's way more complicated doing the same thing 
 When it comes to exporting. Things become a piece of cake:
 
 1. Paste content in the spreadsheet.
-2. Run batch_export.py
+2. Run psd_renderer.py
 
-I even made another script to moniter the spreadsheet and export images automatically once the spreadsheets are modified.
+I even made another script (file_monitor.py) to moniter the spreadsheet and export images automatically once the spreadsheets are modified.
 
 ## Multi-file Processing
 
@@ -85,12 +85,12 @@ This tool supports processing multiple PSD templates with one Excel file. Here's
 - **Grouping by Prefix**: All PSD files in the same directory are grouped by their prefix. The prefix is defined as the part of the filename before the first hash (`#`). For example:
   - `product_intro#templateA.psd` and `product_intro#templateB.psd` share the same prefix `product_intro`
 - **Shared Excel**: For each group, a single Excel file (named `[prefix].xlsx`) is created. This Excel file contains variables from all PSDs in the group.
-- **Batch Export**: When running `batch_export.py [prefix] ...`, the script will process all PSDs in the group. Each row in the Excel will generate one image for every PSD in the group. The output image filenames include the PSD's suffix (e.g., `row1_templateA.jpg`).
+- **Batch Export**: When running `psd_renderer.py [prefix] ...`, the script will process all PSDs in the group. Each row in the Excel will generate one image for every PSD in the group. The output image filenames include the PSD's suffix (e.g., `row1_templateA.jpg`).
 
 Example:
   - PSD files: `campaign#summer.psd`, `campaign#winter.psd`
   - Excel file: `campaign.xlsx`
-  - Command: `python batch_export.py campaign AlibabaPuHuiTi-2-85-Bold.ttf jpg`
+  - Command: `python psd_renderer.py campaign AlibabaPuHuiTi-2-85-Bold.ttf jpg`
   - Output: For each row in `campaign.xlsx`, two images are generated: `row1_summer.jpg`, `row1_winter.jpg`, etc.
 
 ## Prerequisite
@@ -126,10 +126,10 @@ python test/run_tests.py coverage
 
 ```bash
 # Basic command format
-python batch_export.py [Excel_file_prefix] [font_file] [output_format]
+python psd_renderer.py [Excel_file_prefix] [font_file] [output_format]
 
 # Example
-python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
+python psd_renderer.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
 ```
 
 ## Thanks

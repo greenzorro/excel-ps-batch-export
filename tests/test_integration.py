@@ -67,7 +67,7 @@ class TestIntegration:
         # 测试不提供参数时的启动
         result = subprocess.run([
             sys.executable, 
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         ], capture_output=True, text=True, timeout=30)
         
         # 程序应该因为缺少参数而退出，但不应该因为代码错误而崩溃
@@ -84,7 +84,7 @@ class TestIntegration:
         # 测试程序启动但不执行完整导出
         result = subprocess.run([
             sys.executable,
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "nonexistent",  # 不存在的文件名，应该会失败但不会崩溃
             "test_font.ttf",
             "jpg"
@@ -129,7 +129,7 @@ class TestIntegration:
         for args in test_cases:
             result = subprocess.run([
                 sys.executable,
-                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
             ] + args, capture_output=True, text=True, timeout=30)
             
             # 不应该因为参数解析而崩溃
@@ -145,7 +145,7 @@ class TestIntegration:
         # 测试相对路径
         result = subprocess.run([
             sys.executable,
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "test",
             "./test.ttf",
             "jpg"
@@ -158,7 +158,7 @@ class TestIntegration:
         abs_font_path = os.path.abspath("test.ttf")
         result = subprocess.run([
             sys.executable,
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "test",
             abs_font_path,
             "jpg"
@@ -172,7 +172,7 @@ class TestIntegration:
         # 测试不存在的字体文件
         result = subprocess.run([
             sys.executable,
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "test",
             "nonexistent_font.ttf",
             "jpg"
@@ -182,9 +182,9 @@ class TestIntegration:
         assert "Traceback" not in result.stdout
         assert result.returncode != 0
     
-    def test_batch_export_script_exists(self):
+    def test_psd_renderer_script_exists(self):
         """测试批量导出脚本是否存在且可执行"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 检查脚本文件是否存在
         assert os.path.exists(script_path), f"批量导出脚本不存在: {script_path}"
@@ -195,7 +195,7 @@ class TestIntegration:
         # 检查脚本是否有基本的Python结构
         with open(script_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            assert 'def batch_export_images' in content, "缺少batch_export_images函数"
+            assert 'def psd_renderer_images' in content, "缺少psd_renderer_images函数"
             assert 'if __name__ == "__main__"' in content, "缺少主程序入口点"
     
     def test_required_dependencies(self):
@@ -218,7 +218,7 @@ class TestIntegration:
     
     def test_program_structure(self):
         """测试程序结构完整性"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         with open(script_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -230,7 +230,7 @@ class TestIntegration:
             'update_text_layer',
             'update_image_layer',
             'validate_data',
-            'batch_export_images'
+            'psd_renderer_images'
         ]
         
         for func in required_functions:
@@ -247,22 +247,22 @@ class TestIntegration:
     def test_main_function_logic(self):
         """测试主函数逻辑"""
         # 导入主模块测试关键逻辑
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "batch_export.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         # 测试能够导入模块
         try:
-            spec = importlib.util.spec_from_file_location("batch_export", script_path)
+            spec = importlib.util.spec_from_file_location("psd_renderer", script_path)
             module = importlib.util.module_from_spec(spec)
             
             # 模拟sys.argv以避免导入时执行
             original_argv = sys.argv
-            sys.argv = ['batch_export.py', 'test', 'test.ttf', 'jpg']
+            sys.argv = ['psd_renderer.py', 'test', 'test.ttf', 'jpg']
             
             try:
                 spec.loader.exec_module(module)
                 
                 # 检查关键变量和函数是否存在
-                assert hasattr(module, 'batch_export_images'), "缺少batch_export_images函数"
+                assert hasattr(module, 'psd_renderer_images'), "缺少psd_renderer_images函数"
                 assert hasattr(module, 'read_excel_file'), "缺少read_excel_file函数"
                 
             finally:

@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 用我的Python脚本，你只需要：
 
 1. 在电子表格中编辑内容。
-2. 运行batch_export.py。
+2. 运行psd_renderer.py。
 
 就这么简单，图就都出来了。你只需要有Python环境，装几个Python包。
 
@@ -63,7 +63,7 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
         - PSD里设置的对齐方向对结果没有影响，程序只认图层名
     - `#i`用电子表格中的路径对应的图片填充图片图层。
     - 注意：请勿使用cmd/ctrl+T缩放可变文本图层。只能通过字体大小属性调整其尺寸，否则脚本将从PSD文件中获取错误的字号。如果已经这么做了，请创建新的文本图层替换它们。
-3. 运行`create_xlsx.py`。你的XLSX文件就创建完成了，所有的列都已准备好。
+3. 运行`xlsx_generator.py`。你的XLSX文件就创建完成了，所有的列都已准备好。
 4. 编辑XLSX文件。Python脚本默认读取第一张工作表，把你的数据放在这。也可以将数据放在另一张工作表中，并在第一张工作表中使用Excel公式读取和计算，特别适合切换图层可见性。请勿删除第一列`File_name`，留空会使用默认文件名格式（如image_1, image_2等）。
 5. 将模板所需的其他文件放入`assets`文件夹，包括字体、背景图像等。确保图片资源的路径与电子表格中的数据匹配。
 
@@ -74,9 +74,9 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 导出时，事情无比简单：
 
 1. 在电子表格中粘贴内容。
-2. 运行batch_export.py。
+2. 运行psd_renderer.py。
 
-我甚至写了另一个脚本监控电子表格，并在电子表格修改后自动导出图像。
+我甚至写了另一个脚本（file_monitor.py）监控电子表格，并在电子表格修改后自动导出图像。
 
 ## 多文件处理
 
@@ -85,12 +85,12 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 - **按前缀分组**：同一目录中的所有PSD文件按前缀分组。前缀定义为文件名中第一个井号（`#`）之前的部分。例如：
   - `产品介绍#模板A.psd` 和 `产品介绍#模板B.psd` 共享相同的前缀 `产品介绍`
 - **共享Excel**：每组创建一个Excel文件（命名为`[前缀].xlsx`），包含组内所有PSD的变量。
-- **批量导出**：运行 `batch_export.py [前缀] ...` 时，脚本将处理组内所有PSD。Excel中的每一行将为组内每个PSD生成一张图片。输出图片文件名包含PSD的后缀（如 `行1_模板A.jpg`）。
+- **批量导出**：运行 `psd_renderer.py [前缀] ...` 时，脚本将处理组内所有PSD。Excel中的每一行将为组内每个PSD生成一张图片。输出图片文件名包含PSD的后缀（如 `行1_模板A.jpg`）。
 
 示例：
   - PSD文件：`活动#夏季版.psd`, `活动#冬季版.psd`
   - Excel文件：`活动.xlsx`
-  - 命令：`python batch_export.py 活动 AlibabaPuHuiTi-2-85-Bold.ttf jpg`
+  - 命令：`python psd_renderer.py 活动 AlibabaPuHuiTi-2-85-Bold.ttf jpg`
   - 输出：对于 `活动.xlsx` 中的每一行，生成两张图片：`行1_夏季版.jpg`, `行1_冬季版.jpg` 等。
 
 ## 使用前提

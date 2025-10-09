@@ -1,10 +1,10 @@
 '''
-File: batch_export.py
+File: psd_renderer.py
 Project: excel-ps-batch-export
 Created: 2024-09-25 02:07:52
 Author: Victor Cheng
 Email: greenzorromail@gmail.com
-Description: 单次批量输出图片
+Description: PSD渲染器 - 将Excel数据渲染到PSD模板并导出图片
 '''
 
 import os
@@ -645,32 +645,26 @@ def preload_psd_templates(psd_files: List[str]) -> dict:
 
 def log_export_activity(excel_file, image_count):
     """记录导出活动到日志文件
-    
+
     :param str excel_file: 使用的Excel文件名
     :param int image_count: 导出的图片数量
     """
     log_file = 'log.csv'
-    log_entry = {
-        '生成时间': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        '图片数量': image_count,
-        '所用Excel文件': excel_file
-    }
-    
+
     # 检查日志文件是否存在
     file_exists = os.path.exists(log_file)
-    
-    # 写入日志
-    with open(log_file, 'a', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=['生成时间', '图片数量', '所用Excel文件'])
-        
+
+    # 使用简单的字符串写入确保跨平台兼容性
+    with open(log_file, 'a', encoding='utf-8') as f:
         # 如果文件不存在，写入表头
         if not file_exists:
-            writer.writeheader()
-        
-        # 写入日志记录
-        writer.writerow(log_entry)
+            f.write('生成时间,图片数量,所用Excel文件\n')
 
-def batch_export_images():
+        # 写入日志记录
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        f.write(f'{timestamp},{image_count},{excel_file}\n')
+
+def psd_renderer_images():
     """批量输出图片
     """
     # ========== 调试代码开始 ==========
@@ -705,7 +699,7 @@ def batch_export_images():
     # 准备并行任务
     tasks = []
     total_images = 0
-    
+
     # 为每个PSD文件和每行数据创建任务
     for psd_file in matching_psds:
         if psd_objects[psd_file] is not None:
@@ -725,22 +719,27 @@ def batch_export_images():
                 }
                 tasks.append(task_data)
                 total_images += 1
-    
+
+    # 如果没有找到任何任务，直接退出
+    if total_images == 0:
+        safe_print_message("\n警告：没有找到匹配的PSD模板或数据，跳过图片生成")
+        return
+
     # 并行处理
     print(f"\n开始并行处理 {total_images} 个任务...")
-    
+
     # 使用CPU核心数的80%作为最大工作进程数
     max_workers = min(multiprocessing.cpu_count(), max(1, int(multiprocessing.cpu_count() * 0.8)))
-    
+
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         # 使用tqdm显示进度
         futures = [executor.submit(export_single_image_task, task) for task in tasks]
-        
+
         # 统计变量
         success_count = 0
         error_count = 0
         error_details = []
-        
+
         # 等待所有任务完成并显示进度
         for future in tqdm(as_completed(futures), total=len(futures), desc="正在导出图片", unit="张"):
             try:
@@ -752,7 +751,7 @@ def batch_export_images():
                 error_msg = f"任务执行失败: {str(e)}"
                 safe_print_message(error_msg)
                 error_details.append(str(e))
-                
+
                 # 根据错误类型进行不同的处理
                 if "PermissionError" in str(e) or "权限" in str(e):
                     safe_print_message("  提示：请检查文件权限设置")
@@ -760,12 +759,12 @@ def batch_export_images():
                     safe_print_message("  提示：请检查相关文件是否存在")
                 elif "MemoryError" in str(e) or "内存" in str(e):
                     safe_print_message("  提示：内存不足，尝试减少并行进程数")
-        
+
         # 输出统计信息
         print(f"\n处理统计:")
         print(f"  成功: {success_count} 张")
         print(f"  失败: {error_count} 张")
-        
+
         if error_count > 0:
             print(f"\n有 {error_count} 个任务失败，请检查错误信息")
             # 如果错误率过高，给出建议
@@ -774,17 +773,24 @@ def batch_export_images():
                 safe_print_message("  建议：检查PSD模板和Excel数据格式是否正确")
             elif error_rate > 0.2:  # 超过20%失败率
                 safe_print_message("  建议：尝试减少并行进程数或检查系统资源")
-    
+
     print(f"\n并行处理完成，共处理 {total_images} 张图片")
-    
-    # 记录日志
-    log_export_activity(file_name, total_images)
-    print("批量导出完成！")
-    
+
+    # 记录日志 - 只在有成功生成的图片时才记录
+    if success_count > 0:
+        log_export_activity(file_name, success_count)
+        print("批量导出完成！")
+    else:
+        print("警告：没有成功生成任何图片，跳过日志记录")
+
     # 打开输出文件夹
     # 在第一次保存图片后获取准确的输出目录
     first_image_output_dir = os.path.join(output_path, f'{current_datetime}_{file_name}')
-    os.system(f'open "{first_image_output_dir}"')
+    # 跨平台兼容的文件夹打开方式
+    if os.name == 'nt':  # Windows
+        os.system(f'explorer "{first_image_output_dir}"')
+    else:  # macOS/Linux
+        os.system(f'open "{first_image_output_dir}"')
 
 
 if __name__ == "__main__":
@@ -813,4 +819,4 @@ if __name__ == "__main__":
 
     # 批量输出图片
     current_datetime = datetime.now().strftime('%Y%m%d_%H%M%S')
-    batch_export_images()
+    psd_renderer_images()

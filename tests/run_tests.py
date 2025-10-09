@@ -68,21 +68,15 @@ def run_performance_tests():
 def run_all_tests():
     """Run all tests"""
     return run_command([
-        sys.executable, "-m", "pytest", 
-        "test_simple.py", "test_performance.py", 
-        "test_business_logic.py", "test_error_handling.py", 
-        "test_boundary_conditions.py", "-v"
+        sys.executable, "-m", "pytest",
+        "test_simple.py", "test_performance.py",
+        "test_business_logic.py", "test_error_handling.py",
+        "test_boundary_conditions.py", "test_clipboard_importer.py",
+        "test_boolean_issues.py", "test_integration.py",
+        "test_platform_compatibility.py", "test_precise_text_position.py",
+        "test_real_scenarios.py", "test_logging_functionality.py", "-v"
     ], "Running all tests")
 
-def run_with_html_report():
-    """Generate HTML report"""
-    return run_command([
-        sys.executable, "-m", "pytest", 
-        "test_simple.py", "test_performance.py", 
-        "test_business_logic.py", "test_error_handling.py", 
-        "test_boundary_conditions.py",
-        "--html=test_report.html", "--self-contained-html"
-    ], "Generating HTML test report")
 
 
 def main():
@@ -101,11 +95,9 @@ def main():
         print("  boundary  - Boundary condition tests")
         print("  perf      - Performance tests")
         print("  all       - All tests")
-        print("  html      - Generate HTML report")
         print("")
         print("Examples:")
         print("  python run_tests.py all")
-        print("  python run_tests.py html")
         print("  python run_tests.py business")
         print("  python run_tests.py error")
         return 1
@@ -130,8 +122,6 @@ def main():
         success = run_performance_tests()
     elif mode == "all":
         success = run_all_tests()
-    elif mode == "html":
-        success = run_with_html_report()
     else:
         print(f"Unknown mode: {mode}")
         return 1

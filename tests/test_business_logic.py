@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入业务代码函数
-from batch_export import get_matching_psds, read_excel_file
+from psd_renderer import get_matching_psds, read_excel_file
 
 # 导入共享测试工具
 from test_utils import (
@@ -34,10 +34,10 @@ from test_utils import (
 
 # 使用测试环境管理器处理sys.argv依赖
 test_env = TestEnvironment()
-test_env.setup_batch_export_args('test', 'test_font.ttf', 'jpg')
+test_env.setup_psd_renderer_args('test', 'test_font.ttf', 'jpg')
 
 # 导入需要测试的函数
-from batch_export import (
+from psd_renderer import (
     read_excel_file,
     set_layer_visibility,
     get_font_color,
@@ -115,7 +115,7 @@ class TestExcelDataValidation:
         df = pd.DataFrame(test_data)
         
         # Mock PSD variables
-        with patch('batch_export.collect_psd_variables') as mock_collect:
+        with patch('psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title", "background", "watermark"}
@@ -123,7 +123,7 @@ class TestExcelDataValidation:
                     mock_psd.return_value = Mock()
                     mock_psd.return_value.__iter__ = Mock(return_value=iter([]))
                     
-                    with patch('batch_export.is_image_column') as mock_is_image:
+                    with patch('psd_renderer.is_image_column') as mock_is_image:
                         mock_is_image.return_value = True
                         
                         errors, warnings = validate_data(df, ["test.psd"])
@@ -140,7 +140,7 @@ class TestExcelDataValidation:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('batch_export.collect_psd_variables') as mock_collect:
+        with patch('psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title", "background"}
@@ -162,7 +162,7 @@ class TestExcelDataValidation:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('batch_export.collect_psd_variables') as mock_collect:
+        with patch('psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title", "background"}
@@ -170,7 +170,7 @@ class TestExcelDataValidation:
                     mock_psd.return_value = Mock()
                     mock_psd.return_value.__iter__ = Mock(return_value=iter([]))
                     
-                    with patch('batch_export.is_image_column') as mock_is_image:
+                    with patch('psd_renderer.is_image_column') as mock_is_image:
                         mock_is_image.return_value = True
                         
                         errors, warnings = validate_data(df, ["test.psd"])
@@ -188,7 +188,7 @@ class TestExcelDataValidation:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('batch_export.collect_psd_variables') as mock_collect:
+        with patch('psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title"}
@@ -397,7 +397,7 @@ class TestValidationReporting:
             result = report_validation_results([], [])
             assert result is True
             mock_print.assert_called()
-            assert "✅" in mock_print.call_args[0][0]
+            assert "数据验证通过" in mock_print.call_args[0][0]
     
     def test_report_validation_results_with_warnings(self):
         """Test validation report with warnings"""
