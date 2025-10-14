@@ -263,6 +263,111 @@ class TestErrorHandling:
             clipboard_importer.write_to_excel('nonexistent.xlsx', test_df)
 
 
+class TestPSDRendererIntegration:
+    """Test PSD renderer integration functionality"""
+
+    @patch('clipboard_importer.subprocess.run')
+    @patch('clipboard_importer.os.path.exists')
+    @patch('clipboard_importer.os.listdir')
+    @patch('clipboard_importer.safe_print_message')
+    def test_run_psd_renderer_success(self, mock_print, mock_listdir, mock_exists, mock_run):
+        """Test successful PSD renderer execution"""
+        # Setup mocks
+        mock_exists.return_value = True
+        # Mock listdir to return both font files and PSD files
+        def listdir_side_effect(path):
+            if path == 'assets/fonts':
+                return ['alibaba_font.ttf', 'other_font.ttf']
+            elif path == '.':
+                return ['test#1.psd', 'test#2.psd']
+            else:
+                return []
+        mock_listdir.side_effect = listdir_side_effect
+        mock_run.return_value = Mock(returncode=0, stdout='', stderr='')
+
+        # Test function
+        result = clipboard_importer.run_psd_renderer('test.xlsx')
+
+        # Verify result
+        assert result == True
+        mock_run.assert_called_once()
+        mock_print.assert_called()
+
+    @patch('clipboard_importer.os.path.exists')
+    @patch('clipboard_importer.os.listdir')
+    @patch('clipboard_importer.safe_print_message')
+    def test_run_psd_renderer_no_fonts_dir(self, mock_print, mock_listdir, mock_exists):
+        """Test PSD renderer when fonts directory doesn't exist"""
+        # Setup mocks
+        def exists_side_effect(path):
+            if path == 'assets/fonts':
+                return False
+            else:
+                return True
+        mock_exists.side_effect = exists_side_effect
+        # Mock listdir to return PSD files
+        mock_listdir.return_value = ['test#1.psd', 'test#2.psd']
+
+        # Test function
+        result = clipboard_importer.run_psd_renderer('test.xlsx')
+
+        # Verify result
+        assert result == False
+        mock_print.assert_called_with("警告: 字体目录不存在: assets/fonts")
+
+    @patch('clipboard_importer.os.path.exists')
+    @patch('clipboard_importer.os.listdir')
+    @patch('clipboard_importer.safe_print_message')
+    def test_run_psd_renderer_no_font_files(self, mock_print, mock_listdir, mock_exists):
+        """Test PSD renderer when no font files are found"""
+        # Setup mocks
+        mock_exists.return_value = True
+        # Mock listdir to return PSD files but no font files
+        def listdir_side_effect(path):
+            if path == 'assets/fonts':
+                return []
+            elif path == '.':
+                return ['test#1.psd', 'test#2.psd']
+            else:
+                return []
+        mock_listdir.side_effect = listdir_side_effect
+
+        # Test function
+        result = clipboard_importer.run_psd_renderer('test.xlsx')
+
+        # Verify result
+        assert result == False
+        mock_print.assert_called_with("警告: 未找到字体文件")
+
+    @patch('clipboard_importer.subprocess.run')
+    @patch('clipboard_importer.os.path.exists')
+    @patch('clipboard_importer.os.listdir')
+    @patch('clipboard_importer.safe_print_message')
+    def test_run_psd_renderer_failure(self, mock_print, mock_listdir, mock_exists, mock_run):
+        """Test PSD renderer execution failure"""
+        # Setup mocks
+        mock_exists.return_value = True
+        # Mock listdir to return both font files and PSD files
+        def listdir_side_effect(path):
+            if path == 'assets/fonts':
+                return ['alibaba_font.ttf']
+            elif path == '.':
+                return ['test#1.psd', 'test#2.psd']
+            else:
+                return []
+        mock_listdir.side_effect = listdir_side_effect
+        mock_run.return_value = Mock(returncode=1, stdout='Error output', stderr='Error details')
+
+        # Test function
+        result = clipboard_importer.run_psd_renderer('test.xlsx')
+
+        # Verify result
+        assert result == False
+        mock_run.assert_called_once()
+        # Check that failure message was printed (not necessarily as the last call)
+        mock_print.assert_any_call("\n✗ 图片渲染失败:")
+
+
 class TestMainFunction:
     """Test main function execution"""
 
@@ -270,14 +375,16 @@ class TestMainFunction:
     @patch('clipboard_importer.parse_clipboard_data')
     @patch('clipboard_importer.find_target_excel_file')
     @patch('clipboard_importer.write_to_excel')
+    @patch('clipboard_importer.run_psd_renderer')
     @patch('clipboard_importer.safe_print_message')
-    def test_main_success(self, mock_print, mock_write, mock_find, mock_parse, mock_get):
-        """Test successful main function execution"""
+    def test_main_success(self, mock_print, mock_run_psd, mock_write, mock_find, mock_parse, mock_get):
+        """Test successful main function execution with PSD rendering"""
         # Setup mocks
         mock_get.return_value = "姓名\t年龄\n张三\t25"
         mock_parse.return_value = pd.DataFrame({'姓名': ['张三'], '年龄': ['25']})
         mock_find.return_value = 'test.xlsx'
         mock_write.return_value = ('Sheet1', 2, 1)
+        mock_run_psd.return_value = True
 
         # Run main function
         result = clipboard_importer.main()
@@ -285,6 +392,7 @@ class TestMainFunction:
         # Verify result
         assert result == 0
         mock_write.assert_called_once()
+        mock_run_psd.assert_called_once_with('test.xlsx')
 
     @patch('clipboard_importer.get_clipboard_data')
     @patch('clipboard_importer.safe_print_message')

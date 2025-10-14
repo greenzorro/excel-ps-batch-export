@@ -367,7 +367,17 @@ def export_single_image_task(task_data):
     # 生成带PSD后缀的输出文件名
     psd_base = os.path.splitext(psd_file_name)[0]
     excel_base = os.path.splitext(os.path.basename(excel_file_path))[0]
-    suffix = psd_base.replace(excel_base, "")  # 提取PSD特有后缀
+    
+    # 更智能地提取PSD特有后缀
+    if psd_base.startswith(excel_base):
+        # 如果PSD文件名以Excel前缀开头，提取剩余部分作为后缀
+        suffix = psd_base[len(excel_base):]
+        # 处理井号分隔符
+        if suffix.startswith('#'):
+            suffix = suffix[1:]  # 去掉开头的井号
+    else:
+        # 如果PSD文件名不以Excel前缀开头，使用整个PSD文件名作为后缀
+        suffix = psd_base
     
     # 处理空后缀情况
     if suffix:
@@ -436,7 +446,17 @@ def export_single_image(row, index, psd_object, psd_file_name):
     # 生成带PSD后缀的输出文件名
     psd_base = os.path.splitext(psd_file_name)[0]
     excel_base = os.path.splitext(os.path.basename(excel_file_path))[0]
-    suffix = psd_base.replace(excel_base, "")  # 提取PSD特有后缀
+    
+    # 更智能地提取PSD特有后缀
+    if psd_base.startswith(excel_base):
+        # 如果PSD文件名以Excel前缀开头，提取剩余部分作为后缀
+        suffix = psd_base[len(excel_base):]
+        # 处理井号分隔符
+        if suffix.startswith('#'):
+            suffix = suffix[1:]  # 去掉开头的井号
+    else:
+        # 如果PSD文件名不以Excel前缀开头，使用整个PSD文件名作为后缀
+        suffix = psd_base
     
     # 处理空后缀情况
     if suffix:
