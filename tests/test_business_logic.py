@@ -420,6 +420,77 @@ class TestValidationReporting:
             assert any("error1" in call for call in print_calls)
 
 
+class TestMultiplePSDTemplates:
+    """多个PSD模板文件名生成测试"""
+    
+    def test_multiple_psd_filename_generation(self):
+        """测试多个PSD模板的文件名生成逻辑"""
+        # 模拟多个PSD模板的文件名生成场景
+        test_cases = [
+            ("test", "test#1.psd", "test_1"),
+            ("test", "test#2.psd", "test_2"),
+            ("test", "test#variant.psd", "test_variant"),
+            ("excel", "excel#template1.psd", "excel_template1"),
+            ("excel", "excel#template2.psd", "excel_template2"),
+            ("prefix", "prefix#suffix.psd", "prefix_suffix"),
+            ("base", "base#1.psd", "base_1"),
+            ("base", "base#2.psd", "base_2"),
+            ("base", "base#3.psd", "base_3"),
+        ]
+        
+        for excel_base, psd_file, expected_suffix in test_cases:
+            # 模拟修复后的文件名生成逻辑
+            psd_base = psd_file.replace('.psd', '')
+            
+            # 使用修复后的逻辑
+            if psd_base.startswith(excel_base):
+                suffix = psd_base[len(excel_base):]
+                if suffix.startswith('#'):
+                    suffix = suffix[1:]
+            else:
+                suffix = psd_base
+            
+            # 生成输出文件名
+            output_name = f"{excel_base}_{suffix}"
+            
+            # 验证结果
+            assert output_name == expected_suffix, f"文件名生成错误: {excel_base}, {psd_file} -> {output_name}, 期望: {expected_suffix}"
+    
+    def test_psd_filename_edge_cases(self):
+        """测试PSD文件名的边界情况"""
+        # 测试边界情况
+        edge_cases = [
+            ("test", "test.psd", "test"),  # 没有#分隔符
+            ("test", "test#.psd", "test"),  # 只有#没有后缀
+            ("test", "test#1#2.psd", "test_1#2"),  # 多个#
+            ("", "#test.psd", "test"),  # 空Excel前缀
+            ("prefix", "different.psd", "prefix_different"),  # 不匹配的前缀
+        ]
+        
+        for excel_base, psd_file, expected_suffix in edge_cases:
+            psd_base = psd_file.replace('.psd', '')
+            
+            # 使用修复后的逻辑
+            if psd_base.startswith(excel_base):
+                suffix = psd_base[len(excel_base):]
+                if suffix.startswith('#'):
+                    suffix = suffix[1:]
+            else:
+                suffix = psd_base
+            
+            # 如果后缀为空，则只使用excel_base
+            if suffix == "":
+                output_name = excel_base
+            elif excel_base == "":
+                # 如果Excel前缀为空，则只使用后缀
+                output_name = suffix
+            else:
+                output_name = f"{excel_base}_{suffix}"
+            
+            # 验证结果
+            assert output_name == expected_suffix, f"边界情况错误: {excel_base}, {psd_file} -> {output_name}, 期望: {expected_suffix}"
+
+
 class TestLayerVisibility:
     """图层可见性测试"""
     

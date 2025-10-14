@@ -4,10 +4,10 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## 🎯 Test Suite Status
 
-**✅ All 140 tests passing (100% success rate)**
+**✅ All 146 tests passing (100% success rate)**
 
-**Last Updated**: 2025-10-09
-**Status**: All tests passing, clipboard importer first-row data handling verified
+**Last Updated**: 2025-10-14
+**Status**: All tests passing, clipboard importer with PSD renderer integration verified
 
 ## Test Files Description
 
@@ -25,6 +25,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Text rendering functionality tests
   - Image layer handling tests
   - Validation reporting tests
+  - Multiple PSD template filename generation tests
 
 - **test_error_handling.py** - Error handling tests
   - Excel file error handling tests
@@ -115,6 +116,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Excel file selection and target sheet detection tests
   - Data writing with proper positioning tests
   - Xlwings formula recalculation tests
+  - PSD renderer integration tests (automatic image generation)
   - Error handling and user interaction tests
 
 - **test_logging_functionality.py** - Logging functionality tests
@@ -140,6 +142,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Text rendering with different alignments and languages
 - [x] Image layer handling and processing
 - [x] Validation reporting functionality
+- [x] Multiple PSD template filename generation with edge cases
 
 #### Error Handling Tests (test_error_handling.py)
 - [x] Excel file error handling (missing, corrupted, empty files)
@@ -166,15 +169,15 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 140
-- **Passed**: 140 (100%)
+- **Total Tests**: 146
+- **Passed**: 146 (100%)
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
 - **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, and logging functionality
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
-- **Specialized Testing**: Boolean value handling, text position precision, platform compatibility, real-world scenario testing, clipboard import functionality with xlwings formula recalculation, and comprehensive logging functionality testing
+- **Specialized Testing**: Boolean value handling, text position precision, platform compatibility, real-world scenario testing, clipboard import functionality with xlwings formula recalculation, comprehensive logging functionality testing, and multiple PSD template filename generation testing
 
 ## Running Tests
 
@@ -282,12 +285,12 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Results
 
-- **Total Tests**: 140
+- **Total Tests**: 146
 - **Pass Rate**: 100%
 - **Failed Tests**: 0
 - **Test Distribution**:
   - Core functionality (17 tests) - 100% pass
-  - Business logic (25 tests) - 100% pass
+  - Business logic (27 tests) - 100% pass (新增多个PSD模板测试)
   - Error handling (21 tests) - 100% pass
   - Boundary conditions (6 tests) - 100% pass
   - Performance testing (5 tests) - 100% pass
@@ -296,10 +299,10 @@ Tests automatically create temporary workspaces without affecting project files.
   - Platform compatibility (13 tests) - 100% pass
   - Precise text position (7 tests) - 100% pass
   - Real scenarios (9 tests) - 100% pass
-  - Clipboard importer (18 tests) - 100% pass
+  - Clipboard importer (22 tests) - 100% pass (including PSD renderer integration)
   - Logging functionality (6 tests) - 100% pass
-- **Last Updated**: 2025-10-09
-- **Status**: All tests passing, clipboard importer first-row data handling verified
+- **Last Updated**: 2025-10-14
+- **Status**: All tests passing, clipboard importer with PSD renderer integration verified
 
 ## Troubleshooting
 

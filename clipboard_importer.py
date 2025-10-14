@@ -5,7 +5,7 @@ Created: 2025-10-09
 Author: Victor Cheng
 Email: greenzorromail@gmail.com
 Description:
-剪贴板导入器 - 从系统剪贴板读取表格数据并写入Excel文件的指定sheet
+剪贴板导入器 - 从系统剪贴板读取表格数据并写入Excel文件，自动触发图片渲染
 
 主要功能：
 1. 从系统剪贴板读取表格数据（支持制表符和逗号分隔格式）
@@ -15,11 +15,12 @@ Description:
 5. 清空从B2单元格开始的右下方所有区域
 6. 从B2单元格开始写入解析后的数据
 7. 支持文件选择退出功能（输入"q"退出或Ctrl+C中断）
+8. 自动运行PSD渲染器，使用阿里巴巴字体生成图片，实现数据导入到图片生成的一体化流程
 
 使用场景：
 - 快速将网页表格、其他软件表格数据导入到Excel中
 - 避免手动打开Excel复制粘贴的繁琐操作
-- 配合Excel-PS批量导出工具的工作流程
+- 实现"数据导入→图片生成"的一键式工作流程
 
 运行方式：
 python clipboard_importer.py
@@ -33,6 +34,17 @@ from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import re
 import xlwings as xw
+import subprocess
+
+# ===== 配置项 =====
+# 渲染配置
+PREFERRED_FONT = 'alibaba'  # 优先使用的字体关键词
+DEFAULT_FORMAT = 'jpg'      # 默认输出格式
+RENDER_TIMEOUT = 300        # 渲染超时时间（秒）
+
+# 文件路径配置
+FONTS_DIR = os.path.join("assets", "fonts")  # 字体目录
+EXPORT_DIR = "export"                        # 输出目录
 
 def safe_print_message(message):
     """安全打印消息，处理Windows控制台编码问题
@@ -237,43 +249,154 @@ def write_to_excel(excel_file, df):
     except Exception as e:
         raise Exception(f"写入Excel文件失败: {str(e)}")
 
+def get_matching_psds(excel_file):
+    """获取匹配的PSD文件列表
+    
+    :param str excel_file: Excel文件名
+    :return list: 匹配的PSD文件列表
+    """
+    base_name = os.path.splitext(excel_file)[0]
+    matching_psds = []
+    for f in os.listdir('.'):
+        if f.endswith('.psd'):
+            # 提取文件名前缀（第一个井号前的部分）
+            name_without_ext = os.path.splitext(f)[0]
+            if '#' in name_without_ext:
+                prefix = name_without_ext.split('#', 1)[0]
+            else:
+                prefix = name_without_ext
+            if prefix == base_name:
+                matching_psds.append(f)
+    return matching_psds
+
+def run_psd_renderer(excel_file):
+    """运行PSD渲染器进行自动图片导出
+
+    :param str excel_file: Excel文件路径
+    :return bool: 渲染是否成功
+    """
+    # 从Excel文件名提取模板前缀（去掉.xlsx后缀）
+    template_name = os.path.splitext(excel_file)[0]
+
+    safe_print_message(f"\n正在准备自动渲染图片...")
+    safe_print_message(f"Excel文件: {excel_file}")
+
+    # 查找匹配的PSD模板
+    matching_psds = get_matching_psds(excel_file)
+    
+    if not matching_psds:
+        safe_print_message(f"警告: 未找到与 '{template_name}' 匹配的PSD模板文件")
+        safe_print_message("请确保PSD文件命名格式为: [Excel前缀]#[后缀].psd")
+        return False
+    
+    safe_print_message(f"找到 {len(matching_psds)} 个匹配的PSD模板:")
+    for i, psd_file in enumerate(matching_psds, 1):
+        safe_print_message(f"  {i}. {psd_file}")
+
+    # 获取可用的字体文件
+    if not os.path.exists(FONTS_DIR):
+        safe_print_message(f"警告: 字体目录不存在: {FONTS_DIR}")
+        return False
+
+    font_files = [f for f in os.listdir(FONTS_DIR) if f.endswith(('.ttf', '.otf'))]
+    if not font_files:
+        safe_print_message("警告: 未找到字体文件")
+        return False
+
+    # 获取渲染配置
+    selected_font, selected_format = get_rendering_config(font_files)
+
+    safe_print_message("正在自动启动PSD渲染器...")
+
+    # 构建命令行参数
+    cmd = [
+        sys.executable,  # 使用当前Python解释器
+        "psd_renderer.py",
+        template_name,
+        selected_font,
+        selected_format
+    ]
+
+    # 运行PSD渲染器（psd_renderer.py内部已处理所有异常）
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=RENDER_TIMEOUT)
+
+    if result.returncode == 0:
+        safe_print_message("\n✓ 图片渲染成功!")
+        safe_print_message(f"输出目录: {EXPORT_DIR}/")
+        safe_print_message(f"输出格式: {selected_format}")
+        safe_print_message(f"处理的PSD模板: {len(matching_psds)} 个")
+        return True
+    else:
+        safe_print_message(f"\n✗ 图片渲染失败:")
+        if result.stdout:
+            safe_print_message(f"输出: {result.stdout}")
+        if result.stderr:
+            safe_print_message(f"错误: {result.stderr}")
+        return False
+
+def get_rendering_config(font_files):
+    """获取渲染配置
+
+    :param list font_files: 可用的字体文件列表
+    :return tuple: (字体文件, 输出格式)
+    """
+    # 优先使用配置的字体
+    preferred_fonts = [f for f in font_files if PREFERRED_FONT in f.lower()]
+    if preferred_fonts:
+        selected_font = preferred_fonts[0]
+    else:
+        # 如果没有优先字体，使用第一个字体
+        selected_font = font_files[0]
+
+    # 使用配置的默认格式
+    selected_format = DEFAULT_FORMAT
+
+    safe_print_message(f"渲染配置:")
+    safe_print_message(f"  字体: {selected_font}")
+    safe_print_message(f"  格式: {selected_format}")
+
+    return selected_font, selected_format
+
 def main():
     """主函数"""
     try:
         # 切换到脚本所在目录
         script_dir = os.path.dirname(os.path.abspath(__file__))
         os.chdir(script_dir)
-        
+
         safe_print_message("剪贴板导入器启动...")
-        
+
         # 1. 读取剪贴板数据
         safe_print_message("正在读取剪贴板数据...")
         clipboard_content = get_clipboard_data()
         safe_print_message(f"读取到 {len(clipboard_content)} 个字符")
-        
+
         # 2. 解析剪贴板数据
         safe_print_message("正在解析剪贴板数据...")
         df = parse_clipboard_data(clipboard_content)
         safe_print_message(f"解析为 {len(df)} 行 {len(df.columns)} 列数据")
-        
+
         # 3. 查找目标Excel文件
         safe_print_message("正在查找Excel文件...")
         excel_file = find_target_excel_file()
         safe_print_message(f"目标文件: {excel_file}")
-        
+
         # 4. 写入Excel文件
         safe_print_message("正在写入Excel文件...")
         sheet_name, start_row, row_count = write_to_excel(excel_file, df)
-        
+
         # 5. 输出结果
         safe_print_message(f"\n✓ 导入成功!")
         safe_print_message(f"   文件: {excel_file}")
         safe_print_message(f"   Sheet: {sheet_name}")
         safe_print_message(f"   位置: 第{start_row}行开始")
         safe_print_message(f"   数据: {row_count}行 {len(df.columns)}列")
-        
+
+        # 6. 自动运行PSD渲染器
+        run_psd_renderer(excel_file)
+
         return 0
-        
+
     except Exception as e:
         safe_print_message(f"\n✗ 错误: {str(e)}")
         safe_print_message("\n使用提示:")
