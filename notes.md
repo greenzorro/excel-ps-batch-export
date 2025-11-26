@@ -68,6 +68,7 @@ excel-ps-batch-export/
 - **智能布尔值解析**：正确处理Excel中各种形式的布尔值（"TRUE"/"FALSE"/"1"/"0"等）
 - **健壮的异常处理**：分层级的错误处理机制，提供智能解决方案建议
 - **Excel公式重新计算**：使用xlwings强制Excel重新计算公式，确保数据正确显示
+- **智能文件名生成**：正确处理多PSD模板场景的井号分隔符格式，确保每个模板生成唯一输出文件名
 
 ## 5. 技术架构
 
@@ -139,6 +140,14 @@ python clipboard_importer.py
 - `_pm`：垂直居中（段落）
 - `_pb`：垂直底部（段落）
 
+### 6.5 多PSD模板命名规则
+
+**多模板支持：**
+- 命名格式：`[前缀]#[后缀].psd`
+- Excel文件名需与PSD前缀保持一致
+- 例如：`产品.xlsx` 配合 `产品#海报.psd` 和 `产品#方图.psd`
+- 输出文件会自动使用PSD后缀区分：`产品-海报.jpg`、`产品-方图.jpg`
+
 ## 7. 测试套件
 
 项目包含完整的测试套件，确保代码质量和功能稳定性。测试套件位于`tests/`目录。
@@ -182,43 +191,5 @@ python clipboard_importer.py
 
 ### 10.4 质量保证
 - 运行完整测试套件确保功能正常（146个测试，100%通过率）
-- 包含专门的多个PSD模板文件名生成测试
 - 覆盖边界情况和异常场景
 - 完整的clipboard_importer集成测试，包括PSD渲染器集成
-
-## 11. 问题修复记录
-
-### 11.1 多个PSD模板文件名生成问题修复（2025-10-14）
-
-**问题描述：**
-当Excel文件对应多个PSD模板时，只输出最后一个模板的图片，其他模板的图片被覆盖。
-
-**根本原因：**
-在`psd_renderer.py`的`export_single_image_task`和`export_single_image`函数中，文件名生成逻辑使用`replace`方法错误地移除了所有匹配部分，导致多个PSD模板生成相同的输出文件名。
-
-**错误代码：**
-```python
-suffix = psd_base.replace(excel_base, "")  # 这会错误地移除所有匹配部分
-```
-
-**修复方案：**
-使用`startswith`检查并智能提取后缀，正确处理井号分隔符：
-```python
-if psd_base.startswith(excel_base):
-    suffix = psd_base[len(excel_base):]
-    if suffix.startswith('#'):
-        suffix = suffix[1:]
-else:
-    suffix = psd_base
-```
-
-**测试验证：**
-- 添加了专门的`TestMultiplePSDTemplates`测试类
-- 测试多个PSD模板的文件名生成逻辑
-- 覆盖边界情况（空后缀、多个井号、不匹配前缀等）
-- 所有测试通过，确保修复正确
-
-**影响范围：**
-- 修复了多个PSD模板并行处理时的文件名冲突问题
-- 确保每个PSD模板都能生成唯一的输出文件
-- 提升了多模板场景下的功能稳定性
