@@ -17,10 +17,7 @@ import csv
 from datetime import datetime
 import re
 from typing import Set, List, Tuple, Dict
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
-import multiprocessing
-import copy
 
 # 全局变量存储错误和警告
 validation_errors = []
@@ -304,106 +301,8 @@ def save_image(output_dir, output_filename, image_format, pil_image):
         rgb_image.save(final_output_path, quality=quality, optimize=optimize)
     print(f"已导出图片: {final_output_path}")
 
-def export_single_image_task(task_data):
-    """并行处理单行数据并导出图像
-    
-    :param dict task_data: 任务数据包含 row, index, psd_object, psd_file_name, excel_file_path, output_path, image_format, text_font, quality, optimize, current_datetime
-    :return str: 输出的文件路径
-    """
-    import os
-    
-    row = task_data['row']
-    index = task_data['index']
-    psd_object = task_data['psd_object']
-    psd_file_name = task_data['psd_file_name']
-    excel_file_path = task_data['excel_file_path']
-    output_path = task_data['output_path']
-    image_format = task_data['image_format']
-    text_font = task_data['text_font']
-    quality = task_data['quality']
-    optimize = task_data['optimize']
-    current_datetime = task_data['current_datetime']
-    
-    # 确保字体路径相对于脚本所在目录
-    if text_font and not os.path.isabs(text_font):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        text_font = os.path.join(script_dir, text_font)
-    
-    # 创建PSD对象的深拷贝，避免并发问题
-    psd_copy = copy.deepcopy(psd_object)
-    pil_image = Image.new('RGBA', psd_copy.size)
-
-    def process_layers(layers):
-        for layer in layers:
-            layer_name = layer.name
-            if layer_name and layer_name.startswith('@'):
-                parts = layer_name[1:].split('#')
-                if len(parts) == 2:
-                    field_name, operation_type = parts
-                    # 修改图层可见性
-                    if operation_type.startswith('v'):
-                        visibility = row[field_name]
-                        set_layer_visibility(layer, visibility)
-                    # 修改文字图层内容
-                    elif operation_type.startswith('t'):
-                        update_text_layer(layer, str(row[field_name]), pil_image, text_font)
-                    # 修改图片图层内容
-                    elif operation_type.startswith('i'):
-                        update_image_layer(layer, str(row[field_name]), pil_image)
-            if layer.is_visible():
-                if layer.is_group():
-                    # 如果是组，递归处理其子图层
-                    process_layers(layer)
-                else:
-                    # 将非变量图层转换为PIL图像并合并到主图像上
-                    layer_image = layer.topil()
-                    if layer_image:
-                        pil_image.alpha_composite(layer_image, (layer.offset[0], layer.offset[1]))
-    
-    # 处理所有图层
-    process_layers(psd_copy)
-    
-    # 输出图片
-    # 生成带PSD后缀的输出文件名
-    psd_base = os.path.splitext(psd_file_name)[0]
-    excel_base = os.path.splitext(os.path.basename(excel_file_path))[0]
-    
-    # 更智能地提取PSD特有后缀
-    if psd_base.startswith(excel_base):
-        # 如果PSD文件名以Excel前缀开头，提取剩余部分作为后缀
-        suffix = psd_base[len(excel_base):]
-        # 处理井号分隔符
-        if suffix.startswith('#'):
-            suffix = suffix[1:]  # 去掉开头的井号
-    else:
-        # 如果PSD文件名不以Excel前缀开头，使用整个PSD文件名作为后缀
-        suffix = psd_base
-    
-    # 处理空后缀情况
-    if suffix:
-        suffix = f"_{suffix}" if not suffix.startswith("_") else suffix
-    else:
-        suffix = ""
-    
-    base_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
-    output_filename = f"{base_filename}{suffix}"
-    
-    # 保存图片
-    output_dir = os.path.join(output_path, f'{current_datetime}_{os.path.splitext(os.path.basename(excel_file_path))[0]}')
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    final_output_path = os.path.join(output_dir, f'{output_filename}.{image_format}')
-    
-    if image_format.lower() == 'png':
-        pil_image.save(final_output_path, format='PNG', optimize=True)
-    else:  # 默认保存为jpg
-        rgb_image = pil_image.convert('RGB')
-        rgb_image.save(final_output_path, quality=quality, optimize=optimize)
-    
-    return final_output_path
-
 def export_single_image(row, index, psd_object, psd_file_name):
-    """处理单行数据并导出图像（串行版本）
+    """处理单行数据并导出图像（单进程串行版本）
 
     :param pd.Series row: 包含单行数据的Series
     :param int index: 当前行索引
@@ -438,15 +337,15 @@ def export_single_image(row, index, psd_object, psd_file_name):
                     layer_image = layer.topil()
                     if layer_image:
                         pil_image.alpha_composite(layer_image, (layer.offset[0], layer.offset[1]))
-    
+
     # 处理所有图层
     process_layers(psd_object)
-    
+
     # 输出图片
     # 生成带PSD后缀的输出文件名
     psd_base = os.path.splitext(psd_file_name)[0]
     excel_base = os.path.splitext(os.path.basename(excel_file_path))[0]
-    
+
     # 更智能地提取PSD特有后缀
     if psd_base.startswith(excel_base):
         # 如果PSD文件名以Excel前缀开头，提取剩余部分作为后缀
@@ -457,13 +356,13 @@ def export_single_image(row, index, psd_object, psd_file_name):
     else:
         # 如果PSD文件名不以Excel前缀开头，使用整个PSD文件名作为后缀
         suffix = psd_base
-    
+
     # 处理空后缀情况
     if suffix:
         suffix = f"_{suffix}" if not suffix.startswith("_") else suffix
     else:
         suffix = ""
-    
+
     base_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
     output_filename = f"{base_filename}{suffix}"
     save_image(output_path, output_filename, image_format, pil_image)
@@ -716,85 +615,64 @@ def psd_renderer_images():
             safe_print_message(f"  - {failed_psd}")
         sys.exit(1)
     
-    # 准备并行任务
-    tasks = []
+    # 单进程串行处理
     total_images = 0
+    success_count = 0
+    error_count = 0
 
-    # 为每个PSD文件和每行数据创建任务
+    # 统计总任务数
     for psd_file in matching_psds:
         if psd_objects[psd_file] is not None:
-            for index, row in df.iterrows():
-                task_data = {
-                    'row': row,
-                    'index': index,
-                    'psd_object': psd_objects[psd_file],
-                    'psd_file_name': psd_file,
-                    'excel_file_path': excel_file_path,
-                    'output_path': output_path,
-                    'image_format': image_format,
-                    'text_font': text_font,
-                    'quality': quality,
-                    'optimize': optimize,
-                    'current_datetime': current_datetime
-                }
-                tasks.append(task_data)
-                total_images += 1
+            total_images += len(df)
 
     # 如果没有找到任何任务，直接退出
     if total_images == 0:
         safe_print_message("\n警告：没有找到匹配的PSD模板或数据，跳过图片生成")
         return
 
-    # 并行处理
-    print(f"\n开始并行处理 {total_images} 个任务...")
+    # 开始串行处理
+    print(f"\n开始单进程串行处理 {total_images} 个任务...")
 
-    # 使用CPU核心数的80%作为最大工作进程数
-    max_workers = min(multiprocessing.cpu_count(), max(1, int(multiprocessing.cpu_count() * 0.8)))
+    # 使用tqdm显示进度条
+    with tqdm(total=total_images, desc="正在导出图片", unit="张") as pbar:
+        for psd_file in matching_psds:
+            if psd_objects[psd_file] is not None:
+                for index, row in df.iterrows():
+                    try:
+                        # 使用原有的串行函数
+                        export_single_image(row, index, psd_objects[psd_file], psd_file)
+                        success_count += 1
+                    except Exception as e:
+                        error_count += 1
+                        error_msg = f"第 {index+1} 行数据处理失败: {str(e)}"
+                        safe_print_message(error_msg)
 
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # 使用tqdm显示进度
-        futures = [executor.submit(export_single_image_task, task) for task in tasks]
+                        # 根据错误类型提供建议
+                        if "PermissionError" in str(e) or "权限" in str(e):
+                            safe_print_message("  提示：请检查文件权限设置")
+                        elif "FileNotFoundError" in str(e) or "文件不存在" in str(e):
+                            safe_print_message("  提示：请检查相关文件是否存在")
+                        elif "MemoryError" in str(e) or "内存" in str(e):
+                            safe_print_message("  提示：内存不足，尝试关闭其他程序")
+                    finally:
+                        pbar.update(1)  # 无论成功还是失败，都更新进度条
 
-        # 统计变量
-        success_count = 0
-        error_count = 0
-        error_details = []
+    # 输出统计信息
+    print(f"\n处理统计:")
+    print(f"  总任务数: {total_images} 张")
+    print(f"  成功: {success_count} 张")
+    print(f"  失败: {error_count} 张")
 
-        # 等待所有任务完成并显示进度
-        for future in tqdm(as_completed(futures), total=len(futures), desc="正在导出图片", unit="张"):
-            try:
-                result = future.result()
-                success_count += 1
-                # 可以在这里记录成功导出的文件
-            except Exception as e:
-                error_count += 1
-                error_msg = f"任务执行失败: {str(e)}"
-                safe_print_message(error_msg)
-                error_details.append(str(e))
+    if error_count > 0:
+        print(f"\n有 {error_count} 个任务失败，请检查错误信息")
+        # 如果错误率过高，给出建议
+        error_rate = error_count / total_images
+        if error_rate > 0.5:  # 超过50%失败率
+            safe_print_message("  建议：检查PSD模板和Excel数据格式是否正确")
+        elif error_rate > 0.2:  # 超过20%失败率
+            safe_print_message("  建议：检查资源文件是否存在")
 
-                # 根据错误类型进行不同的处理
-                if "PermissionError" in str(e) or "权限" in str(e):
-                    safe_print_message("  提示：请检查文件权限设置")
-                elif "FileNotFoundError" in str(e) or "文件不存在" in str(e):
-                    safe_print_message("  提示：请检查相关文件是否存在")
-                elif "MemoryError" in str(e) or "内存" in str(e):
-                    safe_print_message("  提示：内存不足，尝试减少并行进程数")
-
-        # 输出统计信息
-        print(f"\n处理统计:")
-        print(f"  成功: {success_count} 张")
-        print(f"  失败: {error_count} 张")
-
-        if error_count > 0:
-            print(f"\n有 {error_count} 个任务失败，请检查错误信息")
-            # 如果错误率过高，给出建议
-            error_rate = error_count / total_images
-            if error_rate > 0.5:  # 超过50%失败率
-                safe_print_message("  建议：检查PSD模板和Excel数据格式是否正确")
-            elif error_rate > 0.2:  # 超过20%失败率
-                safe_print_message("  建议：尝试减少并行进程数或检查系统资源")
-
-    print(f"\n并行处理完成，共处理 {total_images} 张图片")
+    print(f"\n处理完成，共生成 {success_count} 张图片")
 
     # 记录日志 - 只在有成功生成的图片时才记录
     if success_count > 0:

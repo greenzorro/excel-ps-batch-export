@@ -6,7 +6,7 @@ Excel-PS Batch Export Performance Tests
 
 This test module validates project performance including:
 - Large file processing performance
-- Parallel processing efficiency
+- Serial processing efficiency
 - Memory usage
 """
 
@@ -15,14 +15,38 @@ import sys
 import time
 import tempfile
 import shutil
-import psutil
 import pytest
 from pathlib import Path
 import pandas as pd
 
+# 条件导入psutil，如果没有则使用内置模块替代
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+    # 使用内置模块获取进程信息
+    import resource
+
+    class MockPsutilProcess:
+        """模拟psutil.Process用于测试"""
+        def __init__(self):
+            pass
+
+        def memory_info(self):
+            """获取内存信息"""
+            usage = resource.getrusage(resource.RUSAGE_SELF)
+            # rss: 实际物理内存使用（字节）
+            return type('obj', (object,), {'rss': usage.ru_maxrss * 1024})()
+
+        def cpu_percent(self, interval=None):
+            """获取CPU使用率"""
+            return 0.0
+
+    psutil = type('obj', (object,), {'Process': MockPsutilProcess})()
+
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 class PerformanceTestConfig:
     """性能测试配置"""
@@ -177,49 +201,38 @@ class TestPerformance:
         assert duration < 0.5, f"PSD simulation processing timetoo long: {duration:.3f}s"
         assert memory_used < 5, f"PSD模拟处理Memory usage过多: {memory_used:.2f}MB"
     
-    def test_concurrent_simulation(self, perf_config, temp_workspace):
-        """测试并发处理模拟"""
-        print("\n=== Concurrent Processing Simulation Test ===")
-        
-        import threading
-        import time
-        
-        def worker(worker_id, results):
-            """工作线程"""
-            start_time = time.time()
-            
-            # 模拟工作负载
-            for i in range(1000):
-                _ = i * i + worker_id
-            
-            end_time = time.time()
-            results[worker_id] = end_time - start_time
-        
-        # 创建多个线程
-        num_threads = 4
-        threads = []
-        results = {}
-        
+    def test_processing_simulation(self, perf_config, temp_workspace):
+        """测试图像处理任务模拟"""
+        print("\n=== Image Processing Simulation Test ===")
+
+        # 模拟串行处理过程
+        def simulate_image_processing(task_id, data_size):
+            """模拟图像处理任务"""
+            result = 0
+            for i in range(data_size):
+                result += i * task_id
+            return result
+
+        # 创建多个任务
+        num_tasks = 10
+        task_ids = list(range(num_tasks))
+
+        # 测试串行处理
         start_time = time.time()
-        
-        for i in range(num_threads):
-            thread = threading.Thread(target=worker, args=(i, results))
-            threads.append(thread)
-            thread.start()
-        
-        # 等待所有线程完成
-        for thread in threads:
-            thread.join()
-        
-        end_time = time.time()
-        total_time = end_time - start_time
-        
-        print(f"Concurrent processing time: {total_time:.3f}s")
-        print(f"Thread count: {num_threads}")
-        print(f"Each thread processing time: {results}")
-        
-        assert total_time < 1.0, f"Concurrent processing timetoo long: {total_time:.3f}s"
-        assert len(results) == num_threads, "不是所有线程都完成了"
+        results = []
+        for task_id in task_ids:
+            results.append(simulate_image_processing(task_id, 10000))
+
+        serial_time = time.time() - start_time
+
+        print(f"Serial processing time: {serial_time:.3f}s for {num_tasks} tasks")
+        print(f"Processed {len(results)} tasks")
+
+        # 验证结果正确性
+        assert len(results) == num_tasks, "任务数量不正确"
+        assert all(r >= 0 for r in results), "所有结果应该非负"
+
+        print("✅ 图像处理模拟测试通过")
 
 
 if __name__ == "__main__":

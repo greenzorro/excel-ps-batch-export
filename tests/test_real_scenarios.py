@@ -140,8 +140,8 @@ class TestRealScenarios:
         # 主要测试的是程序不会崩溃，并且能够给出合理的错误信息
         assert "FileNotFoundError" in result.stderr or result.returncode == 0
     
-    def test_concurrent_execution_simulation(self):
-        """测试并发执行的模拟"""
+    def test_serial_execution_simulation(self):
+        """测试串行执行的模拟"""
         # 创建多个测试任务
         test_tasks = []
         for i in range(3):
@@ -158,7 +158,7 @@ class TestRealScenarios:
             
             test_tasks.append(f"concurrent_test_{i}")
         
-        # 模拟并发执行（实际是串行，但测试程序处理多个任务的能力）
+        # 模拟串行执行（测试程序处理多个任务的能力）
         script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         for task in test_tasks:
