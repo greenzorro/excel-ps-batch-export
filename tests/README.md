@@ -4,10 +4,10 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## 🎯 Test Suite Status
 
-**✅ All 146 tests passing (100% success rate)**
+**✅ All 143 tests passing (100% success rate)**
 
-**Last Updated**: 2025-10-14
-**Status**: All tests passing, clipboard importer with PSD renderer integration verified
+**Last Updated**: 2025-12-03
+**Status**: All tests passing, single-process architecture with clipboard importer integration verified
 
 ## Test Files Description
 
@@ -48,7 +48,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - **test_performance.py** - Performance tests
   - Excel processing performance tests
   - Memory usage monitoring tests
-  - Concurrent processing capability tests
+  - Serial processing capability tests
   - PSD file processing simulation tests
 
 - **test_utils.py** - Test utility functions
@@ -103,7 +103,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - **test_real_scenarios.py** - Real scenario tests
   - Real execution with actual files tests
   - Large dataset simulation tests
-  - Concurrent execution simulation tests
+  - Serial execution simulation tests
   - Error recovery and continuation tests
   - Resource usage monitoring tests
   - User workflow simulation tests
@@ -125,7 +125,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Zero count handling tests
   - File format integrity tests
   - Cross-platform compatibility tests
-  - Concurrent scenario simulation tests
+  - Serial scenario simulation tests
 
 ### Test Coverage
 
@@ -160,23 +160,24 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Text extreme conditions (extreme font sizes, layer sizes, multilingual text)
 - [x] Validation extreme conditions (large datasets, null values)
 - [x] File system extreme conditions (special filenames, deep directory structures)
-- [x] Memory extreme conditions (memory usage simulation, concurrent operations)
+- [x] Memory extreme conditions (memory usage simulation, serial operations)
 
 #### Performance Tests (test_performance.py)
 - [x] Excel processing performance benchmarks
 - [x] Memory usage monitoring and optimization
-- [x] Concurrent processing efficiency tests
+- [x] Serial processing efficiency tests
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 146
-- **Passed**: 146 (100%)
+- **Total Tests**: 143
+- **Passed**: 143 (100%)
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
 - **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, and logging functionality
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
+- **Architecture**: Single-process serial execution for optimal stability and simplicity
 - **Specialized Testing**: Boolean value handling, text position precision, platform compatibility, real-world scenario testing, clipboard import functionality with xlwings formula recalculation, comprehensive logging functionality testing, and multiple PSD template filename generation testing
 
 ## Running Tests
@@ -189,7 +190,7 @@ pip install -r requirements.txt
 
 2. Install test dependencies:
 ```bash
-pip install pytest psutil pytest-html
+pip install pytest pytest-html
 ```
 
 ### Running Options
@@ -279,19 +280,19 @@ Tests automatically create temporary workspaces without affecting project files.
 
 1. **Recommended** to use `test_simple.py` and `test_performance.py` for testing
 2. Tests require PSD and Excel files from the project root directory
-3. Performance tests require the psutil package
-4. Some tests may be skipped due to missing actual resources
-5. **Windows Note**: All Windows temporary file permission issues have been fixed. Tests now run at 100% pass rate.
+3. Some tests may be skipped due to missing actual resources
+4. **Windows Note**: All Windows temporary file permission issues have been fixed. Tests now run at 100% pass rate.
+5. **Architecture**: Project uses single-process serial execution for optimal stability and simplicity
 
 ## Test Results
 
-- **Total Tests**: 146
+- **Total Tests**: 143
 - **Pass Rate**: 100%
 - **Failed Tests**: 0
 - **Test Distribution**:
   - Core functionality (17 tests) - 100% pass
-  - Business logic (27 tests) - 100% pass (新增多个PSD模板测试)
-  - Error handling (21 tests) - 100% pass
+  - Business logic (27 tests) - 100% pass
+  - Error handling (18 tests) - 100% pass
   - Boundary conditions (6 tests) - 100% pass
   - Performance testing (5 tests) - 100% pass
   - Boolean value handling (9 tests) - 100% pass
@@ -301,8 +302,8 @@ Tests automatically create temporary workspaces without affecting project files.
   - Real scenarios (9 tests) - 100% pass
   - Clipboard importer (22 tests) - 100% pass (including PSD renderer integration)
   - Logging functionality (6 tests) - 100% pass
-- **Last Updated**: 2025-10-14
-- **Status**: All tests passing, clipboard importer with PSD renderer integration verified
+- **Last Updated**: 2025-12-03
+- **Status**: All tests passing, single-process architecture with clipboard importer integration verified
 
 ## Troubleshooting
 

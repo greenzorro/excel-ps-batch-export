@@ -186,8 +186,8 @@ def test_log_export_activity_cross_platform_compatibility():
             os.chdir(original_dir)
 
 
-def test_log_export_activity_concurrent_simulation():
-    """模拟并发场景测试"""
+def test_log_export_activity_serial_simulation():
+    """模拟串行场景测试"""
     with tempfile.TemporaryDirectory() as temp_dir:
         original_dir = os.getcwd()
         os.chdir(temp_dir)

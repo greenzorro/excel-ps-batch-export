@@ -1,17 +1,17 @@
 # 自动生成的依赖文件
-# 生成时间: 2025-10-09 14:10:24
+# 生成时间: 2025-12-03 10:23:39
 # Python环境: Routine (全局)
 # 扫描文件数: 7
 # 推荐使用 uv 进行包管理
 
 # 核心依赖
-Pillow==10.3.0
-openpyxl==3.1.3
-pandas==2.2.2
+Pillow
+openpyxl
+pandas
 psd-tools==1.9.23
-pyperclip
+pyperclip==1.11.0
 tqdm==4.66.4
-xlwings
+xlwings==0.33.16
 
 #
 # 使用说明:

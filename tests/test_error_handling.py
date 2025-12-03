@@ -36,7 +36,7 @@ from psd_renderer import (
     update_image_layer,
     get_matching_psds,
     preload_psd_templates,
-    export_single_image_task
+    export_single_image  # 改为导入串行函数
 )
 
 # 恢复原始环境
@@ -390,93 +390,6 @@ class TestValidationErrorHandling:
                     # Empty DataFrame should pass validation
                     assert len(errors) == 0
                     assert len(warnings) == 0
-
-
-class TestExportTaskErrors:
-    """导出任务错误处理测试"""
-    
-    def test_export_single_image_task_with_invalid_data(self):
-        """Test invalid data export"""
-        # Create mock task data
-        task_data = {
-            'row': pd.Series(["test"], index=["File_name"]),
-            'index': 0,
-            'psd_object': Mock(),
-            'psd_file_name': "test.psd",
-            'excel_file_path': "test.xlsx",
-            'output_path': "output",
-            'image_format': "jpg",
-            'text_font': "test.ttf",
-            'quality': 95,
-            'optimize': False,
-            'current_datetime': "20240101_120000"
-        }
-        
-        # Mock PSD object has issues
-        task_data['psd_object'].size = (100, 100)
-        task_data['psd_object'].is_group.return_value = False
-        task_data['psd_object'].is_visible.return_value = True
-        task_data['psd_object'].topil.side_effect = Exception("PSD error")
-        # Ensure Mock object is iterable
-        task_data['psd_object'].__iter__ = Mock(return_value=iter([]))
-        
-        original_cwd = os.getcwd()
-        tmp_dir = None
-        try:
-            tmp_dir = tempfile.mkdtemp()
-            os.chdir(tmp_dir)
-            
-            # Should handle errors gracefully - either by returning an error result or raising an exception
-            try:
-                result = export_single_image_task(task_data)
-                # If no exception, should return an error indicator (None or error string)
-                assert result is None or isinstance(result, str), f"Expected error result, got: {result}"
-            except Exception as e:
-                # If exception is raised, it should be meaningful
-                assert "PSD" in str(e).lower() or "topil" in str(e).lower() or "error" in str(e).lower(), f"Unexpected error: {e}"
-        finally:
-            os.chdir(original_cwd)
-            if tmp_dir and os.path.exists(tmp_dir):
-                try:
-                    shutil.rmtree(tmp_dir)
-                except (PermissionError, OSError):
-                    pass  # 忽略权限错误，Windows下可能发生
-    
-    def test_export_single_image_task_with_permission_error(self):
-        """Test permission error handling"""
-        # Create mock task data
-        task_data = {
-            'row': pd.Series(["test"], index=["File_name"]),
-            'index': 0,
-            'psd_object': Mock(),
-            'psd_file_name': "test.psd",
-            'excel_file_path': "test.xlsx",
-            'output_path': "/root/no_permission",  # Unix系统目录，通常无写入权限
-            'image_format': "jpg",
-            'text_font': "test.ttf",
-            'quality': 95,
-            'optimize': False,
-            'current_datetime': "20240101_120000"
-        }
-        
-        task_data['psd_object'].size = (100, 100)
-        task_data['psd_object'].is_group.return_value = False
-        task_data['psd_object'].is_visible.return_value = True
-        task_data['psd_object'].topil.return_value = Image.new('RGB', (100, 100))
-        task_data['psd_object'].__iter__ = Mock(return_value=iter([]))
-        
-        # Mock os.path.exists to return False and os.makedirs to raise PermissionError
-        with patch('os.path.exists', return_value=False), \
-             patch('os.makedirs') as mock_makedirs:
-            mock_makedirs.side_effect = PermissionError("Permission denied")
-            
-            # Should handle permission errors specifically
-            with pytest.raises((PermissionError, OSError)) as exc_info:
-                result = export_single_image_task(task_data)
-        # Verify it's a permission-related error
-        error_msg = str(exc_info.value).lower()
-        assert any(term in error_msg for term in ["permission", "denied", "read-only", "access"])
-        del exc_info  # Clean up exception reference
 
 
 class TestBoundaryConditionErrors:
