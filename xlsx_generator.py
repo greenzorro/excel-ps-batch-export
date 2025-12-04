@@ -3,7 +3,7 @@ File: xlsx_generator.py
 Project: excel-ps-batch-export
 Created: 2024-10-14 11:41:59
 Author: Victor Cheng
-Email: greenzorromail@gmail.com
+Email: hi@victor42.work
 Description: Excel生成器 - 为PSD模板创建Excel配置文件，根据变量图层初始化列
 '''
 

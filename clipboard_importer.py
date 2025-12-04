@@ -3,7 +3,7 @@ File: clipboard_importer.py
 Project: excel-ps-batch-export
 Created: 2025-10-09
 Author: Victor Cheng
-Email: greenzorromail@gmail.com
+Email: hi@victor42.work
 Description:
 剪贴板导入器 - 从系统剪贴板读取表格数据并写入Excel文件，自动触发图片渲染
 
