@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入业务代码函数
-from psd_renderer import get_matching_psds, read_excel_file
+from psd_renderer import get_matching_psds, read_excel_file, sanitize_filename, preprocess_text
 
 # 导入共享测试工具
 from test_utils import (
@@ -528,6 +528,193 @@ class TestLayerVisibility:
         
         set_layer_visibility(mock_layer, "0")
         assert mock_layer.visible is False  # 修复：现在正确解析0
+
+
+class TestFilenameSanitization:
+    """文件名清理功能测试"""
+
+    def test_normal_filename(self):
+        """测试正常文件名"""
+        assert sanitize_filename("normal_name") == "normal_name"
+        assert sanitize_filename("测试文件") == "测试文件"
+        assert sanitize_filename("file123") == "file123"
+
+    def test_illegal_characters_replacement(self):
+        """测试非法字符替换"""
+        # Windows非法字符替换测试
+        assert sanitize_filename("file/name") == "file_name"
+        assert sanitize_filename("file\\name") == "file_name"
+        assert sanitize_filename("file:name") == "file_name"
+        assert sanitize_filename("file*name") == "file_name"
+        assert sanitize_filename("file?name") == "file_name"
+        assert sanitize_filename('file"name') == "file_name"
+        assert sanitize_filename("file<name") == "file_name"
+        assert sanitize_filename("file>name") == "file_name"
+        assert sanitize_filename("file|name") == "file_name"
+
+    def test_spaces_handling(self):
+        """测试空格处理"""
+        # 保留中间空格
+        assert sanitize_filename("file with spaces") == "file with spaces"
+        # 清理首尾空格
+        assert sanitize_filename("  leading") == "leading"
+        assert sanitize_filename("trailing  ") == "trailing"
+        assert sanitize_filename("  both  ") == "both"
+
+    def test_edge_cases(self):
+        """测试边界情况"""
+        # 空字符串
+        assert sanitize_filename("") == "unnamed"
+        # None值
+        assert sanitize_filename(None) == "unnamed"
+        # 纯空格和点
+        assert sanitize_filename("  .  ") == "unnamed"
+        assert sanitize_filename("...") == "unnamed"
+
+    def test_length_limit(self):
+        """测试长度限制"""
+        long_name = "a" * 300
+        result = sanitize_filename(long_name)
+        assert len(result) == 200
+        assert result == "a" * 200
+
+    def test_chinese_and_special_chars(self):
+        """测试中文和特殊字符"""
+        # 中文与非法字符混合
+        assert sanitize_filename("产品/名称*special?") == "产品_名称_special_"
+        assert sanitize_filename("中文:测试") == "中文_测试"
+        # 中文字符保留
+        assert sanitize_filename("中文测试") == "中文测试"
+
+    def test_control_characters(self):
+        """测试控制字符过滤"""
+        # 包含换行符
+        assert sanitize_filename("file\nname") == "file_name"
+        # 包含制表符
+        assert sanitize_filename("file\tname") == "file_name"
+        # 包含回车符
+        assert sanitize_filename("file\rname") == "file_name"
+        # 包含Excel回车符转义字符串
+        assert sanitize_filename("file_x000D_name") == "filename"
+        assert sanitize_filename("name_x000D__x000D_") == "name"
+        assert sanitize_filename("file_x000A_name") == "filename"
+        assert sanitize_filename("file_x0009_name") == "filename"
+
+    def test_multiple_consecutive_illegal_chars(self):
+        """测试连续非法字符"""
+        assert sanitize_filename("file///name") == "file___name"
+        assert sanitize_filename("file***name") == "file___name"
+        assert sanitize_filename("file:::name") == "file___name"
+
+    def test_mixed_scenarios(self):
+        """测试混合场景"""
+        # 复杂混合情况
+        result = sanitize_filename("  产品/名称*特别版?:  ")
+        assert result == "产品_名称_特别版__"
+        assert not result.startswith(" ")
+        assert not result.endswith(" ")
+
+
+class TestTextPreprocessing:
+    """文本预处理功能测试"""
+
+    def test_normal_text(self):
+        """测试正常文本"""
+        assert preprocess_text("正常文本") == "正常文本"
+        assert preprocess_text("Test Text") == "Test Text"
+        assert preprocess_text("123") == "123"
+
+    def test_strip_whitespace(self):
+        """测试清理首尾空白字符"""
+        # 清理首尾空格
+        assert preprocess_text("  text  ") == "text"
+        # 清理首尾制表符
+        assert preprocess_text("\ttext\t") == "text"
+        # 清理首尾换行符
+        assert preprocess_text("\ntext\n") == "text"
+        # 清理混合空白字符
+        assert preprocess_text("  \t\n text \n\t  ") == "text"
+
+    def test_none_and_empty(self):
+        """测试None和空值处理"""
+        assert preprocess_text(None) == ""
+        assert preprocess_text("") == ""
+        assert preprocess_text("   ") == ""
+
+    def test_non_string_types(self):
+        """测试非字符串类型转换"""
+        assert preprocess_text(123) == "123"
+        assert preprocess_text(45.67) == "45.67"
+        assert preprocess_text(True) == "True"
+        assert preprocess_text(False) == "False"
+
+    def test_whitespace_only(self):
+        """测试仅包含空白字符的文本"""
+        assert preprocess_text(" ") == ""
+        assert preprocess_text("\t") == ""
+        assert preprocess_text("\n") == ""
+        assert preprocess_text("  \t\n  ") == ""
+
+    def test_preserve_internal_whitespace(self):
+        """测试保留内部空白字符"""
+        assert preprocess_text("text with   spaces") == "text with   spaces"
+        assert preprocess_text("text\t\twith\ttabs") == "text\t\twith\ttabs"
+        assert preprocess_text("line1\nline2") == "line1\nline2"
+
+    def test_chinese_text(self):
+        """测试中文文本处理"""
+        assert preprocess_text("  中文文本  ") == "中文文本"
+        assert preprocess_text("\t中文测试\n") == "中文测试"
+        assert preprocess_text("产品  名称") == "产品  名称"
+
+    def test_mixed_content(self):
+        """测试混合内容"""
+        assert preprocess_text("  标题：产品名称  ") == "标题：产品名称"
+        assert preprocess_text("\t分类: 电子产品\n") == "分类: 电子产品"
+
+    def test_quote_replacement(self):
+        """测试中文双引号替换"""
+        # 替换中文双引号
+        left_quote = chr(0x201C)  # "
+        right_quote = chr(0x201D)  # "
+        assert preprocess_text(f'产品{left_quote}名称{right_quote}') == '产品「名称」'
+        assert preprocess_text(f'{left_quote}标题{right_quote}') == '「标题」'
+        assert preprocess_text(f'完整{left_quote}内容{right_quote}测试') == '完整「内容」测试'
+
+    def test_slash_replacement(self):
+        """测试斜杠替换"""
+        # 替换斜杠为和号
+        assert preprocess_text('产品/名称') == '产品&名称'
+        assert preprocess_text('A/B/C') == 'A&B&C'
+        assert preprocess_text('分类/子分类') == '分类&子分类'
+
+    def test_excel_carriage_return_escape(self):
+        """测试Excel转义字符串清理"""
+        # 清理_x000D_ (回车符)
+        assert preprocess_text('文本_x000D_') == '文本'
+        assert preprocess_text('_x000D_文本') == '文本'
+        assert preprocess_text('文本_x000D_内容') == '文本内容'
+        # 清理_x000A_ (换行符)
+        assert preprocess_text('文本_x000A_') == '文本'
+        assert preprocess_text('文本_x000A_内容') == '文本内容'
+        # 清理_x0009_ (制表符)
+        assert preprocess_text('文本_x0009_') == '文本'
+        assert preprocess_text('文本_x0009_内容') == '文本内容'
+        # 混合清理
+        assert preprocess_text('多个_x000D_回车_x000A_换行_x0009_') == '多个回车换行'
+
+    def test_paired_english_quotes_removal(self):
+        """测试首尾成对英文引号清理"""
+        # 成对英文引号删除
+        assert preprocess_text('"文本"') == '文本'
+        assert preprocess_text('"test content"') == 'test content'
+        # 只有开头或结尾的引号不删除
+        assert preprocess_text('"文本') == '"文本'
+        assert preprocess_text('文本"') == '文本"'
+        # 空内容的引号
+        assert preprocess_text('""') == ''
+        # 单个引号
+        assert preprocess_text('"') == '"'
 
 
 if __name__ == "__main__":

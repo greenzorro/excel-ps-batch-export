@@ -96,9 +96,8 @@ def parse_clipboard_data(clipboard_content):
         else:
             # 如果没有分隔符，将整行作为一个单元格
             row_data = [line]
-        
-        # 清理每个单元格的空白字符
-        row_data = [cell.strip() for cell in row_data]
+
+        # 注意：不再清理空白字符，统一在PSD渲染阶段处理
         data.append(row_data)
     
     # 转换为DataFrame

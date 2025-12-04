@@ -56,7 +56,7 @@ def read_excel_file(file_path):
     :raises ValueError: 当文件格式不支持时抛出异常
     """
     if not os.path.exists(file_path):
-        # 修复BC-006: Windows路径编码问题
+        # 处理Windows路径编码问题
         # 使用ASCII编码确保路径在Windows控制台正确显示
         try:
             # 尝试直接显示路径
@@ -90,7 +90,7 @@ def set_layer_visibility(layer, visibility):
     if hasattr(visibility, 'bool'):
         visibility = visibility.bool()
     
-    # 正确解析布尔值 - 修复原始bug
+    # 正确解析布尔值
     if isinstance(visibility, bool):
         layer.visible = visibility
     elif isinstance(visibility, str):
@@ -214,6 +214,39 @@ def calculate_text_position(text, layer_width, font_size, alignment):
     y_offset = font_size * 0.26
     return x_position - x_offset, -y_offset
 
+def preprocess_text(text_content):
+    """预处理文本内容，在写入图片前进行统一清理
+
+    :param str text_content: 原始文本内容
+    :return str: 预处理后的文本内容
+    """
+    if text_content is None:
+        return ""
+
+    # 转换为字符串（处理非字符串类型）
+    text_content = str(text_content)
+
+    # 清理Excel特殊字符转义字符串
+    text_content = text_content.replace('_x000D_', '')  # 回车符
+    text_content = text_content.replace('_x000A_', '')  # 换行符
+    text_content = text_content.replace('_x0009_', '')  # 制表符
+
+    # 清理首尾成对的英文引号
+    if len(text_content) >= 2 and text_content.startswith('"') and text_content.endswith('"'):
+        text_content = text_content[1:-1]
+
+    # 清理首尾空白字符（空格、制表符、换行符等）
+    text_content = text_content.strip()
+
+    # 文本内容规范化处理
+    # 将中文双引号"" (U+201C, U+201D) 替换为中文书名号「」(U+300C, U+300D)
+    text_content = text_content.replace(chr(0x201C), '「')  # 左双引号"
+    text_content = text_content.replace(chr(0x201D), '」')  # 右双引号"
+    # 将斜杠替换为和号
+    text_content = text_content.replace('/', '&')
+
+    return text_content
+
 def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf'):
     """更新文字图层内容
 
@@ -223,11 +256,14 @@ def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/Al
     :param str text_font: 字体文件路径
     """
     import os
+    # 预处理文本内容，统一清理空白字符
+    text_content = preprocess_text(text_content)
+
     # 确保字体路径相对于脚本所在目录
     if not os.path.isabs(text_font):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         text_font = os.path.join(script_dir, text_font)
-    
+
     layer.visible = False  # 防止PSD原始图层被输出到PIL
     font_info = layer.engine_dict
     font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
@@ -281,6 +317,45 @@ def update_image_layer(layer, new_image_path, pil_image):
         pil_image.alpha_composite(new_image, (layer.offset[0], layer.offset[1]))
     else:
         print(f"Warning: Image file {new_image_path} does not exist")
+
+def sanitize_filename(filename):
+    """清理文件名中的非法字符，确保跨平台兼容性
+
+    :param str filename: 原始文件名
+    :return str: 清理后的文件名
+    """
+    if not filename:
+        return "unnamed"
+
+    # 转换为字符串（处理非字符串类型）
+    filename = str(filename)
+
+    # 清理Excel特殊字符转义字符串
+    filename = filename.replace('_x000D_', '')  # 回车符
+    filename = filename.replace('_x000A_', '')  # 换行符
+    filename = filename.replace('_x0009_', '')  # 制表符
+
+    # Windows非法字符: / \ : * ? " < > |
+    # 其他系统也可能不支持的字符: 控制字符 (0-31)
+    illegal_chars = r'[\\/:*?"<>|\x00-\x1f]'
+
+    # 替换非法字符为下划线
+    import re
+    sanitized = re.sub(illegal_chars, '_', filename)
+
+    # 清理开头和结尾的空格和点（Windows不支持）
+    sanitized = sanitized.strip(' .')
+
+    # 限制文件名长度（避免文件系统限制）
+    # 大多数文件系统支持255字符，但考虑路径长度限制，使用200字符
+    if len(sanitized) > 200:
+        sanitized = sanitized[:200]
+
+    # 如果清理后为空，使用默认名称
+    if not sanitized:
+        sanitized = "unnamed"
+
+    return sanitized
 
 def save_image(output_dir, output_filename, image_format, pil_image):
     """保存PIL图片
@@ -365,6 +440,8 @@ def export_single_image(row, index, psd_object, psd_file_name):
 
     base_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
     output_filename = f"{base_filename}{suffix}"
+    # 清理文件名中的非法字符，确保跨平台兼容性
+    output_filename = sanitize_filename(output_filename)
     save_image(output_path, output_filename, image_format, pil_image)
 
 def get_matching_psds(excel_file):
@@ -399,7 +476,7 @@ def collect_psd_variables(psd_file_path: str) -> Set[str]:
     
     # 检查文件是否存在
     if not os.path.exists(psd_file_path):
-        # 修复BC-006: Windows路径编码问题
+        # 处理Windows路径编码问题
         # 使用ASCII编码确保路径在Windows控制台正确显示
         try:
             # 尝试直接显示路径
