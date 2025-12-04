@@ -3,7 +3,7 @@ File: psd_renderer.py
 Project: excel-ps-batch-export
 Created: 2024-09-25 02:07:52
 Author: Victor Cheng
-Email: greenzorromail@gmail.com
+Email: hi@victor42.work
 Description: PSD渲染器 - 将Excel数据渲染到PSD模板并导出图片
 '''
 
