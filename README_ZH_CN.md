@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/c52c6e05-1bc9-4a2b-ae4c-b283a25067f6
 
 https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
-在Photoshop你得这么干：
+在Photoshop[你得这么干](https://victor42.eth.limo/post/3650/)：
 
 1. 在电子表格中编辑内容。
 2. 将电子表格保存为CSV文件。
