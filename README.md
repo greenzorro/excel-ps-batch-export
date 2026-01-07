@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/c52c6e05-1bc9-4a2b-ae4c-b283a25067f6
 
 https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
-This is what you do using Photoshop:
+This is [what you do using Photoshop](https://victor42.eth.limo/post-en/3650/):
 
 1. Edit content in a spreadsheet.
 2. Save spreadsheet as a CSV file.
