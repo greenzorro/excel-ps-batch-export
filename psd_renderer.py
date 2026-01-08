@@ -247,13 +247,44 @@ def preprocess_text(text_content):
 
     return text_content
 
+def parse_rotation_from_name(layer_name: str):
+    """从图层名解析旋转角度
+
+    :param str layer_name: 图层名称，如 "@标题#t_a15"
+    :return float|None: 旋转角度（度数），无旋转参数返回 None
+
+    Examples:
+        >>> parse_rotation_from_name("@标题#t_a15")
+        15.0
+        >>> parse_rotation_from_name("@标题#t_a-30")
+        -30.0
+        >>> parse_rotation_from_name("@标题#t")
+        None
+    """
+    if not layer_name:
+        return None
+
+    # 匹配 _a 后跟数字（可带负号和小数）
+    match = re.search(r'_a(-?\d+(?:\.\d+)?)', layer_name)
+    if match:
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+
+    return None
+
 def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf'):
-    """更新文字图层内容
+    """更新文字图层内容（支持旋转参数）
 
     :param PSDLayer layer: PSD文字图层
     :param str text_content: 新的文字内容
     :param PIL.Image pil_image: PIL图像对象
     :param str text_font: 字体文件路径
+
+    支持的旋转参数：
+    - @变量名#t_a[角度] - 旋转指定角度
+    - 例如：@标题#t_a15 旋转 15 度
     """
     import os
     # 预处理文本内容，统一清理空白字符
@@ -269,39 +300,98 @@ def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/Al
     font_size = font_info['StyleRun']['RunArray'][0]['StyleSheet']['StyleSheetData']['FontSize']
     font_color = get_font_color(font_info)
     font = ImageFont.truetype(text_font, int(font_size))
-    draw = ImageDraw.Draw(pil_image)
     layer_width = layer.size[0]
+    layer_height = layer.size[1]
+
+    # 解析旋转角度
+    rotation_angle = parse_rotation_from_name(layer.name)
+
+    # 根据是否有旋转决定绘制策略
+    if rotation_angle is not None:
+        # 有旋转：创建足够大的临时画布
+        # 计算实际文字尺寸，确保绘制区域足够大
+        temp_img = Image.new('RGB', (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
+        text_bbox = temp_draw.textbbox((0, 0), text_content, font=font)
+        actual_text_width = text_bbox[2] - text_bbox[0]
+        actual_text_height = text_bbox[3] - text_bbox[1]
+
+        # 使用实际文字尺寸和图层尺寸的较大值
+        draw_width = max(layer_width, actual_text_width)
+        draw_height = max(layer_height, actual_text_height)
+
+        # 固定 500px padding，确保旋转后文字不会被裁剪
+        padding = 500
+        padded_width = draw_width + 2 * padding
+        padded_height = draw_height + 2 * padding
+
+        target_image = Image.new('RGBA', (padded_width, padded_height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(target_image)
+        offset_x = padding
+        offset_y = padding
+        current_width = draw_width
+        current_height = draw_height
+    else:
+        # 无旋转：直接在主画布上绘制
+        target_image = None
+        draw = ImageDraw.Draw(pil_image)
+        offset_x = layer.offset[0]
+        offset_y = layer.offset[1]
+        current_width = layer_width
+        current_height = layer_height
+
     # 判断对齐方向
     alignment = 'left'
     if '_c' in layer.name:
         alignment = 'center'
     elif '_r' in layer.name:
         alignment = 'right'
+
     if '_p' in layer.name:
         # 段落文本处理
         if any('\u4e00' <= char <= '\u9fff' for char in text_content):
-            wrapped_text = textwrap.fill(text_content, width=round(layer_width / font_size))
+            wrapped_text = textwrap.fill(text_content, width=round(current_width / font_size))
         else:
-            wrapped_text = textwrap.fill(text_content, width=round(layer_width / font_size) * 2)
+            wrapped_text = textwrap.fill(text_content, width=round(current_width / font_size) * 2)
         lines = wrapped_text.split('\n')
-        x_position, y_position_line = calculate_text_position(text_content, layer_width, font_size, alignment)
-        y_position_line += layer.offset[1]
+        x_position, y_position_line = calculate_text_position(text_content, current_width, font_size, alignment)
+        y_position_line += offset_y
         # 计算段落文本的总高度
         total_height = len(lines) * font_size * 1.2 - font_size * 0.2
         # 根据垂直对齐方式调整y_position_line
         if '_pm' in layer.name:
-            y_position_line += (layer.size[1] - total_height) / 2
+            y_position_line += (current_height - total_height) / 2
         elif '_pb' in layer.name:
-            y_position_line += layer.size[1] - total_height
+            y_position_line += current_height - total_height
         # 逐行绘制
         for line in lines:
-            x_position, y_position = calculate_text_position(line, layer_width, font_size, alignment)
-            draw.text((layer.offset[0] + x_position, y_position_line), line, fill=font_color, font=font)
+            x_position, y_position = calculate_text_position(line, current_width, font_size, alignment)
+            draw.text((offset_x + x_position, y_position_line), line, fill=font_color, font=font)
             y_position_line += font_size * 1.2  # 1.2倍行距
     else:
         # 单行文本处理
-        x_position, y_position = calculate_text_position(text_content, layer_width, font_size, alignment)
-        draw.text((layer.offset[0] + x_position, layer.offset[1] + y_position), text_content, fill=font_color, font=font)
+        x_position, y_position = calculate_text_position(text_content, current_width, font_size, alignment)
+        draw.text((offset_x + x_position, offset_y + y_position), text_content, fill=font_color, font=font)
+
+    # 如果有旋转，旋转临时画布并合成到主画布
+    if rotation_angle is not None:
+        # 旋转临时画布（负角度因为Pillow的旋转方向与常规相反）
+        # expand=True 会自动扩展画布以容纳旋转后的内容
+        rotated_image = target_image.rotate(-rotation_angle, resample=Image.BICUBIC, expand=True)
+
+        # 计算合成位置：让旋转后图像的中心对齐到图层在主画布上的中心
+        # 由于文字区域中心 = 临时画布中心，旋转后文字中心 = 旋转后图像中心
+        # 注意：这里使用 draw_width 和 draw_height 计算中心，因为实际绘制区域可能更大
+        layer_center_x = layer.offset[0] + draw_width / 2
+        layer_center_y = layer.offset[1] + draw_height / 2
+        rotated_center_x = rotated_image.width / 2
+        rotated_center_y = rotated_image.height / 2
+
+        composite_x = int(layer_center_x - rotated_center_x)
+        composite_y = int(layer_center_y - rotated_center_y)
+
+        # 将旋转后的图像合成到主画布
+        pil_image.alpha_composite(rotated_image, (composite_x, composite_y))
 
 def update_image_layer(layer, new_image_path, pil_image):
     """更新图片图层内容
