@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## 🎯 Test Suite Status
 
-**✅ All 165 tests passing (100% success rate)**
+**✅ All 173 tests passing (100% success rate)**
 
-**Last Updated**: 2025-12-04
+**Last Updated**: 2026-01-08
 **Status**: All tests passing
 
 ## Test Files Description
@@ -28,6 +28,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Multiple PSD template filename generation tests
   - Filename sanitization tests
   - Text preprocessing tests
+  - Rotation functionality tests (text rotation angle parsing)
 
 - **test_error_handling.py** - Error handling tests
   - Excel file error handling tests
@@ -147,6 +148,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Multiple PSD template filename generation with edge cases
 - [x] Filename sanitization functionality
 - [x] Text preprocessing functionality
+- [x] Rotation functionality (positive/negative/decimal angles, combined with alignment parameters)
 
 #### Error Handling Tests (test_error_handling.py)
 - [x] Excel file error handling (missing, corrupted, empty files)
@@ -173,12 +175,12 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 165
-- **Passed**: 165 (100%)
+- **Total Tests**: 173
+- **Passed**: 173 (100%)
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
-- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, and logging functionality
+- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, and text rotation
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
 - **Architecture**: Single-process serial execution for optimal stability and simplicity
@@ -289,12 +291,12 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Results
 
-- **Total Tests**: 165
+- **Total Tests**: 173
 - **Pass Rate**: 100%
 - **Failed Tests**: 0
 - **Test Distribution**:
   - Core functionality (17 tests)
-  - Business logic (48 tests)
+  - Business logic (56 tests, including 8 rotation tests)
   - Error handling (18 tests)
   - Boundary conditions (6 tests)
   - Performance testing (5 tests)

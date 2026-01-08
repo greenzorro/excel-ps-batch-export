@@ -56,13 +56,16 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
         - 默认左上对齐
         - `_c` 水平居中对齐
         - `_r` 水平右对齐
+        - `_a[角度]` 按指定角度旋转文字（如 `_a15` 顺时针旋转15°，`_a-30` 逆时针旋转30°）
         - `_p` 段落文本换行，在PSD中至少填满一行文本
         - `_pm` 垂直居中对齐
         - `_pb` 垂直底部对齐
-        - 这些参数可以组合使用，如 `#t_c_p`、`#t_r_pb`
+        - 这些参数可以组合使用，如 `#t_c_a15`、`#t_r_p`
         - PSD里设置的对齐方向对结果没有影响，程序只认图层名
     - `#i`用电子表格中的路径对应的图片填充图片图层。
-    - 注意：请勿使用cmd/ctrl+T缩放可变文本图层。只能通过字体大小属性调整其尺寸，否则脚本将从PSD文件中获取错误的字号。如果已经这么做了，请创建新的文本图层替换它们。
+    - 注意：
+        - 请勿使用cmd/ctrl+T缩放可变文本图层。只能通过字体大小属性调整其尺寸，否则脚本将从PSD文件中获取错误的字号。如果已经这么做了，请创建新的文本图层替换它们。
+        - 需要旋转的文字，只需在图层名中添加旋转参数。在PSD中文字图层保持水平平直放置，不要手动旋转，否则脚本可能无法正确读取图层的位置信息，导致输出位置偏移。
 3. 运行`xlsx_generator.py`。你的XLSX文件就创建完成了，所有的列都已准备好。
 4. 编辑XLSX文件。Python脚本默认读取第一张工作表，把你的数据放在这。也可以将数据放在另一张工作表中，并在第一张工作表中使用Excel公式读取和计算，特别适合切换图层可见性。请勿删除第一列`File_name`，留空会使用默认文件名格式（如image_1, image_2等）。
 5. 将模板所需的其他文件放入`assets`文件夹，包括字体、背景图像等。确保图片资源的路径与电子表格中的数据匹配。
@@ -78,6 +81,17 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 我甚至写了另一个脚本（file_monitor.py）监控电子表格，并在电子表格修改后自动导出图像。
 
+## 剪贴板导入器
+
+为了更快的工作流程，可以使用clipboard_importer.py脚本：
+
+1. 复制表格数据到剪贴板（从Excel、网页表格等）
+2. 运行 `python clipboard_importer.py`
+3. 选择目标Excel文件（如有多个）
+4. 数据自动写入Excel并生成图片
+
+这下，既不用打开Photoshop，也不用打开Excel了。
+
 ## 多文件处理
 
 本工具支持用一个Excel文件处理多个PSD模板。工作原理如下：
@@ -85,13 +99,13 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 - **按前缀分组**：同一目录中的所有PSD文件按前缀分组。前缀定义为文件名中第一个井号（`#`）之前的部分。例如：
   - `产品介绍#模板A.psd` 和 `产品介绍#模板B.psd` 共享相同的前缀 `产品介绍`
 - **共享Excel**：每组创建一个Excel文件（命名为`[前缀].xlsx`），包含组内所有PSD的变量。
-- **批量导出**：运行 `psd_renderer.py [前缀] ...` 时，脚本将处理组内所有PSD。Excel中的每一行将为组内每个PSD生成一张图片。输出图片文件名包含PSD的后缀（如 `行1_模板A.jpg`）。
+- **批量导出**：运行 `psd_renderer.py [前缀] ...` 时，脚本将处理组内所有PSD。Excel中的每一行将为组内每个PSD生成一张图片。输出图片文件名包含PSD的后缀（如 `image_1_模板A.jpg`）。
 
 示例：
   - PSD文件：`活动#夏季版.psd`, `活动#冬季版.psd`
   - Excel文件：`活动.xlsx`
   - 命令：`python psd_renderer.py 活动 AlibabaPuHuiTi-2-85-Bold.ttf jpg`
-  - 输出：对于 `活动.xlsx` 中的每一行，生成两张图片：`行1_夏季版.jpg`, `行1_冬季版.jpg` 等。
+  - 输出：对于 `活动.xlsx` 中的每一行，生成两张图片：`image_1_夏季版.jpg`, `image_1_冬季版.jpg` 等（假设File_name列为空，否则使用File_name列的值）。
 
 ## 使用前提
 
@@ -109,10 +123,10 @@ pip install pillow pandas openpyxl psd-tools tqdm
 
 ```bash
 # 基本命令格式
-python batch_export.py [Excel文件前缀] [字体文件] [输出格式]
+python psd_renderer.py [Excel文件前缀] [字体文件] [输出格式]
 
 # 示例
-python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
+python psd_renderer.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
 ```
 
 ## 感谢

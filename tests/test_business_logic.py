@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入业务代码函数
-from psd_renderer import get_matching_psds, read_excel_file, sanitize_filename, preprocess_text
+from psd_renderer import get_matching_psds, read_excel_file, sanitize_filename, preprocess_text, parse_rotation_from_name
 
 # 导入共享测试工具
 from test_utils import (
@@ -715,6 +715,94 @@ class TestTextPreprocessing:
         assert preprocess_text('""') == ''
         # 单个引号
         assert preprocess_text('"') == '"'
+
+
+class TestRotationFunctionality:
+    """旋转文字功能测试"""
+
+    def test_parse_rotation_positive_angle(self):
+        """测试解析正角度旋转参数"""
+        assert parse_rotation_from_name("@标题#t_a15") == 15.0
+        assert parse_rotation_from_name("@标题#t_a45") == 45.0
+        assert parse_rotation_from_name("@标题#t_a90") == 90.0
+        assert parse_rotation_from_name("@标题#t_a180") == 180.0
+
+    def test_parse_rotation_negative_angle(self):
+        """测试解析负角度旋转参数"""
+        assert parse_rotation_from_name("@标题#t_a-15") == -15.0
+        assert parse_rotation_from_name("@标题#t_a-30") == -30.0
+        assert parse_rotation_from_name("@标题#t_a-45") == -45.0
+        assert parse_rotation_from_name("@标题#t_a-90") == -90.0
+
+    def test_parse_rotation_decimal_angle(self):
+        """测试解析小数角度旋转参数"""
+        assert parse_rotation_from_name("@标题#t_a15.5") == 15.5
+        assert parse_rotation_from_name("@标题#t_a-22.5") == -22.5
+        assert parse_rotation_from_name("@标题#t_a45.75") == 45.75
+
+    def test_parse_rotation_combined_with_alignment(self):
+        """测试旋转参数与对齐参数组合"""
+        # 居中 + 旋转
+        assert parse_rotation_from_name("@标题#t_c_a15") == 15.0
+        assert parse_rotation_from_name("@标题#t_c_a-30") == -30.0
+
+        # 右对齐 + 旋转
+        assert parse_rotation_from_name("@标题#t_r_a45") == 45.0
+
+        # 居中 + 旋转 + 段落
+        assert parse_rotation_from_name("@内容#t_c_a15_p") == 15.0
+
+    def test_parse_rotation_no_rotation_parameter(self):
+        """测试没有旋转参数的图层名"""
+        assert parse_rotation_from_name("@标题#t") is None
+        assert parse_rotation_from_name("@标题#t_c") is None
+        assert parse_rotation_from_name("@标题#t_r_p") is None
+        assert parse_rotation_from_name("@标题#t_c_pm") is None
+
+    def test_parse_rotation_invalid_cases(self):
+        """测试无效情况"""
+        # 空字符串
+        assert parse_rotation_from_name("") is None
+        assert parse_rotation_from_name(None) is None
+
+        # 没有井号
+        assert parse_rotation_from_name("标题") is None
+
+        # 只有_a没有数字
+        assert parse_rotation_from_name("@标题#t_a") is None
+
+        # _a后跟非数字
+        assert parse_rotation_from_name("@标题#t_abc") is None
+
+    def test_parse_rotation_edge_cases(self):
+        """测试边界情况"""
+        # 零度旋转
+        assert parse_rotation_from_name("@标题#t_a0") == 0.0
+
+        # 极端角度
+        assert parse_rotation_from_name("@标题#t_a360") == 360.0
+        assert parse_rotation_from_name("@标题#t_a-360") == -360.0
+
+        # 小角度
+        assert parse_rotation_from_name("@标题#t_a0.5") == 0.5
+        assert parse_rotation_from_name("@标题#t_a-0.1") == -0.1
+
+    def test_rotation_layer_name_parsing(self):
+        """测试带旋转参数的图层名完整解析"""
+        # 旋转 + 居中
+        result = parse_layer_name("@标题#t_c_a15")
+        assert result is not None
+        assert result["type"] == "text"
+        assert result["name"] == "标题"
+        assert result["align"] == "center"
+
+        # 旋转 + 右对齐 + 段落
+        result = parse_layer_name("@内容#t_r_a30_p")
+        assert result is not None
+        assert result["type"] == "text"
+        assert result["name"] == "内容"
+        assert result["align"] == "right"
+        assert result["paragraph"] is True
 
 
 if __name__ == "__main__":
