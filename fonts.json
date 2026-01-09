@@ -1,0 +1,8 @@
+{
+  "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
+  "_usage": "键名为PSD文件前缀（不含扩展名和#后缀），值为字体文件名",
+  "_path_rules": "路径规则：字体文件必须位于 assets/fonts/ 目录，如 'AlibabaPuHuiTi-2-85-Bold.ttf'",
+  "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
+  "2": "AlibabaPuHuiTi-2-85-Bold.ttf",
+  "3": "AlimamaShuHeiTi-Bold.ttf"
+}

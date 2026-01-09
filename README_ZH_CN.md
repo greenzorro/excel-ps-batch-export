@@ -63,14 +63,24 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
         - 这些参数可以组合使用，如 `#t_c_a15`、`#t_r_p`
         - PSD里设置的对齐方向对结果没有影响，程序只认图层名
     - `#i`用电子表格中的路径对应的图片填充图片图层。
-    - 注意：
-        - 请勿使用cmd/ctrl+T缩放可变文本图层。只能通过字体大小属性调整其尺寸，否则脚本将从PSD文件中获取错误的字号。如果已经这么做了，请创建新的文本图层替换它们。
-        - 需要旋转的文字，只需在图层名中添加旋转参数。在PSD中文字图层保持水平平直放置，不要手动旋转，否则脚本可能无法正确读取图层的位置信息，导致输出位置偏移。
+    - PSD制作建议：
+        - 文本图层尺寸通过字体大小属性调整，避免使用自由变换（cmd/ctrl+T），以确保脚本正确读取字号
+        - 需要旋转的文字在PSD中保持水平放置，通过图层名参数（如 `#t_a15`）实现旋转效果
 3. 运行`xlsx_generator.py`。你的XLSX文件就创建完成了，所有的列都已准备好。
 4. 编辑XLSX文件。Python脚本默认读取第一张工作表，把你的数据放在这。也可以将数据放在另一张工作表中，并在第一张工作表中使用Excel公式读取和计算，特别适合切换图层可见性。请勿删除第一列`File_name`，留空会使用默认文件名格式（如image_1, image_2等）。
-5. 将模板所需的其他文件放入`assets`文件夹，包括字体、背景图像等。确保图片资源的路径与电子表格中的数据匹配。
+5. 将模板所需的其他文件放入`assets`文件夹，包括字体放在`assets/fonts/`目录、背景图像等。确保图片资源的路径与电子表格中的数据匹配。
+6. 配置字体文件（可选）。如果有多个PSD模板需要不同的字体，可以在项目根目录创建`fonts.json`文件为每个模板指定字体：
+   ```json
+   {
+     "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
+     "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
+     "2": "SourceHanSansCN-Medium.otf",
+     "产品": "CustomFont.ttf"
+   }
+   ```
+   键名为PSD文件前缀（第一个`#`之前的部分），值为`assets/fonts/`目录中的字体文件名。如未配置，将使用默认字体`AlibabaPuHuiTi-2-85-Bold.ttf`。
 
-看起来非常复杂？相信我，用Photoshop做同样的事情要复杂得多。一旦设置完成，这将是你的救星。
+看起来非常复杂？相信我，用Photoshop做同样的事情要复杂得多。设置完成，你就高枕无忧了。
 
 ## 导出
 
@@ -104,17 +114,17 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 示例：
   - PSD文件：`活动#夏季版.psd`, `活动#冬季版.psd`
   - Excel文件：`活动.xlsx`
-  - 命令：`python psd_renderer.py 活动 AlibabaPuHuiTi-2-85-Bold.ttf jpg`
+  - 命令：`python psd_renderer.py 活动 jpg`
   - 输出：对于 `活动.xlsx` 中的每一行，生成两张图片：`image_1_夏季版.jpg`, `image_1_冬季版.jpg` 等（假设File_name列为空，否则使用File_name列的值）。
 
 ## 使用前提
 
 ### 安装依赖
 
-推荐使用 `requirements.txt` 文件安装所有依赖：
+使用 `requirements.txt` 文件安装所有依赖：
 
 ```bash
-pip install pillow pandas openpyxl psd-tools tqdm
+pip install -r requirements.txt
 ```
 
 ## 使用说明
@@ -123,11 +133,13 @@ pip install pillow pandas openpyxl psd-tools tqdm
 
 ```bash
 # 基本命令格式
-python psd_renderer.py [Excel文件前缀] [字体文件] [输出格式]
+python psd_renderer.py [Excel文件前缀] [输出格式]
 
 # 示例
-python psd_renderer.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
+python psd_renderer.py 1 jpg
 ```
+
+**说明**：字体文件通过项目根目录的`fonts.json`配置。如未配置，将使用默认字体`assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
 
 ## 感谢
 

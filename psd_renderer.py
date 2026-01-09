@@ -13,19 +13,31 @@ from psd_tools import PSDImage
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import sys
-import csv
 from datetime import datetime
 import re
-from typing import Set, List, Tuple, Dict
+import json
+from typing import Set, List, Tuple, Dict, Optional
 from tqdm import tqdm
 
 # 全局变量存储错误和警告
 validation_errors = []
 validation_warnings = []
 
+# 字体配置全局变量
+fonts_config: Dict[str, str] = {}
+DEFAULT_FONT = 'assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf'
+
+# 模块级配置变量
+file_name = None
+image_format = None
+quality = 95
+current_datetime = ''
+output_path = 'export'
+excel_file_path = None
+
 def safe_print_message(message):
     """安全打印消息，处理Windows控制台编码问题
-    
+
     :param str message: 要打印的消息
     """
     try:
@@ -35,17 +47,98 @@ def safe_print_message(message):
         safe_message = message.encode('ascii', errors='replace').decode('ascii')
         print(safe_message)
 
-# 作为模块导入时的默认值
-file_name = None
-font_file = None
-image_format = None
-quality = 95
-optimize = False
-current_datetime = ''
-output_path = 'export'
-excel_file_path = None
-psd_file_path = None
-text_font = None
+def load_fonts_config():
+    """加载字体配置文件
+
+    :return dict: 字体配置字典 {psd_prefix: font_file_name}
+    """
+    global fonts_config
+    config_path = 'fonts.json'
+
+    if not os.path.exists(config_path):
+        safe_print_message(f"警告：字体配置文件不存在: {config_path}")
+        safe_print_message(f"  将使用默认字体: {DEFAULT_FONT}")
+        return {}
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+
+        # 过滤掉注释字段（以 _ 开头的键）
+        fonts_config = {k: v for k, v in config.items() if not k.startswith('_')}
+        safe_print_message(f"已加载字体配置: {len(fonts_config)} 个PSD模板")
+        return fonts_config
+    except json.JSONDecodeError as e:
+        safe_print_message(f"错误：字体配置文件格式错误: {e}")
+        safe_print_message(f"  将使用默认字体: {DEFAULT_FONT}")
+        return {}
+    except Exception as e:
+        safe_print_message(f"错误：加载字体配置失败: {e}")
+        safe_print_message(f"  将使用默认字体: {DEFAULT_FONT}")
+        return {}
+
+def get_psd_prefix(psd_file_name: str) -> str:
+    """从 PSD 文件名提取前缀
+
+    :param str psd_file_name: PSD 文件名，如 "1#海报.psd" 或 "2.psd"
+    :return str: PSD 前缀，如 "1" 或 "2"
+
+    Examples:
+        >>> get_psd_prefix("1#海报.psd")
+        "1"
+        >>> get_psd_prefix("2.psd")
+        "2"
+        >>> get_psd_prefix("产品#横版#v2.psd")
+        "产品"
+    """
+    # 去掉扩展名
+    name_without_ext = os.path.splitext(psd_file_name)[0]
+
+    # 提取第一个 # 之前的部分作为前缀
+    if '#' in name_without_ext:
+        prefix = name_without_ext.split('#', 1)[0]
+    else:
+        prefix = name_without_ext
+
+    return prefix
+
+def get_font_for_psd(psd_file_name: str) -> str:
+    """根据 PSD 文件名获取对应的字体文件路径
+
+    :param str psd_file_name: PSD 文件名
+    :return str: 字体文件完整路径
+    :raises FileNotFoundError: 当字体文件不存在时抛出异常
+
+    优先级：
+    1. fonts.json 中配置的字体
+    2. 默认字体 DEFAULT_FONT（仅当配置不存在时，配置存在但文件不存在则报错）
+    """
+    global fonts_config
+
+    # 提取 PSD 前缀
+    psd_prefix = get_psd_prefix(psd_file_name)
+
+    # 从配置中查找字体
+    if psd_prefix in fonts_config:
+        font_file_name = fonts_config[psd_prefix]
+        # 拼接完整路径（字体文件必须位于 assets/fonts/ 目录）
+        font_path = os.path.join('assets/fonts', font_file_name)
+
+        # 检查字体文件是否存在
+        if not os.path.exists(font_path):
+            raise FileNotFoundError(
+                f"错误：字体配置文件中指定的字体不存在: {font_path}\n"
+                f"  PSD前缀: {psd_prefix}\n"
+                f"  配置的字体: {font_file_name}\n"
+                f"  请检查 fonts.json 配置或添加字体文件到 assets/fonts/ 目录"
+            )
+
+        safe_print_message(f"  [{psd_prefix}] 使用字体: {font_file_name}")
+        return font_path
+
+    # 未找到配置，使用默认字体
+    safe_print_message(f"  [{psd_prefix}] 未配置字体，使用默认字体: {DEFAULT_FONT}")
+    return DEFAULT_FONT
 
 def read_excel_file(file_path):
     """读取Excel文件
@@ -57,7 +150,7 @@ def read_excel_file(file_path):
     """
     if not os.path.exists(file_path):
         # 处理Windows路径编码问题
-        # 使用ASCII编码确保路径在Windows控制台正确显示
+        # 使用ASCII编码处理路径，在Windows控制台正确显示
         try:
             # 尝试直接显示路径
             error_msg = f"Excel文件不存在: {file_path}"
@@ -133,74 +226,39 @@ def get_font_color(font_info):
         b = argb_color[3]
         a = argb_color[0]
         font_color = (r, g, b, a)
-        font_color = tuple(int(c * 255) for c in font_color)  # 确保颜色值为整数
+        font_color = tuple(int(c * 255) for c in font_color)  # 转换为 0-255 范围的整数值
     else:
         # 如果没有 'FillColor'，使用默认颜色
         font_color = (0, 0, 0, 255)  # 默认黑色
     return font_color
 
-def calculate_text_position(text, layer_width, font_size, alignment):
+def calculate_text_position(text, layer_width, font_size, alignment, draw, font):
     """计算单行文字位置
 
     :param str text: 文字内容
     :param int layer_width: 图层宽度
     :param int font_size: 字体大小
     :param str alignment: 对齐方式 ('left', 'center', 'right')
+    :param draw: ImageDraw 对象（用于获取精确度量）
+    :param font: 字体对象
     :return tuple: 文字位置 (x, y)
     :raises ValueError: 当参数无效时抛出异常
     """
     # 参数验证
     if font_size <= 0:
         raise ValueError(f"字体大小必须大于0，当前值: {font_size}")
-    
+
     if layer_width < 0:
         raise ValueError(f"图层宽度不能为负数，当前值: {layer_width}")
-    
+
     if alignment not in ['left', 'center', 'right']:
         raise ValueError(f"对齐方式必须是 'left', 'center', 或 'right'，当前值: {alignment}")
-    
-    # 使用Pillow的字体度量功能获取精确的文本宽度
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-        
-        # 创建一个临时图像来计算文本宽度
-        temp_image = Image.new('RGB', (1, 1))
-        draw = ImageDraw.Draw(temp_image)
-        
-        # 尝试加载字体，如果失败则使用默认字体
-        try:
-            # 使用相对路径的默认字体
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            font_path = os.path.join(script_dir, 'assets', 'fonts', 'AlibabaPuHuiTi-2-85-Bold.ttf')
-            
-            if os.path.exists(font_path):
-                font = ImageFont.truetype(font_path, font_size)
-            else:
-                # 如果默认字体不存在，使用Pillow的默认字体
-                font = ImageFont.load_default()
-        except (OSError, IOError):
-            # 字体加载失败，使用默认字体
-            font = ImageFont.load_default()
-        
-        # 使用textbbox获取精确的文本边界框
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[2] - bbox[0]  # 右边界 - 左边界
-        
-    except ImportError:
-        # 如果PIL不可用，回退到原始算法（改进版）
-        text_width = 0
-        for char in text:
-            if '\u4e00' <= char <= '\u9fff':  # 判断是否为中文字符
-                text_width += font_size * 0.9  # 更准确的中文字符宽度估算
-            elif char.isdigit():
-                text_width += font_size * 0.6  # 数字字符宽度
-            elif char in 'iIl1':  # 窄字符
-                text_width += font_size * 0.3
-            elif char in 'mwMW':  # 宽字符
-                text_width += font_size * 0.8
-            else:
-                text_width += font_size * 0.5  # 普通英文字符
-    
+
+    # 使用textbbox获取精确的文本边界框
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]  # 右边界 - 左边界
+    bbox_top = bbox[1]  # top 值（通常是负数）
+
     # 计算位置
     if alignment == 'center':  # 计算居中位置
         x_position = (layer_width - text_width) / 2
@@ -208,11 +266,39 @@ def calculate_text_position(text, layer_width, font_size, alignment):
         x_position = layer_width - text_width
     else:  # 计算左对齐位置
         x_position = 0
-    
-    # 修正文字位置偏移（基于实际测试调整）
-    x_offset = font_size * 0.01
-    y_offset = font_size * 0.26
-    return x_position - x_offset, -y_offset
+
+    # 通用修正：用 top 值修正 y 坐标
+    # top 是负数，所以 -bbox_top 是正数，相当于向下偏移
+    y_position = -bbox_top
+
+    return x_position, y_position
+
+def parse_rotation_from_name(layer_name: str):
+    """从图层名解析旋转角度
+
+    :param str layer_name: 图层名称，如 "@标题#t_a15"
+    :return float|None: 旋转角度（度数），无旋转参数返回 None
+
+    Examples:
+        >>> parse_rotation_from_name("@标题#t_a15")
+        15.0
+        >>> parse_rotation_from_name("@标题#t_a-30")
+        -30.0
+        >>> parse_rotation_from_name("@标题#t")
+        None
+    """
+    if not layer_name:
+        return None
+
+    # 匹配 _a 后跟数字（可带负号和小数）
+    match = re.search(r'_a(-?\d+(?:\.\d+)?)', layer_name)
+    if match:
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+
+    return None
 
 def preprocess_text(text_content):
     """预处理文本内容，在写入图片前进行统一清理
@@ -247,50 +333,31 @@ def preprocess_text(text_content):
 
     return text_content
 
-def parse_rotation_from_name(layer_name: str):
-    """从图层名解析旋转角度
-
-    :param str layer_name: 图层名称，如 "@标题#t_a15"
-    :return float|None: 旋转角度（度数），无旋转参数返回 None
-
-    Examples:
-        >>> parse_rotation_from_name("@标题#t_a15")
-        15.0
-        >>> parse_rotation_from_name("@标题#t_a-30")
-        -30.0
-        >>> parse_rotation_from_name("@标题#t")
-        None
-    """
-    if not layer_name:
-        return None
-
-    # 匹配 _a 后跟数字（可带负号和小数）
-    match = re.search(r'_a(-?\d+(?:\.\d+)?)', layer_name)
-    if match:
-        try:
-            return float(match.group(1))
-        except ValueError:
-            return None
-
-    return None
-
 def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf'):
-    """更新文字图层内容（支持旋转参数）
+    """更新文字图层内容
+
+    支持文本对齐、段落换行、文字旋转等功能。
 
     :param PSDLayer layer: PSD文字图层
     :param str text_content: 新的文字内容
     :param PIL.Image pil_image: PIL图像对象
     :param str text_font: 字体文件路径
 
-    支持的旋转参数：
-    - @变量名#t_a[角度] - 旋转指定角度
-    - 例如：@标题#t_a15 旋转 15 度
+    图层命名规则：
+    - @变量名#t - 基本文本替换
+    - @变量名#t_c - 水平居中对齐
+    - @变量名#t_r - 水平右对齐
+    - @变量名#t_a[角度] - 旋转指定角度（如 _a15 旋转15°，_a-30 逆时针30°）
+    - @变量名#t_p - 段落文本（自动换行）
+    - @变量名#t_pm - 段落垂直居中
+    - @变量名#t_pb - 段落垂直底部
+    - 参数可组合使用，如 @标题#t_c_a15（居中+旋转15°）
     """
     import os
     # 预处理文本内容，统一清理空白字符
     text_content = preprocess_text(text_content)
 
-    # 确保字体路径相对于脚本所在目录
+    # 处理字体路径：相对路径转换为绝对路径
     if not os.path.isabs(text_font):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         text_font = os.path.join(script_dir, text_font)
@@ -308,19 +375,19 @@ def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/Al
 
     # 根据是否有旋转决定绘制策略
     if rotation_angle is not None:
-        # 有旋转：创建足够大的临时画布
-        # 计算实际文字尺寸，确保绘制区域足够大
+        # 有旋转：创建带 padding 的临时画布
+        # 计算实际文字尺寸，用于确定绘制区域大小
         temp_img = Image.new('RGB', (1, 1))
         temp_draw = ImageDraw.Draw(temp_img)
         text_bbox = temp_draw.textbbox((0, 0), text_content, font=font)
         actual_text_width = text_bbox[2] - text_bbox[0]
         actual_text_height = text_bbox[3] - text_bbox[1]
 
-        # 使用实际文字尺寸和图层尺寸的较大值
+        # 使用实际文字尺寸和图层尺寸的较大值作为绘制区域尺寸
         draw_width = max(layer_width, actual_text_width)
         draw_height = max(layer_height, actual_text_height)
 
-        # 固定 500px padding，确保旋转后文字不会被裁剪
+        # 添加 500px padding，旋转后文字有足够空间
         padding = 500
         padded_width = draw_width + 2 * padding
         padded_height = draw_height + 2 * padding
@@ -354,8 +421,15 @@ def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/Al
         else:
             wrapped_text = textwrap.fill(text_content, width=round(current_width / font_size) * 2)
         lines = wrapped_text.split('\n')
-        x_position, y_position_line = calculate_text_position(text_content, current_width, font_size, alignment)
-        y_position_line += offset_y
+
+        # 设置段落文本起始Y坐标
+        # 旋转情况：从 padding 位置开始，对称 padding 使文字居中于临时画布
+        # 非旋转情况：从图层 offset 开始
+        if rotation_angle is not None:
+            y_position_line = padding
+        else:
+            y_position_line = offset_y
+
         # 计算段落文本的总高度
         total_height = len(lines) * font_size * 1.2 - font_size * 0.2
         # 根据垂直对齐方式调整y_position_line
@@ -363,14 +437,15 @@ def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/Al
             y_position_line += (current_height - total_height) / 2
         elif '_pb' in layer.name:
             y_position_line += current_height - total_height
+
         # 逐行绘制
         for line in lines:
-            x_position, y_position = calculate_text_position(line, current_width, font_size, alignment)
-            draw.text((offset_x + x_position, y_position_line), line, fill=font_color, font=font)
+            x_position, y_position = calculate_text_position(line, current_width, font_size, alignment, draw, font)
+            draw.text((offset_x + x_position, y_position_line + y_position), line, fill=font_color, font=font)
             y_position_line += font_size * 1.2  # 1.2倍行距
     else:
         # 单行文本处理
-        x_position, y_position = calculate_text_position(text_content, current_width, font_size, alignment)
+        x_position, y_position = calculate_text_position(text_content, current_width, font_size, alignment, draw, font)
         draw.text((offset_x + x_position, offset_y + y_position), text_content, fill=font_color, font=font)
 
     # 如果有旋转，旋转临时画布并合成到主画布
@@ -379,16 +454,18 @@ def update_text_layer(layer, text_content, pil_image, text_font='assets/fonts/Al
         # expand=True 会自动扩展画布以容纳旋转后的内容
         rotated_image = target_image.rotate(-rotation_angle, resample=Image.BICUBIC, expand=True)
 
-        # 计算合成位置：让旋转后图像的中心对齐到图层在主画布上的中心
-        # 由于文字区域中心 = 临时画布中心，旋转后文字中心 = 旋转后图像中心
-        # 注意：这里使用 draw_width 和 draw_height 计算中心，因为实际绘制区域可能更大
-        layer_center_x = layer.offset[0] + draw_width / 2
-        layer_center_y = layer.offset[1] + draw_height / 2
+        # 计算合成位置
+        # 旋转原理：文字在临时画布中心（padding对称），旋转后文字仍在旋转画布中心
+        # 合成策略：将旋转画布中心对齐到 PSD 图层中心
+        # 图层中心坐标基于 layer.offset 和 layer 的实际尺寸
+        layer_center_x = layer.offset[0] + layer_width / 2
+        layer_center_y = layer.offset[1] + layer_height / 2
         rotated_center_x = rotated_image.width / 2
         rotated_center_y = rotated_image.height / 2
 
-        composite_x = int(layer_center_x - rotated_center_x)
-        composite_y = int(layer_center_y - rotated_center_y)
+        # 旋转画布中心对齐到图层中心
+        composite_x = int(round(layer_center_x - rotated_center_x))
+        composite_y = int(round(layer_center_y - rotated_center_y))
 
         # 将旋转后的图像合成到主画布
         pil_image.alpha_composite(rotated_image, (composite_x, composite_y))
@@ -409,7 +486,7 @@ def update_image_layer(layer, new_image_path, pil_image):
         print(f"Warning: Image file {new_image_path} does not exist")
 
 def sanitize_filename(filename):
-    """清理文件名中的非法字符，确保跨平台兼容性
+    """清理文件名中的非法字符，实现跨平台兼容
 
     :param str filename: 原始文件名
     :return str: 清理后的文件名
@@ -466,13 +543,14 @@ def save_image(output_dir, output_filename, image_format, pil_image):
         rgb_image.save(final_output_path, quality=quality, optimize=optimize)
     print(f"已导出图片: {final_output_path}")
 
-def export_single_image(row, index, psd_object, psd_file_name):
+def export_single_image(row, index, psd_object, psd_file_name, font):
     """处理单行数据并导出图像（单进程串行版本）
 
     :param pd.Series row: 包含单行数据的Series
     :param int index: 当前行索引
     :param PSDImage psd_object: 预加载的PSD对象
     :param str psd_file_name: PSD文件名（用于输出文件名）
+    :param str font: 字体文件路径
     """
     pil_image = Image.new('RGBA', psd_object.size)
 
@@ -489,7 +567,7 @@ def export_single_image(row, index, psd_object, psd_file_name):
                         set_layer_visibility(layer, visibility)
                     # 修改文字图层内容
                     elif operation_type.startswith('t'):
-                        update_text_layer(layer, str(row[field_name]), pil_image, text_font)
+                        update_text_layer(layer, str(row[field_name]), pil_image, font)
                     # 修改图片图层内容
                     elif operation_type.startswith('i'):
                         update_image_layer(layer, str(row[field_name]), pil_image)
@@ -530,7 +608,7 @@ def export_single_image(row, index, psd_object, psd_file_name):
 
     base_filename = row.iloc[0] if pd.notna(row.iloc[0]) else f"image_{index + 1}"
     output_filename = f"{base_filename}{suffix}"
-    # 清理文件名中的非法字符，确保跨平台兼容性
+    # 清理文件名中的非法字符，实现跨平台兼容
     output_filename = sanitize_filename(output_filename)
     save_image(output_path, output_filename, image_format, pil_image)
 
@@ -567,7 +645,7 @@ def collect_psd_variables(psd_file_path: str) -> Set[str]:
     # 检查文件是否存在
     if not os.path.exists(psd_file_path):
         # 处理Windows路径编码问题
-        # 使用ASCII编码确保路径在Windows控制台正确显示
+        # 使用ASCII编码处理路径，在Windows控制台正确显示
         try:
             # 尝试直接显示路径
             error_msg = f"PSD文件不存在: {psd_file_path}"
@@ -740,7 +818,7 @@ def log_export_activity(excel_file, image_count):
     # 检查日志文件是否存在
     file_exists = os.path.exists(log_file)
 
-    # 使用简单的字符串写入确保跨平台兼容性
+    # 使用简单的字符串写入，实现跨平台兼容
     with open(log_file, 'a', encoding='utf-8') as f:
         # 如果文件不存在，写入表头
         if not file_exists:
@@ -753,14 +831,11 @@ def log_export_activity(excel_file, image_count):
 def psd_renderer_images():
     """批量输出图片
     """
-    # ========== 调试代码开始 ==========
-    print("="*50)
-    print(f"Excel文件: {excel_file_path}")
-    matching_psds = get_matching_psds(excel_file_path)
-    print(f"匹配PSD: {matching_psds}")
-    # ========== 调试代码结束 ==========
-    
+    # 加载字体配置
+    load_fonts_config()
+
     # 读取Excel数据
+    matching_psds = get_matching_psds(excel_file_path)
     df = read_excel_file(excel_file_path)
     
     # 数据验证
@@ -804,10 +879,13 @@ def psd_renderer_images():
     with tqdm(total=total_images, desc="正在导出图片", unit="张") as pbar:
         for psd_file in matching_psds:
             if psd_objects[psd_file] is not None:
+                # 获取当前 PSD 的字体
+                psd_font = get_font_for_psd(psd_file)
+
                 for index, row in df.iterrows():
                     try:
-                        # 使用原有的串行函数
-                        export_single_image(row, index, psd_objects[psd_file], psd_file)
+                        # 传递字体参数
+                        export_single_image(row, index, psd_objects[psd_file], psd_file, psd_font)
                         success_count += 1
                     except Exception as e:
                         error_count += 1
@@ -862,25 +940,23 @@ if __name__ == "__main__":
     # 切换到脚本所在目录
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
-    
+
     # 设置项
-    if len(sys.argv) < 4:
-        print("用法: python batch_export.py [Excel文件前缀] [字体文件] [输出格式]")
-        print("示例: python batch_export.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg")
+    if len(sys.argv) < 3:
+        print("用法: python psd_renderer.py [模板名] [输出格式]")
+        print("示例: python psd_renderer.py 1 jpg")
+        print("\n字体配置请使用项目根目录的 fonts.json 文件")
         sys.exit(1)
-    
+
     file_name = sys.argv[1]  # 从命令行参数获取使用第几套数据和模版
-    font_file = sys.argv[2]  # 从命令行参数获取字体文件
-    image_format = sys.argv[3]  # 从命令行参数获取输出图片格式
-    
+    image_format = sys.argv[2]  # 从命令行参数获取输出图片格式
+
     quality = 95
     optimize = False
-    
+
     # 文件路径
     output_path = 'export'
     excel_file_path = f'{file_name}.xlsx'
-    psd_file_path = f'{file_name}.psd'
-    text_font = font_file
 
     # 批量输出图片
     current_datetime = datetime.now().strftime('%Y%m%d_%H%M%S')

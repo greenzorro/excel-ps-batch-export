@@ -68,7 +68,6 @@ excel-ps-batch-export/
 
 **组合参数**：
 - 旋转参数可与对齐参数组合使用（如 `_c`、`_r`、`_p`）
-- `_a` 用于旋转，`_r` 用于右对齐，不会冲突
 
 **技术实现**：
 - 创建图层尺寸的临时画布 → 绘制文字 → 旋转 → 中心对齐合成
@@ -115,6 +114,7 @@ excel-ps-batch-export/
 - **PSD预加载**：一次性加载所有PSD模板，避免重复IO操作
 - **单进程串行处理**：使用简单for循环逐个处理，代码简单可靠
 - **文本渲染**：通过Pillow实现高质量的文本绘制，支持中英文混合
+- **文字定位修正**：使用`textbbox`的top值自动修正不同字体的垂直偏移，确保Pillow渲染的文字位置与PSD原始位置一致
 - **图像合成**：使用`alpha_composite`实现精确的图层合成
 - **Excel自动化**：使用xlwings实现Excel公式强制重新计算，确保数据正确显示
 - **剪贴板数据解析**：智能识别制表符和逗号分隔格式，自动转换为DataFrame
@@ -133,12 +133,13 @@ excel-ps-batch-export/
 2. **命名变量图层**：按照`@变量名#操作符`规则重命名需要动态修改的图层
 3. **生成Excel配置**：运行`python xlsx_generator.py`生成Excel配置文件
 4. **准备资源**：将字体文件放入`assets/fonts`目录
+5. **配置字体**：在项目根目录创建或编辑 `fonts.json` 文件，为每个PSD模板前缀指定字体
 
 ### 6.2 批量导出
 ```bash
 # 手动导出
-python psd_renderer.py [模板名] [字体文件] [格式]
-# 示例：python psd_renderer.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
+python psd_renderer.py [模板名] [格式]
+# 示例：python psd_renderer.py 1 jpg
 
 # 自动监控导出
 python file_monitor.py
@@ -235,6 +236,46 @@ python clipboard_importer.py
 - `  leading spaces  ` → `leading spaces`
 - `file:name` → `file_name`
 
+### 6.8 字体配置规则
+
+**fonts.json 配置文件：**
+- 字体配置通过项目根目录的 `fonts.json` 文件管理
+- 每个 PSD 模板前缀可以配置独立的字体
+- 字体文件必须位于 `assets/fonts/` 目录
+
+**配置格式：**
+```json
+{
+  "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
+  "_usage": "键名为PSD文件前缀（不含扩展名和#后缀），值为字体文件名",
+  "_path_rules": "字体文件必须位于 assets/fonts/ 目录",
+  "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
+  "2": "SourceHanSansCN-Medium.otf",
+  "产品": "CustomFont.ttf"
+}
+```
+
+**配置说明：**
+- 键名：PSD 文件前缀（不含扩展名和 # 后缀）
+- 值：字体文件名（不含路径）
+- 注释字段：以 `_` 开头的键会被自动过滤
+
+**字体选择逻辑：**
+1. 优先使用 `fonts.json` 中配置的字体
+2. 如果配置存在但字体文件不存在，抛出错误终止程序
+3. 如果 PSD 前缀未配置，使用默认字体（警告提示）
+4. 如果 `fonts.json` 不存在，使用默认字体（警告提示）
+
+**多模板示例：**
+```
+PSD文件：1#海报.psd、1#方图.psd、2#卡片.psd
+fonts.json配置：
+{
+  "1": "AlibabaPuHuiTi-2-85-Bold.ttf",  # 1#*.psd 系列使用此字体
+  "2": "SourceHanSansCN-Medium.otf"     # 2#*.psd 系列使用此字体
+}
+```
+
 ## 7. 测试套件
 
 项目包含完整的测试套件，确保代码质量和功能稳定性。测试套件位于`tests/`目录。
@@ -248,7 +289,7 @@ python clipboard_importer.py
 ### 8.1 验证内容
 - **列名匹配**：检查Excel列名与PSD变量的一致性
 - **文件路径**：验证图片资源文件是否存在
-- **数据完整性**：确保必需变量都有对应数据
+- **数据完整性**：验证必需变量是否都有对应数据
 
 ### 8.2 错误报告
 - **详细错误信息**：指出具体的错误位置和原因

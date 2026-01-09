@@ -261,10 +261,10 @@ class TestEnvironment:
         self.original_argv = None
         self.original_cwd = None
     
-    def setup_psd_renderer_args(self, file_name='test', font_file='test.ttf', image_format='jpg'):
+    def setup_psd_renderer_args(self, file_name='test', image_format='jpg'):
         """设置psd_renderer.py的命令行参数"""
         self.original_argv = sys.argv.copy()
-        sys.argv = ['psd_renderer.py', file_name, font_file, image_format]
+        sys.argv = ['psd_renderer.py', file_name, image_format]
     
     def restore_argv(self):
         """恢复原始命令行参数"""

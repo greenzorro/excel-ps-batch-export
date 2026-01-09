@@ -267,22 +267,12 @@ class TestPSDRendererIntegration:
     """Test PSD renderer integration functionality"""
 
     @patch('clipboard_importer.subprocess.run')
-    @patch('clipboard_importer.os.path.exists')
     @patch('clipboard_importer.os.listdir')
     @patch('clipboard_importer.safe_print_message')
-    def test_run_psd_renderer_success(self, mock_print, mock_listdir, mock_exists, mock_run):
+    def test_run_psd_renderer_success(self, mock_print, mock_listdir, mock_run):
         """Test successful PSD renderer execution"""
-        # Setup mocks
-        mock_exists.return_value = True
-        # Mock listdir to return both font files and PSD files
-        def listdir_side_effect(path):
-            if path == 'assets/fonts':
-                return ['alibaba_font.ttf', 'other_font.ttf']
-            elif path == '.':
-                return ['test#1.psd', 'test#2.psd']
-            else:
-                return []
-        mock_listdir.side_effect = listdir_side_effect
+        # Mock listdir to return PSD files
+        mock_listdir.return_value = ['test#1.psd', 'test#2.psd']
         mock_run.return_value = Mock(returncode=0, stdout='', stderr='')
 
         # Test function
@@ -293,69 +283,13 @@ class TestPSDRendererIntegration:
         mock_run.assert_called_once()
         mock_print.assert_called()
 
-    @patch('clipboard_importer.os.path.exists')
+    @patch('clipboard_importer.subprocess.run')
     @patch('clipboard_importer.os.listdir')
     @patch('clipboard_importer.safe_print_message')
-    def test_run_psd_renderer_no_fonts_dir(self, mock_print, mock_listdir, mock_exists):
-        """Test PSD renderer when fonts directory doesn't exist"""
-        # Setup mocks
-        def exists_side_effect(path):
-            if path == 'assets/fonts':
-                return False
-            else:
-                return True
-        mock_exists.side_effect = exists_side_effect
+    def test_run_psd_renderer_failure(self, mock_print, mock_listdir, mock_run):
+        """Test PSD renderer execution failure"""
         # Mock listdir to return PSD files
         mock_listdir.return_value = ['test#1.psd', 'test#2.psd']
-
-        # Test function
-        result = clipboard_importer.run_psd_renderer('test.xlsx')
-
-        # Verify result
-        assert result == False
-        mock_print.assert_called_with("警告: 字体目录不存在: assets/fonts")
-
-    @patch('clipboard_importer.os.path.exists')
-    @patch('clipboard_importer.os.listdir')
-    @patch('clipboard_importer.safe_print_message')
-    def test_run_psd_renderer_no_font_files(self, mock_print, mock_listdir, mock_exists):
-        """Test PSD renderer when no font files are found"""
-        # Setup mocks
-        mock_exists.return_value = True
-        # Mock listdir to return PSD files but no font files
-        def listdir_side_effect(path):
-            if path == 'assets/fonts':
-                return []
-            elif path == '.':
-                return ['test#1.psd', 'test#2.psd']
-            else:
-                return []
-        mock_listdir.side_effect = listdir_side_effect
-
-        # Test function
-        result = clipboard_importer.run_psd_renderer('test.xlsx')
-
-        # Verify result
-        assert result == False
-        mock_print.assert_called_with("警告: 未找到字体文件")
-
-    @patch('clipboard_importer.subprocess.run')
-    @patch('clipboard_importer.os.path.exists')
-    @patch('clipboard_importer.os.listdir')
-    @patch('clipboard_importer.safe_print_message')
-    def test_run_psd_renderer_failure(self, mock_print, mock_listdir, mock_exists, mock_run):
-        """Test PSD renderer execution failure"""
-        # Setup mocks
-        mock_exists.return_value = True
-        # Mock listdir to return both font files and PSD files
-        def listdir_side_effect(path):
-            if path == 'assets/fonts':
-                return ['alibaba_font.ttf']
-            elif path == '.':
-                return ['test#1.psd', 'test#2.psd']
-            else:
-                return []
-        mock_listdir.side_effect = listdir_side_effect
         mock_run.return_value = Mock(returncode=1, stdout='Error output', stderr='Error details')
 
         # Test function

@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## 🎯 Test Suite Status
 
-**✅ All 173 tests passing (100% success rate)**
+**✅ All 188 tests passing (100% success rate)**
 
-**Last Updated**: 2026-01-08
+**Last Updated**: 2026-01-09
 **Status**: All tests passing
 
 ## Test Files Description
@@ -18,6 +18,13 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Excel operation validation tests
   - File structure integrity tests
   - Dependency package functionality tests
+
+- **test_font_config.py** - Font configuration system tests
+  - fonts.json loading tests (normal, missing file, invalid JSON)
+  - PSD prefix extraction tests
+  - Font path retrieval tests (configured, default, error handling)
+  - Comment field filtering tests
+  - Integration tests with real files
 
 - **test_business_logic.py** - Business logic tests
   - Advanced layer parsing tests
@@ -139,6 +146,22 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Required dependency package installation checks
 - [x] psd-tools library functionality verification
 
+#### Font Configuration Tests (test_font_config.py)
+- [x] Loading fonts.json with valid configuration
+- [x] Handling missing fonts.json file (uses default font)
+- [x] Handling invalid JSON format in fonts.json (uses default font)
+- [x] Filtering comment fields (keys starting with _)
+- [x] Extracting prefix from PSD filename with # separator
+- [x] Extracting prefix from PSD filename without # separator
+- [x] Extracting prefix from full file path
+- [x] Handling multiple # in filename (only first is considered)
+- [x] Getting configured font for PSD template
+- [x] Error when configured font file doesn't exist
+- [x] Using default font when PSD prefix not configured
+- [x] Multiple PSDs with same prefix use same font
+- [x] Default font fallback chain behavior
+- [x] Error message includes helpful details
+
 #### Business Logic Tests (test_business_logic.py)
 - [x] Advanced layer name parsing with complex parameters
 - [x] Excel data validation with various scenarios
@@ -175,12 +198,12 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 173
-- **Passed**: 173 (100%)
+- **Total Tests**: 188
+- **Passed**: 188 (100%)
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
-- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, and text rotation
+- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, text rotation, and font configuration system
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
 - **Architecture**: Single-process serial execution for optimal stability and simplicity
@@ -261,6 +284,7 @@ test/
 ├── README.md              # This document
 ├── run_tests.py           # Unified test runner script
 ├── test_simple.py         # Core functionality tests
+├── test_font_config.py    # Font configuration system tests
 ├── test_business_logic.py # Business logic tests
 ├── test_error_handling.py # Error handling tests
 ├── test_boundary_conditions.py # Boundary conditions tests
@@ -291,11 +315,12 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Results
 
-- **Total Tests**: 173
+- **Total Tests**: 188
 - **Pass Rate**: 100%
 - **Failed Tests**: 0
 - **Test Distribution**:
   - Core functionality (17 tests)
+  - Font configuration (17 tests)
   - Business logic (56 tests, including 8 rotation tests)
   - Error handling (18 tests)
   - Boundary conditions (6 tests)

@@ -68,7 +68,17 @@ For the first time, you'll need some basic setup:
         - For text that needs rotation, only add the rotation parameter in the layer name. Keep the text layer horizontal/straight in PSD, do not rotate it manually, otherwise the script may not be able to correctly read the layer's position information, causing the output to be misaligned.
 3. Run `xlsx_generator.py`. Your XLSX files will appear, with columns ready.
 4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first one to read and calculate everything. It's especially useful when you want to toggle layer visibility. DO NOT delete the first `File_name` column, leave it blank to use the default file name format(image_1, image_2, etc).
-5. Put everything else the templates need in `assets` folder, including fonts, background images, etc. Make sure the path to image assets match the data in the spreadsheet.
+5. Put everything else the templates need in `assets` folder, including fonts in `assets/fonts/`, background images, etc. Make sure the path to image assets match the data in the spreadsheet.
+6. Configure fonts in `fonts.json` (optional). If you have multiple PSD templates with different font requirements, create a `fonts.json` file in the project root to specify which font file each template should use:
+   ```json
+   {
+     "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
+     "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
+     "2": "SourceHanSansCN-Medium.otf",
+     "product": "CustomFont.ttf"
+   }
+   ```
+   The key is the PSD file prefix (part before the first `#`), and the value is the font filename in `assets/fonts/`. If not configured, the default font `AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
 
 Looks complicated huh? Trust me, it's way more complicated doing the same thing using Photoshop. And once you've done setting up, this would be your life saver.
 
@@ -104,17 +114,17 @@ This tool supports processing multiple PSD templates with one Excel file. Here's
 Example:
   - PSD files: `campaign#summer.psd`, `campaign#winter.psd`
   - Excel file: `campaign.xlsx`
-  - Command: `python psd_renderer.py campaign AlibabaPuHuiTi-2-85-Bold.ttf jpg`
+  - Command: `python psd_renderer.py campaign jpg`
   - Output: For each row in `campaign.xlsx`, two images are generated: `image_1_summer.jpg`, `image_1_winter.jpg`, etc. (assuming File_name column is empty, otherwise uses the File_name value)
 
 ## Prerequisite
 
 ### Install Dependencies
 
-It's recommended to use the `requirements.txt` file to install all dependencies:
+Install all required dependencies using the `requirements.txt` file:
 
 ```bash
-pip install pillow pandas openpyxl psd-tools tqdm
+pip install -r requirements.txt
 ```
 
 ### Testing
@@ -132,7 +142,7 @@ python -m pytest tests/test_simple.py -v
 python tests/run_tests.py coverage
 ```
 
-**Test Coverage**: 173 tests covering core functionality, business logic, error handling, boundary conditions, performance scenarios, and text rotation with strict validation standards.
+**Test Coverage**: 188 tests covering core functionality, business logic, error handling, boundary conditions, performance scenarios, text rotation, font configuration system, and platform compatibility with strict validation standards.
 
 ## Usage Guide
 
@@ -140,11 +150,13 @@ python tests/run_tests.py coverage
 
 ```bash
 # Basic command format
-python psd_renderer.py [Excel_file_prefix] [font_file] [output_format]
+python psd_renderer.py [Excel_file_prefix] [output_format]
 
 # Example
-python psd_renderer.py 1 AlibabaPuHuiTi-2-85-Bold.ttf jpg
+python psd_renderer.py 1 jpg
 ```
+
+**Note**: Font files are configured via `fonts.json` in the project root. If not configured, the default font `assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
 
 ## Thanks
 
