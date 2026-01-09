@@ -8,7 +8,6 @@ Description: 监控数据文件并自动执行批量图片输出
 '''
 
 # 设置项
-font_file = 'AlibabaPuHuiTi-2-85-Bold.ttf'
 image_format = 'jpg'  # jpg/png
 
 import os
@@ -31,7 +30,7 @@ async def monitor_excel_file(excel_file_path, psd_files):
         current_modified_time = os.path.getmtime(excel_file_path)
         if current_modified_time != last_modified_time:
             print(f"{excel_file_path} 文件已被修改，正在执行 psd_renderer.py...")
-            subprocess.run([sys.executable, 'psd_renderer.py', str(os.path.splitext(excel_file_path)[0]), font_file, image_format])
+            subprocess.run([sys.executable, 'psd_renderer.py', str(os.path.splitext(excel_file_path)[0]), image_format])
             last_modified_time = current_modified_time
             print(f"正在监控数据文件……")
 

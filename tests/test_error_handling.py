@@ -26,7 +26,7 @@ from test_utils import TestEnvironment
 
 # 使用测试环境管理器处理sys.argv依赖
 test_env = TestEnvironment()
-test_env.setup_psd_renderer_args('test', 'test_font.ttf', 'jpg')
+test_env.setup_psd_renderer_args('test', 'jpg')
 
 # 导入需要测试的函数
 from psd_renderer import (

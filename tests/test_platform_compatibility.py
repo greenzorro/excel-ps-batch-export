@@ -63,7 +63,7 @@ class TestPlatformCompatibility:
         
         # 运行程序并检查输出编码
         result = subprocess.run([
-            sys.executable, script_path, "test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 检查是否有编码错误
@@ -85,7 +85,7 @@ class TestPlatformCompatibility:
         
         # 测试中文路径的处理
         result = subprocess.run([
-            sys.executable, script_path, "test", f"assets/fonts/{chinese_font_name}", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 不应该因为路径编码问题而崩溃
@@ -98,7 +98,7 @@ class TestPlatformCompatibility:
         
         # 运行程序并检查输出中的特殊字符
         result = subprocess.run([
-            sys.executable, script_path, "test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 检查是否有特殊字符导致的编码问题
@@ -119,7 +119,7 @@ class TestPlatformCompatibility:
         
         # 测试带空格的路径
         result = subprocess.run([
-            sys.executable, script_path, "test", f"assets/fonts/{spaced_font_name}", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 不应该因为空格而崩溃
@@ -189,7 +189,7 @@ class TestPlatformCompatibility:
         
         # 故意使用不存在的文件来触发错误
         result = subprocess.run([
-            sys.executable, script_path, "test", "nonexistent_font.ttf", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 错误消息应该能够正确显示，不应该有编码问题
@@ -210,7 +210,7 @@ class TestPlatformCompatibility:
         
         # 运行程序并检查进度显示
         result = subprocess.run([
-            sys.executable, script_path, "test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 检查进度条相关的字符是否正确显示
@@ -259,7 +259,7 @@ class TestPlatformCompatibility:
         
         # 在特定环境下运行程序
         result = subprocess.run([
-            sys.executable, script_path, "test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace', env=test_env)
         
         # 环境变量不应该导致程序崩溃
@@ -290,7 +290,7 @@ class TestPlatformCompatibility:
         
         # 运行程序并检查输出缓冲
         result = subprocess.run([
-            sys.executable, script_path, "test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "test", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 检查输出是否完整

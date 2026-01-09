@@ -86,7 +86,6 @@ class TestIntegration:
             sys.executable,
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "nonexistent",  # 不存在的文件名，应该会失败但不会崩溃
-            "test_font.ttf",
             "jpg"
         ], capture_output=True, text=True, timeout=30)
         
@@ -121,9 +120,9 @@ class TestIntegration:
         
         # 测试不同参数组合
         test_cases = [
-            ["test", "test.ttf", "jpg"],
-            ["test", "test.ttf", "png"],
-            ["long_name", "test.ttf", "jpg"],
+            ["test", "jpg"],
+            ["test", "png"],
+            ["long_name", "jpg"],
         ]
         
         for args in test_cases:
@@ -147,7 +146,6 @@ class TestIntegration:
             sys.executable,
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "test",
-            "./test.ttf",
             "jpg"
         ], capture_output=True, text=True, timeout=30)
         
@@ -155,12 +153,10 @@ class TestIntegration:
         assert "FileNotFoundError" in result.stderr or result.returncode != 0
         
         # 测试绝对路径
-        abs_font_path = os.path.abspath("test.ttf")
         result = subprocess.run([
             sys.executable,
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "test",
-            abs_font_path,
             "jpg"
         ], capture_output=True, text=True, timeout=30)
         
@@ -174,7 +170,6 @@ class TestIntegration:
             sys.executable,
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py"),
             "test",
-            "nonexistent_font.ttf",
             "jpg"
         ], capture_output=True, text=True, timeout=30)
         

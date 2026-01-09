@@ -15,7 +15,7 @@ Description:
 5. 清空从B2单元格开始的右下方所有区域
 6. 从B2单元格开始写入解析后的数据
 7. 支持文件选择退出功能（输入"q"退出或Ctrl+C中断）
-8. 自动运行PSD渲染器，使用阿里巴巴字体生成图片，实现数据导入到图片生成的一体化流程
+8. 自动运行PSD渲染器生成图片，实现数据导入到图片生成的一体化流程
 
 使用场景：
 - 快速将网页表格、其他软件表格数据导入到Excel中
@@ -38,13 +38,11 @@ import subprocess
 
 # ===== 配置项 =====
 # 渲染配置
-PREFERRED_FONT = 'alibaba'  # 优先使用的字体关键词
 DEFAULT_FORMAT = 'jpg'      # 默认输出格式
 RENDER_TIMEOUT = 300        # 渲染超时时间（秒）
 
 # 文件路径配置
-FONTS_DIR = os.path.join("assets", "fonts")  # 字体目录
-EXPORT_DIR = "export"                        # 输出目录
+EXPORT_DIR = "export"       # 输出目录
 
 def safe_print_message(message):
     """安全打印消息，处理Windows控制台编码问题
@@ -282,28 +280,15 @@ def run_psd_renderer(excel_file):
 
     # 查找匹配的PSD模板
     matching_psds = get_matching_psds(excel_file)
-    
+
     if not matching_psds:
         safe_print_message(f"警告: 未找到与 '{template_name}' 匹配的PSD模板文件")
         safe_print_message("请确保PSD文件命名格式为: [Excel前缀]#[后缀].psd")
         return False
-    
+
     safe_print_message(f"找到 {len(matching_psds)} 个匹配的PSD模板:")
     for i, psd_file in enumerate(matching_psds, 1):
         safe_print_message(f"  {i}. {psd_file}")
-
-    # 获取可用的字体文件
-    if not os.path.exists(FONTS_DIR):
-        safe_print_message(f"警告: 字体目录不存在: {FONTS_DIR}")
-        return False
-
-    font_files = [f for f in os.listdir(FONTS_DIR) if f.endswith(('.ttf', '.otf'))]
-    if not font_files:
-        safe_print_message("警告: 未找到字体文件")
-        return False
-
-    # 获取渲染配置
-    selected_font, selected_format = get_rendering_config(font_files)
 
     safe_print_message("正在自动启动PSD渲染器...")
 
@@ -312,8 +297,7 @@ def run_psd_renderer(excel_file):
         sys.executable,  # 使用当前Python解释器
         "psd_renderer.py",
         template_name,
-        selected_font,
-        selected_format
+        DEFAULT_FORMAT
     ]
 
     # 运行PSD渲染器（psd_renderer.py内部已处理所有异常）
@@ -322,7 +306,7 @@ def run_psd_renderer(excel_file):
     if result.returncode == 0:
         safe_print_message("\n✓ 图片渲染成功!")
         safe_print_message(f"输出目录: {EXPORT_DIR}/")
-        safe_print_message(f"输出格式: {selected_format}")
+        safe_print_message(f"输出格式: {DEFAULT_FORMAT}")
         safe_print_message(f"处理的PSD模板: {len(matching_psds)} 个")
         return True
     else:
@@ -332,29 +316,6 @@ def run_psd_renderer(excel_file):
         if result.stderr:
             safe_print_message(f"错误: {result.stderr}")
         return False
-
-def get_rendering_config(font_files):
-    """获取渲染配置
-
-    :param list font_files: 可用的字体文件列表
-    :return tuple: (字体文件, 输出格式)
-    """
-    # 优先使用配置的字体
-    preferred_fonts = [f for f in font_files if PREFERRED_FONT in f.lower()]
-    if preferred_fonts:
-        selected_font = preferred_fonts[0]
-    else:
-        # 如果没有优先字体，使用第一个字体
-        selected_font = font_files[0]
-
-    # 使用配置的默认格式
-    selected_format = DEFAULT_FORMAT
-
-    safe_print_message(f"渲染配置:")
-    safe_print_message(f"  字体: {selected_font}")
-    safe_print_message(f"  格式: {selected_format}")
-
-    return selected_font, selected_format
 
 def main():
     """主函数"""

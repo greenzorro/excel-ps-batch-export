@@ -22,7 +22,7 @@ from test_utils import TestEnvironment
 
 # 使用测试环境管理器处理sys.argv依赖
 test_env = TestEnvironment()
-test_env.setup_psd_renderer_args('test', 'test_font.ttf', 'jpg')
+test_env.setup_psd_renderer_args('test', 'jpg')
 
 from psd_renderer import calculate_text_position, read_excel_file
 

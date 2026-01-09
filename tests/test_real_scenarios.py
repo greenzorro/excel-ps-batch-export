@@ -77,7 +77,7 @@ class TestRealScenarios:
             # 使用真实文件测试
             script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
             result = subprocess.run([
-                sys.executable, script_path, "1", "assets/fonts/test_font.ttf", "jpg"
+                sys.executable, script_path, "1", "jpg"
             ], capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
             
             # 检查是否生成了输出文件
@@ -123,7 +123,7 @@ class TestRealScenarios:
         
         start_time = time.time()
         result = subprocess.run([
-            sys.executable, script_path, "large_test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "large_test", "jpg"
         ], capture_output=True, text=True, timeout=120, encoding='utf-8', errors='replace')
         end_time = time.time()
         
@@ -163,7 +163,7 @@ class TestRealScenarios:
         
         for task in test_tasks:
             result = subprocess.run([
-                sys.executable, script_path, task, "assets/fonts/test_font.ttf", "jpg"
+                sys.executable, script_path, task, "jpg"
             ], capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
             
             # 检查每个任务是否都能处理
@@ -195,7 +195,7 @@ class TestRealScenarios:
         # 测试错误处理
         script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         result = subprocess.run([
-            sys.executable, script_path, "error_test", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "error_test", "jpg"
         ], capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
         
         # 检查是否能够处理错误并继续
@@ -320,7 +320,7 @@ class TestRealScenarios:
         script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
         
         result = subprocess.run([
-            sys.executable, script_path, "workflow", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "workflow", "jpg"
         ], capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
         
         # 记录结果
@@ -372,7 +372,7 @@ class TestRealScenarios:
             
             start_time = time.time()
             result = subprocess.run([
-                sys.executable, script_path, f"perf_{size_name}", "assets/fonts/test_font.ttf", "jpg"
+                sys.executable, script_path, f"perf_{size_name}", "jpg"
             ], capture_output=True, text=True, timeout=120, encoding='utf-8', errors='replace')
             end_time = time.time()
             
@@ -403,7 +403,7 @@ class TestRealScenarios:
         
         # 测试空数据
         result = subprocess.run([
-            sys.executable, script_path, "empty", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "empty", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 空数据应该能够优雅处理
@@ -419,7 +419,7 @@ class TestRealScenarios:
         
         # 测试单行数据
         result = subprocess.run([
-            sys.executable, script_path, "single", "assets/fonts/test_font.ttf", "jpg"
+            sys.executable, script_path, "single", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
         
         # 单行数据应该能够正常处理
