@@ -147,4 +147,4 @@ python psd_renderer.py 1 jpg
 
 ---
 
-由 [Victor_42](https://victor42.work/) 创造
+Created by [Victor_42](https://victor42.work/)
