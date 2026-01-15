@@ -4,5 +4,7 @@
   "_path_rules": "路径规则：字体文件必须位于 assets/fonts/ 目录，如 'AlibabaPuHuiTi-2-85-Bold.ttf'",
   "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
   "2": "AlibabaPuHuiTi-2-85-Bold.ttf",
-  "3": "AlimamaShuHeiTi-Bold.ttf"
+  "3": "AlimamaShuHeiTi-Bold.ttf",
+  "4_text_rotation": "AlibabaPuHuiTi-2-85-Bold.ttf",
+  "5_image": "AlibabaPuHuiTi-2-85-Bold.ttf"
 }

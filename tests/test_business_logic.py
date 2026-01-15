@@ -205,49 +205,61 @@ class TestExcelDataValidation:
 
 class TestTextRendering:
     """文本渲染功能测试"""
-    
+
     def test_calculate_text_position_chinese(self):
         """Test Chinese text position calculation"""
         # Test Chinese text width calculation
         text = "中文测试"
         layer_width = 200
         font_size = 20
-        
-        x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "center")
-        
+        # 创建测试用的 draw 和 font
+        test_img = Image.new("RGB", (layer_width, 50))
+        draw = ImageDraw.Draw(test_img)
+        font = ImageFont.load_default()
+
+        x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "center", draw, font)
+
         # Chinese should be wider than English characters
         assert x_pos > 0
         assert y_pos < 0
-    
+
     def test_calculate_text_position_english(self):
         """Test English text position calculation"""
         text = "Hello World"
         layer_width = 200
         font_size = 20
-        
-        x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "right")
-        
+        # 创建测试用的 draw 和 font
+        test_img = Image.new("RGB", (layer_width, 50))
+        draw = ImageDraw.Draw(test_img)
+        font = ImageFont.load_default()
+
+        x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "right", draw, font)
+
         # Right alignment should be close to right boundary, considering text width and offset
         assert x_pos > layer_width / 4  # Lower expectation
         assert y_pos < 0
-    
+
     def test_calculate_text_position_alignment(self):
         """Test different alignment methods"""
         text = "Test"
         layer_width = 100
         font_size = 16
-        
+        # 创建测试用的 draw 和 font
+        test_img = Image.new("RGB", (layer_width, 50))
+        draw = ImageDraw.Draw(test_img)
+        font = ImageFont.load_default()
+
         # Test left alignment - should account for offset calculation
-        x_left, _ = calculate_text_position(text, layer_width, font_size, "left")
+        x_left, _ = calculate_text_position(text, layer_width, font_size, "left", draw, font)
         # Left alignment includes negative offset, should be between -0.5 and 0
         assert -0.5 <= x_left <= 0, f"Left alignment should be close to 0, got {x_left}"
-        
+
         # Test center alignment
-        x_center, _ = calculate_text_position(text, layer_width, font_size, "center")
+        x_center, _ = calculate_text_position(text, layer_width, font_size, "center", draw, font)
         assert x_center > 0 and x_center < layer_width / 2
-        
+
         # Test right alignment
-        x_right, _ = calculate_text_position(text, layer_width, font_size, "right")
+        x_right, _ = calculate_text_position(text, layer_width, font_size, "right", draw, font)
         assert x_right > layer_width / 2
     
     def test_get_font_color_with_color(self):
@@ -300,17 +312,18 @@ class TestImageLayerHandling:
         mock_layer = Mock()
         mock_layer.size = (100, 100)
         mock_layer.offset = (10, 10)
-        
+        mock_layer.name = "@产品图#i"  # 设置正确的图层名
+
         # Create temporary image file
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
             # Create a simple test image
             img = Image.new('RGB', (50, 50), color='red')
             img.save(tmp.name)
-            
+
             with patch('os.path.exists', return_value=True):
                 with patch('PIL.Image.open', return_value=img):
                     update_image_layer(mock_layer, tmp.name, mock_image)
-                    
+
                     # Verify alpha_composite is called
                     mock_image.alpha_composite.assert_called_once()
     
