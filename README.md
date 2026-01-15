@@ -44,7 +44,7 @@ Two ways of downloading:
 
 For the first time, you'll need some basic setup:
 
-1. Place your PSD template files here.
+1. Place your PSD template files in the `workspace/` directory.
 2. Edit PSD template file. Rename all changeable layers or groups with this pattern:
     - Format: `@Variable_name#Operation_Parameter`
     - A layer name may be like: `@badge#v`, `@description#t_p` or `@bg#i`
@@ -62,13 +62,21 @@ For the first time, you'll need some basic setup:
         - `_pb` for vertically bottom alignment
         - All these parameters work together, like `#t_c_a15`, `#t_r_p`
         - Alignment set in PSD will not affect the result, the program only checks layer names
-    - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet
+    - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet, parameters including:
+        - Scale mode: `_cover` (crop mode, default) fills the layer by cropping excess, `_contain` (letterbox mode) fits the entire image with transparent padding
+        - Alignment (9-grid): `_lt` (left-top), `_ct` (center-top), `_rt` (right-top), `_lm` (left-middle), `_cm` (center, default), `_rm` (right-middle), `_lb` (left-bottom), `_cb` (center-bottom), `_rb` (right-bottom)
+        - Examples:
+            - `@产品图#i` - default: cover + center
+            - `@产品图#i_cover` - cover + center
+            - `@产品图#i_contain` - contain + center
+            - `@产品图#i_cover_rb` - cover + right-bottom
+            - `@产品图#i_contain_lt` - contain + left-top
     - Notes:
-        - Do not use cmd/ctrl+T to scale changeable text layers. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
-        - For text that needs rotation, only add the rotation parameter in the layer name. Keep the text layer horizontal/straight in PSD, do not rotate it manually, otherwise the script may not be able to correctly read the layer's position information, causing the output to be misaligned.
+        - **Do not use cmd/ctrl+T to scale changeable text layers**. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
+        - For text that needs rotation, only add the rotation parameter in the layer name. **Keep the text layer horizontal/straight in PSD**, do not rotate it manually, otherwise the script may not be able to correctly read the layer's position information, causing the output to be misaligned.
 3. Run `xlsx_generator.py`. Your XLSX files will appear, with columns ready.
 4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first one to read and calculate everything. It's especially useful when you want to toggle layer visibility. DO NOT delete the first `File_name` column, leave it blank to use the default file name format(image_1, image_2, etc).
-5. Put everything else the templates need in `assets` folder, including fonts in `assets/fonts/`, background images, etc. Make sure the path to image assets match the data in the spreadsheet.
+5. Put everything else the templates need in `assets` folder, including fonts in `assets/fonts/`, background images, etc. Make sure the path to image assets match the data in the spreadsheet. Image paths must be relative to the project root directory (e.g., `assets/2_img/image.jpg`), not relative to the workspace directory (do not use `../assets/...`).
 6. Configure fonts in `fonts.json` (optional). If you have multiple PSD templates with different font requirements, create a `fonts.json` file in the project root to specify which font file each template should use:
    ```json
    {

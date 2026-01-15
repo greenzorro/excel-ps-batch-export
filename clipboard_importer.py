@@ -109,12 +109,13 @@ def parse_clipboard_data(clipboard_content):
     return df
 
 def find_target_excel_file():
-    """在当前目录查找Excel文件
+    """在 workspace 目录查找Excel文件
 
-    :return str: Excel文件路径
+    :return tuple: (文件名, 完整路径)
     :raises FileNotFoundError: 当找不到Excel文件时抛出异常
     """
-    excel_files = [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xls'))]
+    workspace_dir = "workspace"
+    excel_files = [f for f in os.listdir(workspace_dir) if f.endswith(('.xlsx', '.xls'))]
 
     # 按文件名排序
     excel_files.sort()
@@ -142,21 +143,25 @@ def find_target_excel_file():
                 choice = int(choice)
 
             if 1 <= choice <= len(excel_files):
-                return excel_files[choice - 1]
+                selected = excel_files[choice - 1]
+                return selected, os.path.join(workspace_dir, selected)
             else:
                 raise ValueError("无效的选择")
         except ValueError:
             safe_print_message("无效选择，使用第一个文件")
-            return excel_files[0]
+            selected = excel_files[0]
+            return selected, os.path.join(workspace_dir, selected)
         except KeyboardInterrupt:
             safe_print_message("\n用户中断程序")
             sys.exit(1)
         except EOFError:
             # 处理非交互式环境（如测试环境）
             safe_print_message("非交互式环境，使用第一个文件")
-            return excel_files[0]
+            selected = excel_files[0]
+            return selected, os.path.join(workspace_dir, selected)
 
-    return excel_files[0]
+    selected = excel_files[0]
+    return selected, os.path.join(workspace_dir, selected)
 
 def get_target_sheet(workbook):
     """获取目标sheet名称
@@ -248,13 +253,14 @@ def write_to_excel(excel_file, df):
 
 def get_matching_psds(excel_file):
     """获取匹配的PSD文件列表
-    
+
     :param str excel_file: Excel文件名
     :return list: 匹配的PSD文件列表
     """
     base_name = os.path.splitext(excel_file)[0]
     matching_psds = []
-    for f in os.listdir('.'):
+    workspace_dir = "workspace"
+    for f in os.listdir(workspace_dir):
         if f.endswith('.psd'):
             # 提取文件名前缀（第一个井号前的部分）
             name_without_ext = os.path.splitext(f)[0]
@@ -338,12 +344,12 @@ def main():
 
         # 3. 查找目标Excel文件
         safe_print_message("正在查找Excel文件...")
-        excel_file = find_target_excel_file()
+        excel_file, excel_path = find_target_excel_file()
         safe_print_message(f"目标文件: {excel_file}")
 
         # 4. 写入Excel文件
         safe_print_message("正在写入Excel文件...")
-        sheet_name, start_row, row_count = write_to_excel(excel_file, df)
+        sheet_name, start_row, row_count = write_to_excel(excel_path, df)
 
         # 5. 输出结果
         safe_print_message(f"\n✓ 导入成功!")

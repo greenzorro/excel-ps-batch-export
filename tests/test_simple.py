@@ -79,8 +79,8 @@ class TestExcelOperations:
     def test_excel_file_reading(self):
         """测试Excel文件读取"""
         project_root = Path(__file__).parent.parent
-        test_excel = project_root / "1.xlsx"
-        
+        test_excel = project_root / "workspace" / "1.xlsx"
+
         if not test_excel.exists():
             pytest.skip(f"测试Excel文件不存在: {test_excel}")
         
@@ -105,8 +105,8 @@ class TestExcelOperations:
     def test_excel_data_validation(self):
         """测试Excel数据验证"""
         project_root = Path(__file__).parent.parent
-        test_excel = project_root / "1.xlsx"
-        
+        test_excel = project_root / "workspace" / "1.xlsx"
+
         if not test_excel.exists():
             pytest.skip(f"测试Excel文件不存在: {test_excel}")
         
@@ -161,19 +161,20 @@ class TestFileOperations:
     def test_psd_files_exist(self):
         """测试PSD文件存在性"""
         project_root = Path(__file__).parent.parent
-        
+        workspace_dir = project_root / "workspace"
+
         # 查找PSD文件
-        psd_files = list(project_root.glob("*.psd"))
+        psd_files = list(workspace_dir.glob("*.psd"))
         assert len(psd_files) > 0, "没有找到PSD文件"
-        
+
         # 验证测试文件
-        test_psd = project_root / "1.psd"
+        test_psd = workspace_dir / "1.psd"
         if test_psd.exists():
             assert test_psd.stat().st_size > 0, "PSD文件为空"
-        
+
         # 验证多模板文件
-        multi_psd_1 = project_root / "3#1.psd"
-        multi_psd_2 = project_root / "3#2.psd"
+        multi_psd_1 = workspace_dir / "3#1.psd"
+        multi_psd_2 = workspace_dir / "3#2.psd"
         
         if multi_psd_1.exists() and multi_psd_2.exists():
             assert multi_psd_1.stat().st_size > 0, "多模板PSD文件1为空"

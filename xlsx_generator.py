@@ -14,10 +14,11 @@ from psd_tools import PSDImage
 
 def main():
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    
-    # 按前缀分组PSD文件
+
+    # 按前缀分组PSD文件（从workspace目录读取）
     psd_groups = {}
-    for file in os.listdir():
+    workspace_dir = "workspace"
+    for file in os.listdir(workspace_dir):
         if file.endswith('.psd'):
             base_name = os.path.splitext(file)[0]
             # 提取前缀（第一个井号前的部分）
@@ -25,32 +26,34 @@ def main():
                 prefix = base_name.split('#', 1)[0]
             else:
                 prefix = base_name
-            
+
             if prefix not in psd_groups:
                 psd_groups[prefix] = []
             psd_groups[prefix].append(file)
-    
+
     # 为每组创建共享Excel文件
     for prefix, psd_files in psd_groups.items():
         excel_file = f"{prefix}.xlsx"
+        excel_path = os.path.join(workspace_dir, excel_file)
         # 跳过已存在Excel的情况
-        if not os.path.exists(excel_file):
+        if not os.path.exists(excel_path):
             # 收集所有PSD的变量
             all_text_columns = []
             all_visibility_columns = []
             all_image_columns = []
-            
+
             for psd_file in psd_files:
-                psd = PSDImage.open(psd_file)
+                psd_path = os.path.join(workspace_dir, psd_file)
+                psd = PSDImage.open(psd_path)
                 text_columns, visibility_columns, image_columns = extract_variables(psd)
                 all_text_columns.extend([c for c in text_columns if c not in all_text_columns])
                 all_visibility_columns.extend([c for c in visibility_columns if c not in all_visibility_columns])
                 all_image_columns.extend([c for c in image_columns if c not in all_image_columns])
-            
+
             # 创建DataFrame
             columns = ['File_name'] + all_text_columns + all_visibility_columns + all_image_columns
             df = pd.DataFrame(columns=columns)
-            
+
             # 添加示例行
             example_data = {'File_name': "文件名"}
             for col in all_text_columns:
@@ -59,10 +62,10 @@ def main():
                 example_data[col] = "TRUE"
             for col in all_image_columns:
                 example_data[col] = "文件/路径/图片.jpg"
-            
+
             df.loc[0] = example_data
-            df.to_excel(excel_file, index=False)
-            print(f"已创建共享Excel文件: {excel_file}")
+            df.to_excel(excel_path, index=False)
+            print(f"已创建共享Excel文件: {excel_path}")
 
 def extract_variables(psd):
     """从PSD提取所有变量图层

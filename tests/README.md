@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## 🎯 Test Suite Status
 
-**✅ All 188 tests passing (100% success rate)**
+**✅ All 210 tests passing (100% success rate)**
 
-**Last Updated**: 2026-01-09
+**Last Updated**: 2026-01-15
 **Status**: All tests passing
 
 ## Test Files Description
@@ -137,6 +137,12 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Cross-platform compatibility tests
   - Serial scenario simulation tests
 
+- **test_image_params.py** - Image parameters tests
+  - Image parameter parsing tests (default, cover/contain mode, 9-grid alignment)
+  - Image scaling by mode tests (cover/contain with landscape/portrait/square images)
+  - Image layer update tests (valid/invalid paths, different parameters)
+  - Aspect ratio preservation tests
+
 ### Test Coverage
 
 #### Functionality Tests (test_simple.py)
@@ -198,12 +204,12 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 188
-- **Passed**: 188 (100%)
+- **Total Tests**: 210
+- **Passed**: 210 (100%)
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
-- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, text rotation, and font configuration system
+- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, text rotation, font configuration system, and image scaling/alignment parameters
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
 - **Architecture**: Single-process serial execution for optimal stability and simplicity
@@ -291,14 +297,15 @@ test/
 ├── test_performance.py    # Performance tests
 ├── test_clipboard_importer.py # Clipboard importer tests
 ├── test_logging_functionality.py # Logging functionality tests
+├── test_image_params.py   # Image parameters tests
 └── test_utils.py          # Test utility functions
 ```
 
 ## Test Data
 
-Tests use actual files from the project root directory:
-- `1.psd`, `1.xlsx` - Basic functionality tests
-- `3#1.psd`, `3#2.psd`, `3.xlsx` - Multi-template tests
+Tests use actual files from the `workspace/` directory:
+- `workspace/1.psd`, `workspace/1.xlsx` - Basic functionality tests
+- `workspace/3#1.psd`, `workspace/3#2.psd`, `workspace/3.xlsx` - Multi-template tests
 - `assets/` - Resource files directory
 
 ## Test Configuration
@@ -308,14 +315,14 @@ Tests automatically create temporary workspaces without affecting project files.
 ## Notes
 
 1. **Recommended** to use `test_simple.py` and `test_performance.py` for testing
-2. Tests require PSD and Excel files from the project root directory
+2. Tests require PSD and Excel files from the `workspace/` directory
 3. Some tests may be skipped due to missing actual resources
 4. **Windows Note**: All Windows temporary file permission issues have been fixed. Tests now run at 100% pass rate.
 5. **Architecture**: Project uses single-process serial execution for optimal stability and simplicity
 
 ## Test Results
 
-- **Total Tests**: 188
+- **Total Tests**: 210
 - **Pass Rate**: 100%
 - **Failed Tests**: 0
 - **Test Distribution**:
@@ -332,13 +339,14 @@ Tests automatically create temporary workspaces without affecting project files.
   - Real scenarios (9 tests)
   - Clipboard importer (22 tests)
   - Logging functionality (6 tests)
+  - Image parameters (22 tests)
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **ImportError**: Ensure all dependency packages are installed
-2. **FileNotFoundError**: Ensure test files exist in the project root directory
+2. **FileNotFoundError**: Ensure test files exist in the `workspace/` directory
 3. **PermissionError**: Ensure write permissions
 
 ### Debug Mode
