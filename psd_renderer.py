@@ -170,7 +170,8 @@ def read_excel_file(file_path):
         raise ValueError(f"不支持的文件格式: {file_path}")
 
     try:
-        df = pd.read_excel(file_path, sheet_name=0)
+        # 强制所有列作为字符串读取，保持原始格式不变
+        df = pd.read_excel(file_path, sheet_name=0, dtype=str)
         return df
     except Exception as e:
         raise ValueError(f"读取Excel文件失败: {file_path}, 错误: {str(e)}")
