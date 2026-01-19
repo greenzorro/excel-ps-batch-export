@@ -221,10 +221,11 @@ def write_to_excel(excel_file, df):
         start_row = 2  # B2单元格的行号
         start_col = 2  # B2单元格的列号
 
-        # 写入数据
+        # 写入数据（强制设置为文本格式，保持原始内容不变）
         for r_idx, row_data in enumerate(dataframe_to_rows(df, index=False, header=False), start_row):
             for c_idx, value in enumerate(row_data, start_col):
-                sheet.cell(row=r_idx, column=c_idx, value=value)
+                cell = sheet.cell(row=r_idx, column=c_idx, value=value)
+                cell.number_format = '@'  # 设置为文本格式
 
         # 保存文件
         workbook.save(excel_file)
