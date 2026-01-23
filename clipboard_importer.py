@@ -1,4 +1,4 @@
-'''
+"""
 File: clipboard_importer.py
 Project: excel-ps-batch-export
 Created: 2025-10-09
@@ -24,7 +24,7 @@ Description:
 
 运行方式：
 python clipboard_importer.py
-'''
+"""
 
 import sys
 import os
