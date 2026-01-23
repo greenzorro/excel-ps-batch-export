@@ -1,11 +1,11 @@
-'''
+"""
 File: file_monitor.py
 Project: excel-ps-batch-export
 Created: 2024-09-26 10:36:43
 Author: Victor Cheng
 Email: hi@victor42.work
 Description: 监控数据文件并自动执行批量图片输出
-'''
+"""
 
 # 设置项
 image_format = 'jpg'  # jpg/png
