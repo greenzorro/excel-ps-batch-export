@@ -1,5 +1,5 @@
 # 自动生成的依赖文件
-# Python环境: Routine (全局)
+# Python环境: 系统Python (Linux)
 # 扫描文件数: 7
 # 推荐使用 uv 进行包管理
 
@@ -7,10 +7,10 @@
 Pillow==12.0.0
 openpyxl==3.1.5
 pandas==2.3.3
-psd-tools
-pyperclip
+psd-tools==1.9.23
+pyperclip==1.11.0
 tqdm==4.67.1
-xlwings
+xlwings==0.33.16
 
 #
 # 使用说明:
