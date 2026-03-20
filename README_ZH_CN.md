@@ -155,4 +155,4 @@ python psd_renderer.py 1 jpg
 
 ---
 
-Created by [Victor_42](https://victor42.work/)
+Created by [Victor42](https://victor42.work/)
