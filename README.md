@@ -172,4 +172,4 @@ Special thanks to [psd-tools](https://github.com/psd-tools/psd-tools) for provid
 
 ---
 
-Created by [Victor42](https://victor42.work/)
+Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
