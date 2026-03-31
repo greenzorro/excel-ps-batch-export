@@ -2,12 +2,12 @@
 
 This directory contains the comprehensive test suite for the excel-ps-batch-export project.
 
-## 🎯 Test Suite Status
+## Test Suite Status
 
-**✅ All 210 tests passing (100% success rate)**
+**351 passed** ✅
 
-**Last Updated**: 2026-01-15
-**Status**: All tests passing
+**Last Updated**: 2026-03-31
+**Status**: All tests passing. No Excel application required.
 
 ## Test Files Description
 
@@ -25,6 +25,14 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Font path retrieval tests (configured, default, error handling)
   - Comment field filtering tests
   - Integration tests with real files
+
+- **test_transform.py** - Data transformation engine tests
+  - Unit tests for all 5 rule types: direct, conditional, template, derived, derived_raw
+  - Helper function tests: is_empty, remove_spaces
+  - Row-level guard tests (primary_field)
+  - Encoding residue passthrough tests (_x000D_ preservation)
+  - End-to-end pipeline integration tests
+  - File error handling tests
 
 - **test_business_logic.py** - Business logic tests
   - Advanced layer parsing tests
@@ -125,7 +133,6 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Clipboard data parsing tests (tab/comma separated, first row preserved)
   - Excel file selection and target sheet detection tests
   - Data writing with proper positioning tests
-  - Xlwings formula recalculation tests
   - PSD renderer integration tests (automatic image generation)
   - Error handling and user interaction tests
 
@@ -204,8 +211,8 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 210
-- **Passed**: 210 (100%)
+- **Total Tests**: 351
+- **Passed**: 351 ✅
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
@@ -213,6 +220,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
 - **Architecture**: Single-process serial execution for optimal stability and simplicity
+- **No Excel Dependency**: All tests pass without requiring Excel application
 
 ## Running Tests
 
@@ -298,6 +306,7 @@ test/
 ├── test_clipboard_importer.py # Clipboard importer tests
 ├── test_logging_functionality.py # Logging functionality tests
 ├── test_image_params.py   # Image parameters tests
+├── test_transform.py      # Data transformation engine tests
 └── test_utils.py          # Test utility functions
 ```
 
@@ -320,26 +329,28 @@ Tests automatically create temporary workspaces without affecting project files.
 4. **Windows Note**: All Windows temporary file permission issues have been fixed. Tests now run at 100% pass rate.
 5. **Architecture**: Project uses single-process serial execution for optimal stability and simplicity
 
-## Test Results
+## Test Distribution
 
-- **Total Tests**: 210
-- **Pass Rate**: 100%
-- **Failed Tests**: 0
-- **Test Distribution**:
-  - Core functionality (17 tests)
-  - Font configuration (17 tests)
-  - Business logic (56 tests, including 8 rotation tests)
-  - Error handling (18 tests)
-  - Boundary conditions (6 tests)
-  - Performance testing (5 tests)
-  - Boolean value handling (9 tests)
-  - Integration testing (11 tests)
-  - Platform compatibility (13 tests)
-  - Precise text position (7 tests)
-  - Real scenarios (9 tests)
-  - Clipboard importer (22 tests)
-  - Logging functionality (6 tests)
-  - Image parameters (22 tests)
+- **Total Tests**: 351
+- **Passed**: 351 ✅
+- **Failed**: 0
+- **Test Breakdown**:
+  - Boolean value handling: 67 tests
+  - Business logic: 51 tests
+  - Image parameters: 27 tests
+  - Platform compatibility: 36 tests
+  - Precise text position: 26 tests
+  - Data transformation: 41 tests
+  - Logging functionality: 23 tests
+  - Error handling: 17 tests
+  - Font configuration: 18 tests
+  - Clipboard importer: 18 tests
+  - Integration: 4 tests
+  - Real scenarios: 9 tests
+  - Performance: 4 tests
+  - Core functionality: 6 tests
+  - Boundary conditions: 6 tests
+  - Test utilities: (fixture class, not counted)
 
 ## Troubleshooting
 

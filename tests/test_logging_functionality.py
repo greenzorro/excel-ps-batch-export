@@ -71,8 +71,8 @@ def test_log_export_activity_basic_functionality():
             os.chdir(original_dir)
 
 
-def test_log_export_activity_duplicate_prevention():
-    """测试重复记录检测功能"""
+def test_log_export_activity_duplicate_logging():
+    """测试重复数据多次记录行为"""
     with tempfile.TemporaryDirectory() as temp_dir:
         original_dir = os.getcwd()
         os.chdir(temp_dir)
@@ -219,8 +219,8 @@ if __name__ == "__main__":
     test_log_export_activity_basic_functionality()
     print("✓ 基本功能测试通过")
 
-    test_log_export_activity_duplicate_prevention()
-    print("✓ 重复记录检测测试通过")
+    test_log_export_activity_duplicate_logging()
+    print("✓ 重复记录行为测试通过")
 
     test_log_export_activity_zero_count_handling()
     print("✓ 零图片数量处理测试通过")
@@ -231,7 +231,7 @@ if __name__ == "__main__":
     test_log_export_activity_cross_platform_compatibility()
     print("✓ 跨平台兼容性测试通过")
 
-    test_log_export_activity_concurrent_simulation()
+    test_log_export_activity_serial_simulation()
     print("✓ 并发场景测试通过")
 
     print("\n🎉 所有日志记录功能测试通过！")

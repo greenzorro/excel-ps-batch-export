@@ -756,7 +756,7 @@ def save_image(output_dir, output_filename, image_format, pil_image):
         pil_image.save(final_output_path, format="PNG", optimize=True)
     else:  # 默认保存为jpg
         rgb_image = pil_image.convert("RGB")
-        rgb_image.save(final_output_path, quality=quality, optimize=optimize)
+        rgb_image.save(final_output_path, quality=quality, optimize=False)
     print(f"已导出图片: {final_output_path}")
 
 
@@ -843,6 +843,8 @@ def get_matching_psds(excel_file):
     base_name = os.path.splitext(filename)[0]
     matching_psds = []
     workspace_dir = "workspace"
+    if not os.path.exists(workspace_dir):
+        return matching_psds
     for f in os.listdir(workspace_dir):
         if f.endswith(".psd"):
             # 提取文件名前缀（第一个井号前的部分）
@@ -1177,8 +1179,10 @@ def psd_renderer_images():
     # 跨平台兼容的文件夹打开方式
     if os.name == "nt":  # Windows
         os.system(f'explorer "{first_image_output_dir}"')
-    else:  # macOS/Linux
+    elif sys.platform == "darwin":  # macOS
         os.system(f'open "{first_image_output_dir}"')
+    else:  # Linux
+        os.system(f'xdg-open "{first_image_output_dir}"')
 
 
 if __name__ == "__main__":
@@ -1202,6 +1206,13 @@ if __name__ == "__main__":
     # 文件路径
     output_path = "export"
     excel_file_path = f"workspace/{file_name}.xlsx"
+
+    # 如果存在变换规则文件，先执行数据变换
+    json_rule_path = f"workspace/{file_name}.json"
+    if os.path.exists(json_rule_path):
+        from transform import transform
+        print("检测到变换规则文件，执行数据变换...")
+        transform(file_name)
 
     # 批量输出图片
     current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")

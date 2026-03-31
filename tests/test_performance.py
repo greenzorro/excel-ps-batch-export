@@ -164,75 +164,105 @@ class TestPerformance:
         assert peak_memory - initial_memory < 20, f"Memory usage增长过多: {peak_memory - initial_memory:.2f}MB"
     
     def test_psd_file_simulation(self, perf_config, temp_workspace):
-        """测试PSD文件处理模拟"""
-        print("\n=== PSD File Processing Simulation Test ===")
-        
-        # 创建模拟PSD文件
-        mock_psd_file = temp_workspace / "mock.psd"
-        with open(mock_psd_file, 'wb') as f:
-            f.write(b'Mock PSD content' * 1000)
-        
-        start_time = time.time()
-        start_memory = psutil.Process().memory_info().rss / 1024 / 1024
-        
-        # 模拟PSD处理操作
-        for i in range(100):
-            # 模拟图层解析
-            layers = [
-                f"@标题{i}#t",
-                f"@背景{i}#i", 
-                f"@水印{i}#v"
-            ]
-            for layer in layers:
-                # 模拟解析操作
-                if layer.startswith('@') and '#' in layer:
-                    var_name = layer[1:].split('#')[0]
-                    operation = layer.split('#')[1]
-        
-        end_time = time.time()
-        end_memory = psutil.Process().memory_info().rss / 1024 / 1024
-        
-        duration = end_time - start_time
-        memory_used = end_memory - start_memory
-        
-        print(f"PSD simulation processing time: {duration:.3f}s")
-        print(f"Memory usage: {memory_used:.2f}MB")
-        
-        assert duration < 0.5, f"PSD simulation processing timetoo long: {duration:.3f}s"
-        assert memory_used < 5, f"PSD模拟处理Memory usage过多: {memory_used:.2f}MB"
-    
-    def test_processing_simulation(self, perf_config, temp_workspace):
-        """测试图像处理任务模拟"""
-        print("\n=== Image Processing Simulation Test ===")
+        """测试transform.py数据变换管线性能（100+行）"""
+        print("\n=== Transform Pipeline Performance Test ===")
 
-        # 模拟串行处理过程
-        def simulate_image_processing(task_id, data_size):
-            """模拟图像处理任务"""
-            result = 0
-            for i in range(data_size):
-                result += i * task_id
-            return result
+        from transform import transform_row
 
-        # 创建多个任务
-        num_tasks = 10
-        task_ids = list(range(num_tasks))
+        # 构造100+行原始数据和规则
+        num_rows = 150
+        raw_data = pd.DataFrame({
+            "File_name": [f"product_{i}" for i in range(num_rows)],
+            "分类": [f"分类_{i % 5}" for i in range(num_rows)],
+            "标题第1行": [f"标题_{i}" for i in range(num_rows)],
+            "标题第2行": [f"副标题_{i}" for i in range(num_rows)],
+            "背景图": [f"assets/1_img/img_{i % 3}.jpg" for i in range(num_rows)],
+            "小标签": ["TRUE" if i % 2 == 0 else "" for i in range(num_rows)],
+        })
 
-        # 测试串行处理
+        rules = {
+            "primary_field": "File_name",
+            "columns": {
+                "File_name": {"type": "direct", "source": "File_name"},
+                "分类": {"type": "direct", "source": "分类"},
+                "标题第1行": {"type": "direct", "source": "标题第1行"},
+                "标题第2行": {"type": "direct", "source": "标题第2行"},
+                "文件名拼接": {
+                    "type": "template",
+                    "template": "{分类}-{标题第1行}",
+                },
+                "小标签": {"type": "direct", "source": "小标签"},
+                "有小标签": {"type": "derived_raw", "source": "小标签"},
+            },
+        }
+
         start_time = time.time()
         results = []
-        for task_id in task_ids:
-            results.append(simulate_image_processing(task_id, 10000))
+        for idx in range(num_rows):
+            row = transform_row(raw_data.iloc[idx], rules, idx + 1)
+            results.append(row)
+        duration = time.time() - start_time
 
-        serial_time = time.time() - start_time
+        non_empty_results = [r for r in results if r]
+        print(f"Transform pipeline: {duration:.3f}s for {num_rows} rows")
+        print(f"Non-empty results: {len(non_empty_results)}")
 
-        print(f"Serial processing time: {serial_time:.3f}s for {num_tasks} tasks")
-        print(f"Processed {len(results)} tasks")
+        assert duration < 2.0, f"Transform pipeline too slow: {duration:.3f}s for {num_rows} rows"
+        assert len(non_empty_results) == num_rows, f"Expected {num_rows} results, got {len(non_empty_results)}"
 
         # 验证结果正确性
-        assert len(results) == num_tasks, "任务数量不正确"
-        assert all(r >= 0 for r in results), "所有结果应该非负"
+        for r in non_empty_results[:5]:
+            assert "File_name" in r, "Result should contain File_name"
+            assert "文件名拼接" in r, "Result should contain template column"
+    
+    def test_processing_simulation(self, perf_config, temp_workspace):
+        """测试批量transform_row操作性能"""
+        print("\n=== Batch transform_row Performance Test ===")
 
-        print("✅ 图像处理模拟测试通过")
+        from transform import transform_row
+
+        num_rows = 100
+        raw_data = pd.DataFrame({
+            "name": [f"item_{i}" for i in range(num_rows)],
+            "value": [str(i * 10) for i in range(num_rows)],
+            "category": [f"cat_{i % 10}" for i in range(num_rows)],
+            "extra": [f"备注_{i}" if i % 3 == 0 else "" for i in range(num_rows)],
+        })
+
+        # 使用多种规则类型的规则集
+        rules = {
+            "primary_field": "name",
+            "columns": {
+                "name": {"type": "direct", "source": "name"},
+                "value": {"type": "direct", "source": "value", "remove_spaces": True},
+                "display": {
+                    "type": "template",
+                    "template": "{category}-{name}",
+                },
+                "extra": {"type": "conditional", "source": "extra", "depends_on": "value"},
+                "has_extra": {"type": "derived_raw", "source": "extra"},
+            },
+        }
+
+        start_time = time.time()
+        results = []
+        for idx in range(num_rows):
+            row_result = transform_row(raw_data.iloc[idx], rules, idx + 1)
+            results.append(row_result)
+        duration = time.time() - start_time
+
+        non_empty = [r for r in results if r]
+        print(f"Batch transform_row: {duration:.3f}s for {num_rows} rows")
+        print(f"Non-empty results: {len(non_empty)}")
+
+        assert duration < 1.0, f"Batch transform_row too slow: {duration:.3f}s"
+        assert len(non_empty) == num_rows
+
+        # 验证不同规则类型都被正确执行
+        sample = non_empty[0]
+        assert "name" in sample, "direct rule result missing"
+        assert "display" in sample, "template rule result missing"
+        assert "has_extra" in sample, "derived_raw rule result missing"
 
 
 if __name__ == "__main__":

@@ -1,0 +1,51 @@
+{
+  "_comment": "模板2 数据变换规则（站内标版）",
+  "primary_field": "标题第1行",
+  "columns": {
+    "File_name": {
+      "type": "template",
+      "template": "{_row}-{分类}-{标题第1行}{标题第2行}",
+      "remove_spaces": ["分类", "标题第1行"],
+      "skip_if_empty": ["标题第2行"]
+    },
+    "分类": {
+      "type": "direct",
+      "source": "分类"
+    },
+    "标题第1行": {
+      "type": "direct",
+      "source": "标题第1行",
+      "remove_spaces": true
+    },
+    "标题第2行": {
+      "type": "conditional",
+      "source": "标题第2行",
+      "depends_on": "标题第1行",
+      "remove_spaces": true
+    },
+    "直播时间": {
+      "type": "conditional",
+      "source": "直播时间",
+      "depends_on": "标题第1行"
+    },
+    "单行": {
+      "type": "derived",
+      "field": "标题第2行",
+      "when_empty": true
+    },
+    "两行": {
+      "type": "derived",
+      "field": "标题第2行",
+      "when_empty": false
+    },
+    "时间框": {
+      "type": "derived",
+      "field": "直播时间",
+      "when_empty": false
+    },
+    "站内标": {
+      "type": "derived_raw",
+      "source": "站内标"
+    }
+  }
+}

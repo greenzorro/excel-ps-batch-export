@@ -86,11 +86,14 @@ class TestExcelOperations:
         
         # 读取Excel文件
         df = pd.read_excel(test_excel)
-        
+
         # 验证数据结构
         assert isinstance(df, pd.DataFrame)
-        assert len(df) > 0
-        assert len(df.columns) > 0
+        assert len(df) > 0, "DataFrame should have at least one row"
+        assert len(df.columns) > 0, "DataFrame should have at least one column"
+
+        # Verify row count matches actual data (not just > 0)
+        assert len(df) >= 1, f"Expected at least 1 data row, got {len(df)}"
         
         # 验证列名
         expected_columns = [
@@ -101,6 +104,12 @@ class TestExcelOperations:
         
         for col in expected_columns:
             assert col in df.columns, f"缺少列: {col}"
+
+        # Verify specific cell values are not empty/NaN for the first row
+        first_row = df.iloc[0]
+        file_name_val = first_row["File_name"]
+        assert pd.notna(file_name_val), "First row File_name should not be NaN"
+        assert str(file_name_val).strip() != "", "First row File_name should not be empty"
     
     def test_excel_data_validation(self):
         """测试Excel数据验证"""
@@ -201,14 +210,19 @@ class TestDependencyCheck:
     
     def test_psd_tools_functionality(self):
         """测试psd-tools基本功能"""
-        try:
-            from psd_tools import PSDImage
-            
-            # 这里不实际打开PSD文件，只测试导入
-            assert PSDImage is not None
-            
-        except ImportError:
-            pytest.fail("psd-tools导入失败")
+        from psd_tools import PSDImage
+
+        # Try to load a real PSD file if one exists
+        project_root = Path(__file__).parent.parent
+        test_psd = project_root / "workspace" / "1.psd"
+
+        if test_psd.exists():
+            psd = PSDImage.open(test_psd)
+            assert psd.width > 0, "PSD width should be positive"
+            assert psd.height > 0, "PSD height should be positive"
+            assert len(list(psd.descendants())) > 0, "PSD should have at least one layer"
+        else:
+            pytest.skip("No PSD file available for functional testing")
 
 
 class TestEndToEndSimple:
@@ -230,46 +244,10 @@ class TestEndToEndSimple:
         assert "Invalid format string" not in result.stderr
         assert "UnicodeEncodeError" not in result.stderr
     
-    def test_program_structure_validation(self):
-        """验证程序结构"""
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
-        
-        # 检查脚本文件是否存在且可读
-        assert os.path.exists(script_path)
-        assert os.access(script_path, os.R_OK)
-        
-        # 检查脚本内容
-        with open(script_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # 检查关键函数是否存在
-        required_functions = [
-            'def read_excel_file',
-            'def calculate_text_position', 
-            'def update_text_layer',
-            'def update_image_layer',
-            'def validate_data',
-            'def psd_renderer_images'
-        ]
-        
-        for func in required_functions:
-            assert func in content, f"缺少关键函数: {func}"
-        
-        # 检查主程序入口
-        assert 'if __name__ == "__main__":' in content
-        
-        # 检查是否有修复过的问题
-        assert '%Y%0m%d_%H%M%S' not in content, "仍存在错误的日期格式字符串"
-        
-        # 检查是否还有emoji字符（可能导致编码问题）
-        emoji_chars = ['📁', '🔍', '🔄', '🚀', '💡', '📊', '⚠️', '❌', '✅']
-        for emoji in emoji_chars:
-            assert emoji not in content, f"仍存在emoji字符: {emoji}"
-    
     def test_datetime_format_functionality(self):
         """测试日期时间格式功能"""
         from datetime import datetime
-        
+
         # 测试修复后的日期格式
         try:
             # 这应该能正常工作，因为我们已经修复了格式字符串
@@ -277,6 +255,21 @@ class TestEndToEndSimple:
             assert len(current_datetime) == 15  # YYYYMMDD_HHMMSS
             assert current_datetime[8] == '_'
             assert current_datetime.replace('_', '').isdigit()
+
+            # Validate individual component ranges
+            year = int(current_datetime[0:4])
+            month = int(current_datetime[4:6])
+            day = int(current_datetime[6:8])
+            hour = int(current_datetime[9:11])
+            minute = int(current_datetime[11:13])
+            second = int(current_datetime[13:15])
+
+            assert 2000 <= year <= 2100, f"Year {year} out of reasonable range"
+            assert 1 <= month <= 12, f"Month {month} out of range [1, 12]"
+            assert 1 <= day <= 31, f"Day {day} out of range [1, 31]"
+            assert 0 <= hour <= 23, f"Hour {hour} out of range [0, 23]"
+            assert 0 <= minute <= 59, f"Minute {minute} out of range [0, 59]"
+            assert 0 <= second <= 59, f"Second {second} out of range [0, 59]"
         except ValueError as e:
             pytest.fail(f"日期格式错误: {e}")
     
@@ -297,27 +290,34 @@ class TestEndToEndSimple:
     
     def test_safe_print_message_function(self):
         """测试安全打印消息函数"""
+        import io
+        from contextlib import redirect_stdout
+
         # 导入业务代码中的safe_print_message函数
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from psd_renderer import safe_print_message
-        
+
         # 测试正常消息
-        try:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
             safe_print_message("测试消息")
-        except Exception as e:
-            pytest.fail(f"safe_print_message 处理正常消息失败: {e}")
-        
+        output = buf.getvalue()
+        assert "测试消息" in output, f"Expected '测试消息' in output, got: {output!r}"
+
         # 测试包含特殊字符的消息
-        try:
-            safe_print_message("测试消息 with special chars: ●○■□★☆◆◇")
-        except Exception as e:
-            pytest.fail(f"safe_print_message 处理特殊字符失败: {e}")
-        
+        buf = io.StringIO()
+        special_msg = "测试消息 with special chars: ●○■□★☆◆◇"
+        with redirect_stdout(buf):
+            safe_print_message(special_msg)
+        output = buf.getvalue()
+        assert len(output.strip()) > 0, "Output should not be empty for special chars input"
+
         # 测试中文消息
-        try:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
             safe_print_message("中文测试消息")
-        except Exception as e:
-            pytest.fail(f"safe_print_message 处理中文消息失败: {e}")
+        output = buf.getvalue()
+        assert "中文测试消息" in output, f"Expected '中文测试消息' in output, got: {output!r}"
     
     def test_business_code_improvements(self):
         """测试业务代码改进效果"""

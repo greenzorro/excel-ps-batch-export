@@ -10,7 +10,6 @@ pandas==2.3.3
 psd-tools==1.10.13
 pyperclip==1.11.0
 tqdm==4.67.1
-xlwings==0.33.16
 
 #
 # 使用说明:
