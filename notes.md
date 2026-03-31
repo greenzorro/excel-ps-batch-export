@@ -17,25 +17,32 @@
 ```
 excel-ps-batch-export/
 ├── xlsx_generator.py        # Excel生成器 - PSD模板扫描和Excel配置文件生成
-├── psd_renderer.py         # 核心PSD渲染脚本
-├── file_monitor.py         # 文件监控脚本
-├── clipboard_importer.py   # 剪贴板导入器 - 从剪贴板读取数据写入Excel
-├── requirements.txt        # 项目依赖管理
-├── fonts.json              # 字体配置文件（可选）
-├── assets/                 # 资源目录
-│   ├── fonts/             # 字体文件
-│   └── 1_img/             # 示例图片素材
-├── workspace/             # 工作目录 - 存放PSD模板和Excel数据文件
-│   ├── 1.psd + 1.xlsx    # 配对的PSD模板和Excel数据
+├── psd_renderer.py          # 核心PSD渲染脚本
+├── transform.py             # 数据变换引擎 - CSV+JSON规则→xlsx
+├── file_monitor.py          # 文件监控脚本
+├── clipboard_importer.py    # 剪贴板导入器 - 从剪贴板读取数据写入Excel
+├── transform_guide.md       # 数据变换规则系统文档
+├── requirements.txt         # 项目依赖管理
+├── fonts.json               # 字体配置文件（可选）
+├── assets/                  # 资源目录
+│   ├── fonts/               # 字体文件
+│   └── 1_img/               # 示例图片素材
+├── workspace/               # 工作目录 - 存放PSD模板和Excel数据文件
+│   ├── 1.psd + 1.xlsx       # 配对的PSD模板和Excel数据
+│   ├── 1.json               # 变换规则（有此文件则走transform管道）
+│   ├── 1_raw.csv            # 原始数据（用户/agent编辑）
 │   ├── 2.psd + 2.xlsx
+│   ├── 2.json + 2_raw.csv
+│   ├── 3#1.psd + 3#2.psd + 3.xlsx
+│   ├── 3.json + 3_raw.csv
 │   └── ...
-├── export/                # 导出图片目录
-├── log.csv                # 导出日志
-├── tests/                 # 测试套件目录
-│   ├── README.md          # 测试套件文档
-│   ├── run_tests.py       # 统一测试运行器
-│   └── *.py              # 测试文件
-├── notes.md               # 本备忘录
+├── export/                  # 导出图片目录（格式：export/日期时间_模板名/）
+├── log.csv                  # 导出日志
+├── tests/                   # 测试套件目录
+│   ├── README.md            # 测试套件文档
+│   ├── run_tests.py         # 统一测试运行器
+│   └── *.py                 # 测试文件
+├── notes.md                 # 本备忘录
 └── (其他项目文件)
 ```
 
@@ -120,7 +127,6 @@ excel-ps-batch-export/
 - **Excel文件选择**：支持多Excel文件环境下的交互式选择，支持退出功能
 - **目标Sheet定位**：优先使用"粘贴"sheet，否则使用第二个sheet
 - **安全数据写入**：从B2单元格开始写入，清空右下方区域
-- **公式重新计算**：使用xlwings强制Excel重新计算公式，确保数据正确联动
 - **自动PSD渲染**：数据导入完成后自动调用PSD渲染器生成图片，实现"数据导入→图片生成"一体化流程
 - **跨平台兼容**：正确处理Windows和macOS的编码和路径问题
 
@@ -137,20 +143,36 @@ excel-ps-batch-export/
 - **精确文本渲染**：使用Pillow字体度量实现像素级精度的文本位置计算
 - **智能布尔值解析**：正确处理Excel中各种形式的布尔值（"TRUE"/"FALSE"/"1"/"0"等）
 - **健壮的异常处理**：分层级的错误处理机制，提供智能解决方案建议
-- **Excel公式重新计算**：使用xlwings强制Excel重新计算公式，确保数据正确显示
 - **稳定的文件生成**：无并发冲突，确保所有图片都能正确生成
 - **跨平台文件名兼容性**：自动处理特殊字符，控制长度，确保在所有操作系统上都能正常保存
+
+### 4.7 数据变换规则系统
+
+对于需要复杂数据处理的模板，系统支持基于 JSON 的数据变换功能。
+
+**工作流程**：
+1. 用户/agent 编辑 `_raw.csv` 原始数据
+2. 系统自动应用 `.json` 中定义的变换规则
+3. 处理后的数据写入 `.xlsx` 供渲染使用
+
+**支持的变换类型**：
+- `direct` - 直接映射
+- `conditional` - 条件映射
+- `template` - 字符串拼接
+- `derived` - 布尔推导（基于成品字段）
+- `derived_raw` - 布尔推导（基于原始字段）
+
+详细文档请参考 `transform_guide.md`。
 
 ## 5. 技术架构
 
 ### 5.1 核心依赖
-- **psd-tools==1.9.23**：PSD文件解析和处理
+- **psd-tools**：PSD文件解析和处理
 - **pandas**：Excel数据读取和处理
 - **Pillow**：图像合成和文本绘制
-- **tqdm==4.66.4**：进度条显示
-- **xlwings==0.33.16**：Excel公式重新计算和自动化操作
-- **pyperclip==1.11.0**：跨平台剪贴板访问
-- **openpyxl**：Excel文件读写操作
+- **tqdm**：进度条显示
+- **pyperclip**：跨平台剪贴板访问
+- **openpyxl**：Excel文件读写操作（无需Excel应用）
 
 ### 5.2 关键技术实现
 - **PSD预加载**：一次性加载所有PSD模板，避免重复IO操作
@@ -158,7 +180,7 @@ excel-ps-batch-export/
 - **文本渲染**：通过Pillow实现高质量的文本绘制，支持中英文混合
 - **文字定位修正**：使用`textbbox`的top值自动修正不同字体的垂直偏移，确保Pillow渲染的文字位置与PSD原始位置一致
 - **图像合成**：使用`alpha_composite`实现精确的图层合成
-- **Excel自动化**：使用xlwings实现Excel公式强制重新计算，确保数据正确显示
+- **Excel读写**：使用openpyxl直接读写Excel文件
 - **剪贴板数据解析**：智能识别制表符和逗号分隔格式，自动转换为DataFrame
 - **安全文件操作**：使用openpyxl进行Excel文件读写，避免数据损坏
 - **跨平台编码处理**：安全处理Windows和macOS的编码差异，确保中文显示正常
@@ -270,7 +292,7 @@ python clipboard_importer.py
 
 - **Excel转义字符清理**：自动清理 `_x000D_`(回车)、`_x000A_`(换行)、`_x0009_`(制表符) 等Excel内部转义字符串
 - **非法字符替换**：将 `/ \ : * ? " < > |` 等字符替换为下划线
-- **控制字符过滤**：移除ASCII控制字符（0-31）
+- **控制字符过滤**：过滤 ASCII 控制字符（0-31）
 - **首尾清理**：去除文件名开头和结尾的空格和点
 - **长度限制**：限制文件名长度不超过200字符
 - **空名处理**：如果清理后为空，自动命名为"unnamed"
@@ -356,41 +378,3 @@ workspace/../assets/...    # 不要包含 workspace 路径
 **运行方式：** `python tests/run_tests.py all`
 
 详细的测试文档、分类说明和运行指南，请参考 `tests/README.md`。
-
-## 8. 数据验证系统
-
-### 8.1 验证内容
-- **列名匹配**：检查Excel列名与PSD变量的一致性
-- **文件路径**：验证图片资源文件是否存在
-- **数据完整性**：验证必需变量是否都有对应数据
-
-### 8.2 错误报告
-- **详细错误信息**：指出具体的错误位置和原因
-- **修复建议**：提供明确的修复指导
-- **优雅退出**：发现错误时停止处理，避免部分导出
-
-## 9. 许可证
-
-本项目使用 **GNU Affero General Public License v3.0** 许可证。任何对该软件的修改和分发，特别是在网络服务器上使用时，都必须开放其源代码。
-
-## 10. 维护说明
-
-### 10.1 版本管理
-- 使用`requirements.txt`锁定依赖版本
-- 定期更新依赖包以获取安全修复
-- 保持向后兼容性
-
-### 10.2 日志记录
-- 自动记录每次导出活动到`log.csv`
-- 包含生成时间、图片数量、使用的Excel文件
-- 便于追踪和审计
-
-### 10.3 性能监控
-- 导出过程中显示实时进度
-- 统计总处理时间和图片数量
-- 支持大规模批量处理（数百张图片）
-
-### 10.4 质量保证
-- 运行完整测试套件确保功能正常
-- 覆盖边界情况和异常场景
-- 详细的测试文档、分类说明和运行指南，请参考 `tests/README.md`

@@ -33,7 +33,6 @@ import pyperclip
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import re
-import xlwings as xw
 import subprocess
 
 # ===== 配置项 =====
@@ -95,7 +94,7 @@ def parse_clipboard_data(clipboard_content):
             # 如果没有分隔符，将整行作为一个单元格
             row_data = [line]
 
-        # 注意：不再清理空白字符，统一在PSD渲染阶段处理
+        # 空白字符清理统一在PSD渲染阶段处理
         data.append(row_data)
     
     # 转换为DataFrame
@@ -230,23 +229,6 @@ def write_to_excel(excel_file, df):
         # 保存文件
         workbook.save(excel_file)
 
-        # 强制Excel重新计算公式（使用xlwings确保公式正确更新）
-        try:
-            safe_print_message("正在重新计算公式...")
-
-            # 使用xlwings打开Excel并重新计算公式
-            app = xw.App(visible=False)
-            wb = app.books.open(excel_file)
-            wb.app.calculate()
-            wb.save()
-            wb.close()
-            app.quit()
-            safe_print_message("公式重新计算完成")
-
-        except Exception as e:
-            safe_print_message(f"警告: 无法重新计算公式: {str(e)}")
-            safe_print_message("第一个sheet的数据可能需要手动刷新")
-
         return target_sheet_name, start_row, len(df)
 
     except Exception as e:
@@ -307,21 +289,21 @@ def run_psd_renderer(excel_file):
         DEFAULT_FORMAT
     ]
 
-    # 运行PSD渲染器（psd_renderer.py内部已处理所有异常）
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=RENDER_TIMEOUT)
+    # 运行PSD渲染器（输出直接显示到终端）
+    try:
+        result = subprocess.run(cmd, timeout=RENDER_TIMEOUT)
 
-    if result.returncode == 0:
-        safe_print_message("\n✓ 图片渲染成功!")
-        safe_print_message(f"输出目录: {EXPORT_DIR}/")
-        safe_print_message(f"输出格式: {DEFAULT_FORMAT}")
-        safe_print_message(f"处理的PSD模板: {len(matching_psds)} 个")
-        return True
-    else:
-        safe_print_message(f"\n✗ 图片渲染失败:")
-        if result.stdout:
-            safe_print_message(f"输出: {result.stdout}")
-        if result.stderr:
-            safe_print_message(f"错误: {result.stderr}")
+        if result.returncode == 0:
+            safe_print_message("\n✓ 图片渲染成功!")
+            safe_print_message(f"输出目录: {EXPORT_DIR}/")
+            safe_print_message(f"输出格式: {DEFAULT_FORMAT}")
+            safe_print_message(f"处理的PSD模板: {len(matching_psds)} 个")
+            return True
+        else:
+            safe_print_message(f"\n✗ 图片渲染失败 (返回码: {result.returncode})")
+            return False
+    except subprocess.TimeoutExpired:
+        safe_print_message(f"\n✗ 渲染超时 (超过 {RENDER_TIMEOUT} 秒)")
         return False
 
 def main():
@@ -348,16 +330,42 @@ def main():
         excel_file, excel_path = find_target_excel_file()
         safe_print_message(f"目标文件: {excel_file}")
 
-        # 4. 写入Excel文件
-        safe_print_message("正在写入Excel文件...")
-        sheet_name, start_row, row_count = write_to_excel(excel_path, df)
+        # 检查是否有变换规则文件
+        template_name = os.path.splitext(excel_file)[0]
+        json_rule_path = os.path.join("workspace", f"{template_name}.json")
 
-        # 5. 输出结果
-        safe_print_message(f"\n✓ 导入成功!")
-        safe_print_message(f"   文件: {excel_file}")
-        safe_print_message(f"   Sheet: {sheet_name}")
-        safe_print_message(f"   位置: 第{start_row}行开始")
-        safe_print_message(f"   数据: {row_count}行 {len(df.columns)}列")
+        if os.path.exists(json_rule_path):
+            # 有变换规则：写入 _raw.csv，psd_renderer 内部会调 transform
+            raw_csv_path = os.path.join("workspace", f"{template_name}_raw.csv")
+            safe_print_message("检测到变换规则文件，写入原始数据...")
+
+            # 读取原 CSV 的表头（如果存在）
+            if os.path.exists(raw_csv_path):
+                with open(raw_csv_path, 'r', encoding='utf-8-sig') as f:
+                    original_header = f.readline().strip()
+            else:
+                # 文件不存在，使用默认数字列名
+                original_header = ','.join(str(i) for i in range(len(df.columns)))
+
+            # 写入：表头 + 数据（不带表头）
+            with open(raw_csv_path, 'w', encoding='utf-8-sig') as f:
+                f.write(original_header + '\n')
+                # 将 DataFrame 写入，不包含列名
+                df.to_csv(f, index=False, header=False)
+
+            safe_print_message(f"\n✓ 导入成功!")
+            safe_print_message(f"   文件: {os.path.basename(raw_csv_path)}")
+            safe_print_message(f"   数据: {len(df)}行 {len(df.columns)}列")
+        else:
+            # 无变换规则：直接写入 Excel（原有逻辑）
+            safe_print_message("正在写入Excel文件...")
+            sheet_name, start_row, row_count = write_to_excel(excel_path, df)
+
+            safe_print_message(f"\n✓ 导入成功!")
+            safe_print_message(f"   文件: {excel_file}")
+            safe_print_message(f"   Sheet: {sheet_name}")
+            safe_print_message(f"   位置: 第{start_row}行开始")
+            safe_print_message(f"   数据: {row_count}行 {len(df.columns)}列")
 
         # 6. 自动运行PSD渲染器
         run_psd_renderer(excel_file)

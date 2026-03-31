@@ -142,21 +142,34 @@ class TestPreciseTextPosition:
 
     def test_extreme_values_handling(self, text_render_objects):
         """测试极值处理"""
+        import math
+
+        def assert_valid_position(x_pos, y_pos, max_bound=None):
+            """验证位置值有效：不是NaN、不是无穷大、在合理范围内"""
+            assert isinstance(x_pos, (int, float)), f"x_pos不是数值类型: {type(x_pos)}"
+            assert isinstance(y_pos, (int, float)), f"y_pos不是数值类型: {type(y_pos)}"
+            assert not (x_pos != x_pos), f"x_pos是NaN: {x_pos}"
+            assert not (y_pos != y_pos), f"y_pos是NaN: {y_pos}"
+            assert not math.isinf(x_pos), f"x_pos是无穷大: {x_pos}"
+            assert not math.isinf(y_pos), f"y_pos是无穷大: {y_pos}"
+            if max_bound is not None:
+                assert 0 <= x_pos <= max_bound, f"x_pos超出合理范围[0, {max_bound}]: {x_pos}"
+
         # 极小字体
         x_pos, y_pos = calculate_text_position("A", 100, 1, "center",
                                                 text_render_objects["draw"], text_render_objects["font"])
-        assert isinstance(x_pos, (int, float))
-        assert isinstance(y_pos, (int, float))
+        assert_valid_position(x_pos, y_pos, max_bound=100)
 
         # 极大图层
         x_pos, y_pos = calculate_text_position("Test", 10000, 20, "right",
                                                 text_render_objects["draw"], text_render_objects["font"])
-        assert x_pos < 10000
+        assert_valid_position(x_pos, y_pos, max_bound=10000)
         assert x_pos > 9000  # 应该接近右边界
 
         # 极短文本
         x_pos, y_pos = calculate_text_position("I", 50, 12, "left",
                                                 text_render_objects["draw"], text_render_objects["font"])
+        assert_valid_position(x_pos, y_pos, max_bound=50)
         assert abs(x_pos) < 1  # 应该接近0
 
 
@@ -194,9 +207,9 @@ class TestImprovedTextPositionAssertions:
         """测试断言精度的改进"""
         test_cases = [
             ("Short", 100, 12, "left"),
-            ("Medium length text", 200, 16, "center"),
+            ("Ab", 200, 16, "center"),
             ("This is a much longer text string", 300, 14, "right"),
-            ("中文测试", 150, 18, "center"),
+            ("中", 150, 18, "center"),
             ("Mixed 中English 文", 250, 15, "left")
         ]
 
@@ -212,8 +225,8 @@ class TestImprovedTextPositionAssertions:
             if alignment == "left":
                 assert -5 <= x_pos <= 5, f"'{text}' 左对齐X位置应该在0附近: {x_pos}"
             elif alignment == "center":
-                center_range = (width * 0.1, width * 0.9)
-                assert center_range[0] <= x_pos <= center_range[1], f"'{text}' 居中X位置应该在{center_range}范围内: {x_pos}"
+                center_range = (width * 0.4, width * 0.6)
+                assert center_range[0] <= x_pos <= center_range[1], f"'{text}' 居中X位置应该在{center_range}范围内（居中40%-60%）: {x_pos}"
             else:  # right
                 # 对于特别长的文本，可能需要更宽松的范围
                 if len(text) > 20:

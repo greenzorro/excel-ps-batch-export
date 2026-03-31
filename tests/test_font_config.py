@@ -47,18 +47,19 @@ class TestLoadFontsConfig:
         }
         config_file.write_text(json.dumps(config_content, ensure_ascii=False))
 
-        with patch('os.path.exists', return_value=True):
-            with patch('builtins.open', create=True) as mock_open:
-                mock_open.return_value.__enter__.return_value.read.return_value = json.dumps(config_content)
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            psd_renderer.fonts_config = {}  # Reset global state
+            result = psd_renderer.load_fonts_config()
 
-                psd_renderer.fonts_config = {}  # Reset global state
-                result = psd_renderer.load_fonts_config()
-
-                # Check that comment field is filtered out
-                assert "_comment" not in result
-                assert "1" in result
-                assert "2" in result
-                assert len(result) == 2
+            # Check that comment field is filtered out
+            assert "_comment" not in result
+            assert "1" in result
+            assert "2" in result
+            assert len(result) == 2
+        finally:
+            os.chdir(original_cwd)
 
     def test_load_fonts_config_file_not_exists(self):
         """Test handling when fonts.json does not exist"""
@@ -74,15 +75,16 @@ class TestLoadFontsConfig:
         config_file = tmp_path / "fonts.json"
         config_file.write_text("{invalid json content")
 
-        with patch('os.path.exists', return_value=True):
-            with patch('builtins.open', create=True) as mock_open:
-                mock_open.return_value.__enter__.return_value.read.return_value = "{invalid"
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            psd_renderer.fonts_config = {}
+            result = psd_renderer.load_fonts_config()
 
-                psd_renderer.fonts_config = {}
-                result = psd_renderer.load_fonts_config()
-
-                # Should return empty dict on error
-                assert result == {}
+            # Should return empty dict on error
+            assert result == {}
+        finally:
+            os.chdir(original_cwd)
 
     def test_load_fonts_config_filters_comments(self, tmp_path):
         """Test that _comment and other _ prefixed keys are filtered"""
@@ -93,22 +95,24 @@ class TestLoadFontsConfig:
             "1": "font1.ttf",
             "2": "font2.otf"
         }
-        config_str = json.dumps(config_content, ensure_ascii=False)
+        config_file = tmp_path / "fonts.json"
+        config_file.write_text(json.dumps(config_content, ensure_ascii=False))
 
-        with patch('os.path.exists', return_value=True):
-            with patch('builtins.open', create=True) as mock_open:
-                mock_open.return_value.__enter__.return_value.read.return_value = config_str
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            psd_renderer.fonts_config = {}
+            result = psd_renderer.load_fonts_config()
 
-                psd_renderer.fonts_config = {}
-                result = psd_renderer.load_fonts_config()
-
-                # Only non-_ prefixed keys should remain
-                assert "_comment" not in result
-                assert "_usage" not in result
-                assert "_path_rules" not in result
-                assert "1" in result
-                assert "2" in result
-                assert len(result) == 2
+            # Only non-_ prefixed keys should remain
+            assert "_comment" not in result
+            assert "_usage" not in result
+            assert "_path_rules" not in result
+            assert "1" in result
+            assert "2" in result
+            assert len(result) == 2
+        finally:
+            os.chdir(original_cwd)
 
 
 class TestGetPsdPrefix:

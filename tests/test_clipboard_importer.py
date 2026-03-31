@@ -164,82 +164,6 @@ class TestExcelWriting:
                 os.unlink(tmp_path)
 
 
-class TestXlwingsRecalculation:
-    """Test xlwings formula recalculation functionality"""
-
-    @patch('clipboard_importer.xw.App')
-    @patch('clipboard_importer.safe_print_message')
-    def test_xlwings_recalculation_success(self, mock_print, mock_app):
-        """Test successful xlwings formula recalculation"""
-        # Mock xlwings objects
-        mock_app_instance = Mock()
-        mock_wb = Mock()
-        mock_app.return_value = mock_app_instance
-        mock_app_instance.books.open.return_value = mock_wb
-        mock_wb.app.calculate.return_value = None
-
-        # Create a real Excel file for testing
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp_file:
-            tmp_path = tmp_file.name
-
-        try:
-            # Create a simple Excel file
-            df_test = pd.DataFrame({'A': ['Test1'], 'B': ['Test2']})
-            df_test.to_excel(tmp_path, index=False)
-
-            # Create test data
-            test_df = pd.DataFrame({'Column1': ['Value1'], 'Column2': ['Value2']})
-
-            # Mock only the parts that need to be mocked
-            with patch('clipboard_importer.get_target_sheet', return_value='Sheet1'):
-                # This will trigger the xlwings recalculation
-                clipboard_importer.write_to_excel(tmp_path, test_df)
-
-            # Verify xlwings was called
-            mock_app.assert_called_once_with(visible=False)
-            mock_app_instance.books.open.assert_called_once_with(tmp_path)
-            mock_wb.app.calculate.assert_called_once()
-            mock_wb.save.assert_called_once()
-            mock_wb.close.assert_called_once()
-            mock_app_instance.quit.assert_called_once()
-
-        finally:
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-
-    @patch('clipboard_importer.xw.App')
-    @patch('clipboard_importer.safe_print_message')
-    def test_xlwings_recalculation_error_handling(self, mock_print, mock_app):
-        """Test xlwings recalculation error handling"""
-        # Mock xlwings to raise an exception
-        mock_app.side_effect = Exception("xlwings error")
-
-        # Create a real Excel file for testing
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp_file:
-            tmp_path = tmp_file.name
-
-        try:
-            # Create a simple Excel file
-            df_test = pd.DataFrame({'A': ['Test1'], 'B': ['Test2']})
-            df_test.to_excel(tmp_path, index=False)
-
-            # Create test data
-            test_df = pd.DataFrame({'Column1': ['Value1'], 'Column2': ['Value2']})
-
-            # Mock only the parts that need to be mocked
-            with patch('clipboard_importer.get_target_sheet', return_value='Sheet1'):
-                # This should handle the xlwings error gracefully
-                clipboard_importer.write_to_excel(tmp_path, test_df)
-
-            # Verify error message was printed
-            mock_print.assert_any_call("警告: 无法重新计算公式: xlwings error")
-            mock_print.assert_any_call("第一个sheet的数据可能需要手动刷新")
-
-        finally:
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-
-
 class TestErrorHandling:
     """Test error handling functionality"""
 
@@ -290,7 +214,7 @@ class TestPSDRendererIntegration:
         """Test PSD renderer execution failure"""
         # Mock listdir to return PSD files
         mock_listdir.return_value = ['test#1.psd', 'test#2.psd']
-        mock_run.return_value = Mock(returncode=1, stdout='Error output', stderr='Error details')
+        mock_run.return_value = Mock(returncode=1)
 
         # Test function
         result = clipboard_importer.run_psd_renderer('test.xlsx')
@@ -298,8 +222,8 @@ class TestPSDRendererIntegration:
         # Verify result
         assert result == False
         mock_run.assert_called_once()
-        # Check that failure message was printed (not necessarily as the last call)
-        mock_print.assert_any_call("\n✗ 图片渲染失败:")
+        # Check that failure message was printed (new format includes return code)
+        mock_print.assert_any_call("\n✗ 图片渲染失败 (返回码: 1)")
 
 
 class TestMainFunction:

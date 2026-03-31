@@ -125,6 +125,26 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
   - 命令：`python psd_renderer.py 活动 jpg`
   - 输出：对于 `活动.xlsx` 中的每一行，生成两张图片：`image_1_夏季版.jpg`, `image_1_冬季版.jpg` 等（假设File_name列为空，否则使用File_name列的值）。
 
+## 高级功能
+
+### 数据变换规则
+
+对于需要复杂数据处理的模板，您可以使用基于 JSON 的数据变换规则。当 workspace 目录中存在与模板同名的 `.json` 文件时：
+
+**工作原理：**
+1. 编辑 `_raw.csv` 原始数据文件
+2. 系统自动应用 `.json` 中定义的变换规则
+3. 处理后的数据写入 `.xlsx` 供渲染使用
+
+**支持的变换类型：**
+- `direct` - 直接复制字段值
+- `conditional` - 仅当依赖字段非空时复制
+- `template` - 组合多个字段（如文件名生成）
+- `derived` - 基于其他字段的布尔值
+- `derived_raw` - 基于原始字段存在性的布尔值
+
+**示例：** 模板 1、2、3 包含变换规则。详细文档请查看 `transform_guide.md`。
+
 ## 使用前提
 
 ### 安装依赖

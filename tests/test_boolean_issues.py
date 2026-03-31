@@ -1,199 +1,269 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-布尔值处理测试 - 发现业务代码问题
-===================================
+布尔值处理测试 - 验证业务代码正确性
+=====================================
 
-专门测试布尔值处理的正确性，发现业务代码中的缺陷。
+测试 psd_renderer.py 中 set_layer_visibility 函数的布尔值处理逻辑，
+确保各种来自 Excel 的字符串/数值/布尔值都能被正确解析。
 """
 
 import pytest
 import sys
 import os
+import time
+from unittest.mock import Mock
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from test_utils import parse_boolean_value, TestEnvironment
-from unittest.mock import Mock
+from psd_renderer import set_layer_visibility
 
 
-class TestBooleanValueParsing:
-    """测试布尔值解析的正确性"""
-    
-    def test_correct_boolean_parsing(self):
-        """测试正确的布尔值解析"""
-        # 布尔值输入
-        assert parse_boolean_value(True) is True
-        assert parse_boolean_value(False) is False
-        
-        # 字符串输入 - 正确解析
-        assert parse_boolean_value("True") is True
-        assert parse_boolean_value("true") is True
-        assert parse_boolean_value("TRUE") is True
-        assert parse_boolean_value("1") is True
-        assert parse_boolean_value("yes") is True
-        assert parse_boolean_value("YES") is True
-        assert parse_boolean_value("on") is True
-        assert parse_boolean_value("ON") is True
-        assert parse_boolean_value("t") is True
-        assert parse_boolean_value("T") is True
-        assert parse_boolean_value("y") is True
-        assert parse_boolean_value("Y") is True
-        
-        # 字符串输入 - 错误解析
-        assert parse_boolean_value("False") is False
-        assert parse_boolean_value("false") is False
-        assert parse_boolean_value("FALSE") is False
-        assert parse_boolean_value("0") is False
-        assert parse_boolean_value("no") is False
-        assert parse_boolean_value("NO") is False
-        assert parse_boolean_value("off") is False
-        assert parse_boolean_value("OFF") is False
-        assert parse_boolean_value("f") is False
-        assert parse_boolean_value("F") is False
-        assert parse_boolean_value("n") is False
-        assert parse_boolean_value("N") is False
-        
-        # 数字输入
-        assert parse_boolean_value(1) is True
-        assert parse_boolean_value(0) is False
-        assert parse_boolean_value(42) is True
-        assert parse_boolean_value(-1) is True
-        assert parse_boolean_value(0.0) is False
-        assert parse_boolean_value(1.0) is True
-        
-        # 空值和None
-        assert parse_boolean_value("") is False
-        assert parse_boolean_value(None) is False
-        
-        # 其他类型
-        assert parse_boolean_value([]) is False
-        assert parse_boolean_value([1]) is True
-        assert parse_boolean_value({}) is False
-        assert parse_boolean_value({"key": "value"}) is True
+def _make_mock_layer():
+    """创建一个用于 set_layer_visibility 测试的 mock 图层对象"""
+    layer = Mock()
+    layer.visible = None
+    return layer
 
 
-class TestBusinessCodeBooleanIssues:
-    """测试业务代码中的布尔值处理问题"""
-    
-    def test_business_code_boolean_conversion_bug(self):
-        """演示业务代码中的布尔值转换bug"""
-        # 这是业务代码中的错误逻辑
-        def business_code_boolean_conversion(value):
-            """模拟业务代码中的错误布尔值转换"""
-            # 处理numpy布尔类型
-            if hasattr(value, 'item'):
-                value = value.item()
-            # 处理pandas布尔类型
-            if hasattr(value, 'bool'):
-                value = value.bool()
-            # 确保是Python原生bool类型 - 这里有问题！
-            value = bool(value)
-            return value
-        
-        # 测试错误逻辑
-        assert business_code_boolean_conversion("False") is True  # 错误！
-        assert business_code_boolean_conversion("0") is True      # 错误！
-        assert business_code_boolean_conversion("") is False       # 正确
-        assert business_code_boolean_conversion("True") is True   # 正确
-        
-        # 对比正确实现
-        assert parse_boolean_value("False") is False  # 正确
-        assert parse_boolean_value("0") is False      # 正确
-        assert parse_boolean_value("") is False       # 正确
-        assert parse_boolean_value("True") is True   # 正确
-    
-    def test_excel_boolean_data_scenarios(self):
-        """测试Excel中常见的布尔值数据场景"""
-        # 模拟Excel中可能出现的各种布尔值表示
-        excel_boolean_values = [
-            # 标准布尔值
-            True, False,
-            # 字符串表示
-            "TRUE", "FALSE", "True", "False", "true", "false",
-            "1", "0", "YES", "NO", "yes", "no", "ON", "OFF", "on", "off",
-            # 数字
-            1, 0, 1.0, 0.0,
-            # 空值
-            "", None,
-            # 其他常见情况
-            " T ", " F ", "  ", "NA", "N/A"
+class TestSetLayerVisibilityBooleanInputs:
+    """测试 set_layer_visibility 对 Python 原生布尔值的处理"""
+
+    def test_bool_true(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, True)
+        assert layer.visible is True
+
+    def test_bool_false(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, False)
+        assert layer.visible is False
+
+
+class TestSetLayerVisibilityTruthyStrings:
+    """测试 set_layer_visibility 对各种真值字符串的处理"""
+
+    @pytest.mark.parametrize("value", [
+        "True", "true", "TRUE",
+        "1",
+        "yes", "YES", "Yes",
+        "on", "ON", "On",
+        "t", "T",
+        "y", "Y",
+    ])
+    def test_truthy_strings(self, value):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, value)
+        assert layer.visible is True, f"Expected True for input '{value}', got {layer.visible}"
+
+
+class TestSetLayerVisibilityFalsyStrings:
+    """测试 set_layer_visibility 对各种假值字符串的处理"""
+
+    @pytest.mark.parametrize("value", [
+        "False", "false", "FALSE",
+        "0",
+        "no", "NO", "No",
+        "off", "OFF", "Off",
+        "f", "F",
+        "n", "N",
+        "",       # 空字符串
+        "  ",     # 仅空格
+        "  \t ",  # 空白字符
+    ])
+    def test_falsy_strings(self, value):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, value)
+        assert layer.visible is False, f"Expected False for input '{value}', got {layer.visible}"
+
+
+class TestSetLayerVisibilityNumericInputs:
+    """测试 set_layer_visibility 对数值类型输入的处理"""
+
+    def test_integer_nonzero(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, 1)
+        assert layer.visible is True
+
+    def test_integer_zero(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, 0)
+        assert layer.visible is False
+
+    def test_float_nonzero(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, 1.0)
+        assert layer.visible is True
+
+    def test_float_zero(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, 0.0)
+        assert layer.visible is False
+
+    def test_negative_number(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, -1)
+        assert layer.visible is True
+
+    def test_large_number(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, 42)
+        assert layer.visible is True
+
+
+class TestSetLayerVisibilityNoneAndEdgeCases:
+    """测试 set_layer_visibility 对 None 和其他边界值的处理"""
+
+    def test_none_input(self):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, None)
+        assert layer.visible is False
+
+    def test_whitespace_stripped_truthy(self):
+        """带空格的真值字符串应正确解析"""
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, " True ")
+        assert layer.visible is True
+
+    def test_whitespace_stripped_falsy(self):
+        """带空格的假值字符串应正确解析"""
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, " false ")
+        assert layer.visible is False
+
+    def test_numeric_string_non_zero(self):
+        """非零数字字符串应解析为 True（通过 float 回退）"""
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, "2.5")
+        assert layer.visible is True
+
+    def test_numeric_string_zero_float(self):
+        """字符串 '0.0' 应解析为 False"""
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, "0.0")
+        assert layer.visible is False
+
+    def test_unrecognized_non_empty_string(self):
+        """无法识别的非空字符串会通过 bool() 回退为 True"""
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, "random_text")
+        assert layer.visible is True
+
+
+class TestSetLayerVisibilityNumpyPandasCompat:
+    """测试 set_layer_visibility 对 numpy/pandas 类型的兼容处理"""
+
+    def test_numpy_like_item(self):
+        """模拟具有 .item() 方法的 numpy 布尔值"""
+        layer = _make_mock_layer()
+        numpy_like = Mock()
+        numpy_like.item.return_value = True
+        # numpy bool 不应有 .bool() 方法（排除 hasattr 判断）
+        del numpy_like.bool
+        set_layer_visibility(layer, numpy_like)
+        assert layer.visible is True
+
+    def test_numpy_like_item_false(self):
+        layer = _make_mock_layer()
+        numpy_like = Mock()
+        numpy_like.item.return_value = False
+        del numpy_like.bool
+        set_layer_visibility(layer, numpy_like)
+        assert layer.visible is False
+
+    def test_pandas_like_bool(self):
+        """模拟具有 .bool() 方法的 pandas 布尔值"""
+        layer = _make_mock_layer()
+        pandas_like = Mock()
+        pandas_like.bool.return_value = True
+        # 不触发 .item() 分支
+        del pandas_like.item
+        set_layer_visibility(layer, pandas_like)
+        assert layer.visible is True
+
+    def test_pandas_like_bool_false(self):
+        layer = _make_mock_layer()
+        pandas_like = Mock()
+        pandas_like.bool.return_value = False
+        del pandas_like.item
+        set_layer_visibility(layer, pandas_like)
+        assert layer.visible is False
+
+    def test_numpy_string_value_via_item(self):
+        """numpy 字符串值通过 .item() 还原后正确解析"""
+        layer = _make_mock_layer()
+        numpy_str = Mock()
+        numpy_str.item.return_value = "FALSE"
+        del numpy_str.bool
+        set_layer_visibility(layer, numpy_str)
+        assert layer.visible is False
+
+
+class TestSetLayerVisibilityExcelScenarios:
+    """模拟 Excel 数据中常见的布尔值场景"""
+
+    EXCEL_TEST_CASES = [
+        # (输入值, 期望的 visible 结果, 描述)
+        (True, True, "Python bool True"),
+        (False, False, "Python bool False"),
+        ("TRUE", True, "Excel TRUE 函数输出（大写）"),
+        ("FALSE", False, "Excel FALSE 函数输出（大写）"),
+        ("True", True, "Excel 字符串 True"),
+        ("False", False, "Excel 字符串 False"),
+        ("1", True, "Excel 数字 1 作为字符串"),
+        ("0", False, "Excel 数字 0 作为字符串"),
+        ("yes", True, "字符串 yes"),
+        ("no", False, "字符串 no"),
+        ("", False, "Excel 空单元格"),
+        (None, False, "pandas 读取空单元格后的 NaN（经 fillna 处理）"),
+        (1, True, "Python int 1"),
+        (0, False, "Python int 0"),
+        (1.0, True, "Python float 1.0"),
+        (0.0, False, "Python float 0.0"),
+    ]
+
+    @pytest.mark.parametrize("input_value,expected,description", EXCEL_TEST_CASES)
+    def test_excel_boolean_scenarios(self, input_value, expected, description):
+        layer = _make_mock_layer()
+        set_layer_visibility(layer, input_value)
+        assert layer.visible == expected, (
+            f"{description}: 输入 {repr(input_value)} 期望 visible={expected}, "
+            f"实际 visible={layer.visible}"
+        )
+
+
+class TestSetLayerVisibilityPerformance:
+    """测试 set_layer_visibility 的批量处理性能"""
+
+    def test_bulk_visibility_performance(self):
+        """验证批量设置图层可见性的性能在合理范围内"""
+        test_inputs = [
+            True, False, "True", "False", "TRUE", "FALSE",
+            "1", "0", "yes", "no", "on", "off",
+            "", None, 1, 0, 1.0, 0.0,
+            "t", "f", "y", "n", "T", "F", "Y", "N",
         ]
-        
-        # 测试我们的正确解析函数
-        correct_results = {
-            True: True, False: False,
-            "TRUE": True, "FALSE": False, "True": True, "False": False,
-            "true": True, "false": False, "1": True, "0": False,
-            "YES": True, "NO": False, "yes": True, "no": False,
-            "ON": True, "OFF": False, "on": True, "off": False,
-            1: True, 0: False, 1.0: True, 0.0: False,
-            "": False, None: False, " T ": False, " F ": False,
-            "  ": False, "NA": False, "N/A": False
-        }
-        
-        for value, expected in correct_results.items():
-            result = parse_boolean_value(value)
-            assert result == expected, f"值 {value} 期望 {expected}, 实际 {result}"
-    
-    def test_layer_visibility_boolean_handling(self):
-        """测试图层可见性的布尔值处理"""
-        # 模拟业务代码中的set_layer_visibility函数
-        def business_set_layer_visibility(layer, visibility):
-            """模拟业务代码中的set_layer_visibility函数"""
-            # 处理numpy布尔类型
-            if hasattr(visibility, 'item'):
-                visibility = visibility.item()
-            # 处理pandas布尔类型
-            if hasattr(visibility, 'bool'):
-                visibility = visibility.bool()
-            # 确保是Python原生bool类型
-            visibility = bool(visibility)  # 这里有bug！
-            layer.visible = visibility
-        
-        # 创建模拟图层
-        mock_layer = Mock()
-        
-        # 测试各种Excel数据输入
-        test_cases = [
-            ("True", True),
-            ("FALSE", False),  # 业务代码会错误地返回True
-            ("1", True),
-            ("0", False),      # 业务代码会错误地返回True
-            ("", False),
-            (None, False),
-            (True, True),
-            (False, False)
-        ]
-        
-        for input_value, expected_visibility in test_cases:
-            mock_layer.visible = None  # 重置
-            business_set_layer_visibility(mock_layer, input_value)
-            
-            # 检查结果
-            if input_value in ["FALSE", "0"]:
-                # 这些情况下业务代码有bug
-                assert mock_layer.visible is True, f"业务代码bug: {input_value} 被转换为 {mock_layer.visible}"
-                print(f"发现业务代码bug: '{input_value}' -> {mock_layer.visible} (期望: {expected_visibility})")
-            else:
-                assert mock_layer.visible == expected_visibility, f"{input_value} -> {mock_layer.visible}"
-    
-    def test_boolean_parsing_performance(self):
-        """测试布尔值解析的性能"""
-        import time
-        
-        # 大量数据测试
-        test_data = ["True", "False", "1", "0", "yes", "no"] * 10000
-        
-        start_time = time.time()
-        for value in test_data:
-            parse_boolean_value(value)
-        end_time = time.time()
-        
-        duration = end_time - start_time
-        assert duration < 1.0, f"布尔值解析性能问题: {duration:.3f}s"
-        print(f"布尔值解析性能: {duration:.3f}s (处理{len(test_data)}个值)")
+
+        iterations = 1000
+        total_calls = len(test_inputs) * iterations
+
+        start = time.perf_counter()
+        for _ in range(iterations):
+            for value in test_inputs:
+                layer = _make_mock_layer()
+                set_layer_visibility(layer, value)
+        elapsed = time.perf_counter() - start
+
+        calls_per_second = total_calls / elapsed
+        print(f"Performance: {total_calls} calls in {elapsed:.3f}s "
+              f"({calls_per_second:.0f} calls/s)")
+
+        # 26000 次调用应在合理时间内完成（远低于 2 秒）
+        assert elapsed < 2.0, (
+            f"Performance regression: {total_calls} calls took {elapsed:.3f}s "
+            f"({calls_per_second:.0f} calls/s)"
+        )
 
 
 if __name__ == "__main__":

@@ -125,6 +125,26 @@ Example:
   - Command: `python psd_renderer.py campaign jpg`
   - Output: For each row in `campaign.xlsx`, two images are generated: `image_1_summer.jpg`, `image_1_winter.jpg`, etc. (assuming File_name column is empty, otherwise uses the File_name value)
 
+## Advanced Features
+
+### Data Transformation Rules
+
+For templates that require complex data processing, you can use JSON-based transformation rules. When a `.json` file exists in the workspace directory alongside your template:
+
+**How it works:**
+1. Edit `_raw.csv` with your raw data
+2. The system automatically applies transformation rules defined in `.json`
+3. Processed data is written to `.xlsx` for rendering
+
+**Supported transformations:**
+- `direct` - Copy field values directly
+- `conditional` - Copy only when a parent field is not empty
+- `template` - Combine multiple fields into one (e.g., filename generation)
+- `derived` - Boolean values based on other fields
+- `derived_raw` - Boolean values based on raw field existence
+
+**Example:** Templates 1, 2, and 3 include transformation rules. See `transform_guide.md` for detailed documentation.
+
 ## Prerequisite
 
 ### Install Dependencies
@@ -134,23 +154,6 @@ Install all required dependencies using the `requirements.txt` file:
 ```bash
 pip install -r requirements.txt
 ```
-
-### Testing
-
-The project includes a comprehensive test suite to ensure code quality and functionality:
-
-```bash
-# Run all tests (recommended)
-python tests/run_tests.py all
-
-# Run specific test file
-python -m pytest tests/test_simple.py -v
-
-# Generate coverage report
-python tests/run_tests.py coverage
-```
-
-**Test Coverage**: 188 tests covering core functionality, business logic, error handling, boundary conditions, performance scenarios, text rotation, font configuration system, and platform compatibility with strict validation standards.
 
 ## Usage Guide
 

@@ -358,11 +358,12 @@ class TestPSDFileMatching:
         original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             os.chdir(tmp_dir)
-            
+
             try:
-                # 创建测试文件
-                Path("test.psd").touch()
-                
+                # 创建 workspace 目录和测试文件
+                os.makedirs("workspace")
+                Path("workspace/test.psd").touch()
+
                 matching = get_matching_psds("test")
                 assert matching == ["test.psd"]
             finally:
@@ -373,13 +374,14 @@ class TestPSDFileMatching:
         original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             os.chdir(tmp_dir)
-            
+
             try:
-                # 创建测试文件
-                Path("test#1.psd").touch()
-                Path("test#2.psd").touch()
-                Path("other.psd").touch()
-                
+                # 创建 workspace 目录和测试文件
+                os.makedirs("workspace")
+                Path("workspace/test#1.psd").touch()
+                Path("workspace/test#2.psd").touch()
+                Path("workspace/other.psd").touch()
+
                 matching = get_matching_psds("test")
                 assert set(matching) == {"test#1.psd", "test#2.psd"}
             finally:
@@ -390,11 +392,12 @@ class TestPSDFileMatching:
         original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             os.chdir(tmp_dir)
-            
+
             try:
-                # 创建测试文件
-                Path("other.psd").touch()
-                
+                # 创建 workspace 目录和测试文件
+                os.makedirs("workspace")
+                Path("workspace/other.psd").touch()
+
                 matching = get_matching_psds("test")
                 assert matching == []
             finally:
