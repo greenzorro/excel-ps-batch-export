@@ -29,11 +29,8 @@ DEFAULT_FONT = "assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
 
 # 模块级配置变量
 file_name = None
-image_format = None
-quality = 95
 current_datetime = ""
 output_path = "export"
-excel_file_path = None
 
 
 def safe_print_message(message):
@@ -1201,7 +1198,6 @@ if __name__ == "__main__":
     image_format = sys.argv[2]  # 从命令行参数获取输出图片格式
 
     quality = 95
-    optimize = False
 
     # 文件路径
     output_path = "export"
