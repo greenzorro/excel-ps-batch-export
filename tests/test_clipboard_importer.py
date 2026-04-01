@@ -100,36 +100,28 @@ class TestExcelFileSelection:
 class TestTargetSheetDetection:
     """Test target sheet detection functionality"""
 
-    def test_get_target_sheet_with_paste_sheet(self):
-        """Test getting target sheet when '粘贴' sheet exists"""
-        mock_workbook = Mock()
-        mock_workbook.sheetnames = ['Sheet1', '粘贴', 'Sheet2']
-
-        result = clipboard_importer.get_target_sheet(mock_workbook)
-        assert result == "粘贴"
-
-    def test_get_target_sheet_without_paste_sheet(self):
-        """Test getting target sheet when no '粘贴' sheet exists"""
+    def test_get_target_sheet_always_first(self):
+        """Test that get_target_sheet always returns the first sheet"""
         mock_workbook = Mock()
         mock_workbook.sheetnames = ['Sheet1', 'Sheet2', 'Sheet3']
 
         result = clipboard_importer.get_target_sheet(mock_workbook)
-        assert result == "Sheet2"
+        assert result == "Sheet1"
 
     def test_get_target_sheet_single_sheet(self):
         """Test getting target sheet when only one sheet exists"""
         mock_workbook = Mock()
-        mock_workbook.sheetnames = ['Sheet1']
+        mock_workbook.sheetnames = ['OnlySheet']
 
         result = clipboard_importer.get_target_sheet(mock_workbook)
-        assert result == "Sheet1"
+        assert result == "OnlySheet"
 
 
 class TestExcelWriting:
     """Test Excel writing functionality"""
 
     def test_write_to_excel_clears_target_area(self):
-        """Test that writing clears B2:Z1000 area before writing"""
+        """Test that writing clears A2:Z100 area before writing"""
         # Create a temporary Excel file for testing
         with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp_file:
             tmp_path = tmp_file.name
@@ -155,7 +147,7 @@ class TestExcelWriting:
 
             # Verify the function returns expected values
             assert result[0] == 'Sheet1'  # sheet name
-            assert result[1] == 2  # start row (B2)
+            assert result[1] == 2  # start row (A2)
             assert result[2] == 2  # row count
 
         finally:

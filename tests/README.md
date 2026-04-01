@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## Test Suite Status
 
-**351 passed** ✅
+**350 passed** ✅
 
-**Last Updated**: 2026-03-31
+**Last Updated**: 2026-04-01
 **Status**: All tests passing. No Excel application required.
 
 ## Test Files Description
@@ -211,8 +211,8 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 351
-- **Passed**: 351 ✅
+- **Total Tests**: 350
+- **Passed**: 350 ✅
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
@@ -239,8 +239,8 @@ pip install pytest pytest-html
 
 #### Using Unified Test Script (Recommended)
 ```bash
-# Run from test directory
-cd test
+# Run from tests directory
+cd tests
 python run_tests.py <mode>
 ```
 
@@ -285,16 +285,16 @@ python -m pytest test_boundary_conditions.py -v
 python -m pytest test_performance.py -v -s
 
 # Run all tests
-python -m pytest test/ -v
+python -m pytest tests/ -v
 
 # Generate HTML report
-python -m pytest test/ -v --html=test_report.html --self-contained-html
+python -m pytest tests/ -v --html=test_report.html --self-contained-html
 ```
 
 ## Test File Structure
 
 ```
-test/
+tests/
 ├── README.md              # This document
 ├── run_tests.py           # Unified test runner script
 ├── test_simple.py         # Core functionality tests
@@ -331,8 +331,8 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Distribution
 
-- **Total Tests**: 351
-- **Passed**: 351 ✅
+- **Total Tests**: 350
+- **Passed**: 350 ✅
 - **Failed**: 0
 - **Test Breakdown**:
   - Boolean value handling: 67 tests
@@ -344,7 +344,7 @@ Tests automatically create temporary workspaces without affecting project files.
   - Logging functionality: 23 tests
   - Error handling: 17 tests
   - Font configuration: 18 tests
-  - Clipboard importer: 18 tests
+  - Clipboard importer: 17 tests
   - Integration: 4 tests
   - Real scenarios: 9 tests
   - Performance: 4 tests

@@ -10,12 +10,11 @@ Description:
 主要功能：
 1. 从系统剪贴板读取表格数据（支持制表符和逗号分隔格式）
 2. 自动解析剪贴板数据为DataFrame格式
-3. 在当前目录查找Excel文件（支持多文件选择）
-4. 确定目标sheet：优先使用名为"粘贴"的sheet，否则使用第二个sheet
-5. 清空从B2单元格开始的右下方所有区域
-6. 从B2单元格开始写入解析后的数据
-7. 支持文件选择退出功能（输入"q"退出或Ctrl+C中断）
-8. 自动运行PSD渲染器生成图片，实现数据导入到图片生成的一体化流程
+3. 在workspace目录查找Excel文件（支持多文件选择）
+4. 写入第一个sheet（与psd_renderer.py保持一致）
+5. 从A2单元格开始追加数据，保留表头行
+6. 支持文件选择退出功能（输入"q"退出或Ctrl+C中断）
+7. 自动运行PSD渲染器生成图片，实现数据导入到图片生成的一体化流程
 
 使用场景：
 - 快速将网页表格、其他软件表格数据导入到Excel中
@@ -164,25 +163,15 @@ def find_target_excel_file():
 
 def get_target_sheet(workbook):
     """获取目标sheet名称
-    
+
     :param Workbook workbook: openpyxl Workbook对象
-    :return str: 目标sheet名称
+    :return str: 目标sheet名称（第一个sheet）
     """
-    sheet_names = workbook.sheetnames
-    
-    # 优先查找名为"粘贴"的sheet
-    if "粘贴" in sheet_names:
-        return "粘贴"
-    
-    # 如果没有"粘贴"sheet，使用第二个sheet
-    if len(sheet_names) >= 2:
-        return sheet_names[1]  # 第二个sheet
-    
-    # 如果只有一个sheet，使用第一个sheet
-    return sheet_names[0]
+    # 始终使用第一个sheet（与psd_renderer.py保持一致）
+    return workbook.sheetnames[0]
 
 def write_to_excel(excel_file, df):
-    """将DataFrame写入Excel文件的指定sheet，从B2单元格开始
+    """将DataFrame写入Excel文件的第一个sheet，从A2开始追加数据
 
     :param str excel_file: Excel文件路径
     :param pd.DataFrame df: 要写入的数据
@@ -193,32 +182,29 @@ def write_to_excel(excel_file, df):
         workbook = load_workbook(excel_file)
         target_sheet_name = get_target_sheet(workbook)
 
-        # 获取或创建目标sheet
-        if target_sheet_name in workbook.sheetnames:
-            sheet = workbook[target_sheet_name]
-        else:
-            sheet = workbook.create_sheet(target_sheet_name)
+        # 获取第一个sheet
+        sheet = workbook[target_sheet_name]
 
-        # 清空从B2开始的右下方所有区域
+        # 清空从A2开始的右下方所有区域（保留第1行表头）
         max_row = sheet.max_row
         max_col = sheet.max_column
 
-        # 计算需要清空的范围：从第2行到最大行，从第2列到最大列
+        # 计算需要清空的范围：从第2行到最大行，从第1列到最大列
         clear_start_row = 2
         clear_end_row = max(max_row, 100)  # 至少清空到第100行
-        clear_start_col = 2
+        clear_start_col = 1  # A列
         clear_end_col = max(max_col, 26)   # 至少清空到Z列
 
-        safe_print_message(f"正在清空 {target_sheet_name} 的 B2 开始区域 (行{clear_start_row}-{clear_end_row}, 列{clear_start_col}-{clear_end_col})...")
+        safe_print_message(f"正在清空 {target_sheet_name} 的 A2 开始区域 (行{clear_start_row}-{clear_end_row}, 列{clear_start_col}-{clear_end_col})...")
 
         for row in range(clear_start_row, clear_end_row + 1):
             for col in range(clear_start_col, clear_end_col + 1):
                 cell = sheet.cell(row=row, column=col)
                 cell.value = None
 
-        # 从B2单元格开始写入数据
-        start_row = 2  # B2单元格的行号
-        start_col = 2  # B2单元格的列号
+        # 从A2单元格开始写入数据
+        start_row = 2  # A2单元格的行号
+        start_col = 1  # A列
 
         # 写入数据（强制设置为文本格式，保持原始内容不变）
         for r_idx, row_data in enumerate(dataframe_to_rows(df, index=False, header=False), start_row):
