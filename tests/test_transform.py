@@ -18,7 +18,7 @@ import pandas as pd
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from transform import (
+from src.transform import (
     is_empty, remove_spaces,
     apply_direct, apply_conditional, apply_template,
     apply_derived, apply_derived_raw,
@@ -278,8 +278,9 @@ class TestEndToEnd:
 
     def setup_method(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.workspace = os.path.join(self.tmpdir, "workspace")
-        os.makedirs(self.workspace)
+        # Create workspace as a sibling to tmpdir so ../workspace works from tmpdir
+        self.workspace = os.path.join(os.path.dirname(self.tmpdir), "workspace")
+        os.makedirs(self.workspace, exist_ok=True)
 
     def teardown_method(self):
         shutil.rmtree(self.tmpdir)
@@ -435,10 +436,10 @@ class TestEndToEnd:
 class TestFileErrors:
     def test_missing_rules_file(self):
         with pytest.raises(FileNotFoundError, match="规则文件不存在"):
-            from transform import load_rules
+            from src.transform import load_rules
             load_rules("nonexistent")
 
     def test_missing_raw_data(self):
         with pytest.raises(FileNotFoundError, match="原始数据文件不存在"):
-            from transform import load_raw_data
+            from src.transform import load_raw_data
             load_raw_data("nonexistent")

@@ -87,7 +87,7 @@ class TestPerformance:
             "分类": ["测试分类"] * 1000,
             "标题第1行": ["测试标题"] * 1000,
             "标题第2行": ["副标题"] * 1000,
-            "背景图": ["assets/1_img/null.jpg"] * 1000,
+            "背景图": ["workspace/assets/1_img/null.jpg"] * 1000,
             "小标签": [True] * 1000,
         }
         
@@ -117,7 +117,7 @@ class TestPerformance:
             "分类": [f"分类_{i%10}" for i in range(5000)],
             "标题第1行": [f"测试标题_{i}" for i in range(5000)],
             "标题第2行": [f"副标题_{i}" for i in range(5000)],
-            "背景图": [f"assets/1_img/img_{i%10}.jpg" for i in range(5000)],
+            "背景图": [f"workspace/assets/1_img/img_{i%10}.jpg" for i in range(5000)],
             "小标签": [i % 2 == 0 for i in range(5000)],
         }
         
@@ -167,7 +167,7 @@ class TestPerformance:
         """测试transform.py数据变换管线性能（100+行）"""
         print("\n=== Transform Pipeline Performance Test ===")
 
-        from transform import transform_row
+        from src.transform import transform_row
 
         # 构造100+行原始数据和规则
         num_rows = 150
@@ -176,7 +176,7 @@ class TestPerformance:
             "分类": [f"分类_{i % 5}" for i in range(num_rows)],
             "标题第1行": [f"标题_{i}" for i in range(num_rows)],
             "标题第2行": [f"副标题_{i}" for i in range(num_rows)],
-            "背景图": [f"assets/1_img/img_{i % 3}.jpg" for i in range(num_rows)],
+            "背景图": [f"workspace/assets/1_img/img_{i % 3}.jpg" for i in range(num_rows)],
             "小标签": ["TRUE" if i % 2 == 0 else "" for i in range(num_rows)],
         })
 
@@ -219,7 +219,7 @@ class TestPerformance:
         """测试批量transform_row操作性能"""
         print("\n=== Batch transform_row Performance Test ===")
 
-        from transform import transform_row
+        from src.transform import transform_row
 
         num_rows = 100
         raw_data = pd.DataFrame({

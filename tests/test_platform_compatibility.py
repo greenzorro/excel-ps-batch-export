@@ -20,7 +20,7 @@ from pathlib import Path
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from transform import (
+from src.transform import (
     transform_row, apply_direct, apply_conditional,
     apply_template, apply_derived, apply_derived_raw,
     is_empty, remove_spaces
@@ -49,7 +49,7 @@ class TestErrorMessageEncoding:
         """运行psd_renderer.py并返回结果"""
         script_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "psd_renderer.py"
+            "src", "psd_renderer.py"
         )
         return subprocess.run(
             [sys.executable, script_path, *args],
@@ -393,7 +393,7 @@ class TestLongFilePaths:
     def test_transform_handles_long_primary_field_value(self):
         """验证transform pipeline能处理超长的字段值"""
         import pandas as pd
-        from transform import transform_row
+        from src.transform import transform_row
 
         long_value = "测" * 200
         raw_row = pd.Series({"File_name": long_value, "title": long_value})
@@ -456,7 +456,7 @@ class TestFilePathWithSpaces:
     def test_transform_handles_spaces_in_field_values(self):
         """验证transform pipeline正确处理值中的空格"""
         import pandas as pd
-        from transform import transform_row
+        from src.transform import transform_row
 
         raw_row = pd.Series({
             "File_name": "test file",
@@ -479,7 +479,7 @@ class TestFilePathWithSpaces:
     def test_template_concatenation_with_spaces(self):
         """验证template类型正确拼接含空格的字段"""
         import pandas as pd
-        from transform import transform_row
+        from src.transform import transform_row
 
         raw_row = pd.Series({
             "File_name": "test",

@@ -29,7 +29,7 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 用我的Python脚本，你只需要：
 
 1. 在电子表格中编辑内容。
-2. 运行psd_renderer.py。
+2. 运行src/psd_renderer.py。
 
 就这么简单，图就都出来了。你只需要有Python环境，装几个Python包。
 
@@ -76,8 +76,8 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
         - 需要旋转的文字**在PSD中保持水平放置**，通过图层名参数（如 `#t_a15`）实现旋转效果
 3. 运行`xlsx_generator.py`。你的XLSX文件就创建完成了，所有的列都已准备好。
 4. 编辑XLSX文件。Python脚本默认读取第一张工作表，把你的数据放在这。也可以将数据放在另一张工作表中，并在第一张工作表中使用Excel公式读取和计算，特别适合切换图层可见性。请勿删除第一列`File_name`，留空会使用默认文件名格式（如image_1, image_2等）。
-5. 将模板所需的其他文件放入`assets`文件夹，包括字体放在`assets/fonts/`目录、背景图像等。确保图片资源的路径与电子表格中的数据匹配。Excel中的图片路径必须相对于项目根目录（如`assets/2_img/image.jpg`），而不是相对于workspace目录（不要使用`../assets/...`）。
-6. 配置字体文件（可选）。如果有多个PSD模板需要不同的字体，可以在项目根目录创建`fonts.json`文件为每个模板指定字体：
+5. 将模板所需的其他文件放入`workspace/assets`文件夹，包括字体放在`workspace/assets/fonts/`目录、背景图像等。确保图片资源的路径与电子表格中的数据匹配。Excel中的图片路径相对于workspace目录（如`assets/1_img/image.jpg`）。
+6. 配置字体文件（可选）。如果有多个PSD模板需要不同的字体，可以在workspace目录中创建`fonts.json`文件为每个模板指定字体：
    ```json
    {
      "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
@@ -86,7 +86,7 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
      "产品": "CustomFont.ttf"
    }
    ```
-   键名为PSD文件前缀（第一个`#`之前的部分），值为`assets/fonts/`目录中的字体文件名。如未配置，将使用默认字体`AlibabaPuHuiTi-2-85-Bold.ttf`。
+   键名为PSD文件前缀（第一个`#`之前的部分），值为`workspace/assets/fonts/`目录中的字体文件名。如未配置，将使用默认字体`workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
 
 看起来非常复杂？相信我，用Photoshop做同样的事情要复杂得多。设置完成，你就高枕无忧了。
 
@@ -95,13 +95,13 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 导出时，事情无比简单：
 
 1. 在电子表格中粘贴内容。
-2. 运行psd_renderer.py。
+2. 运行src/psd_renderer.py。
 
-我甚至写了另一个脚本（file_monitor.py）监控电子表格，并在电子表格修改后自动导出图像。
+我甚至写了另一个脚本（src/file_monitor.py）监控电子表格，并在电子表格修改后自动导出图像。
 
 ## 剪贴板导入器
 
-为了更快的工作流程，可以使用clipboard_importer.py脚本：
+为了更快的工作流程，可以使用src/clipboard_importer.py脚本：
 
 1. 复制表格数据到剪贴板（从Excel、网页表格等）
 2. 运行 `python clipboard_importer.py`
@@ -155,19 +155,25 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 pip install -r requirements.txt
 ```
 
-## 使用说明
-
-### 基本用法
+### 使用说明
 
 ```bash
 # 基本命令格式
-python psd_renderer.py [Excel文件前缀] [输出格式]
+python src/psd_renderer.py [Excel文件前缀] [输出格式] [输出目录(可选)]
 
 # 示例
-python psd_renderer.py 1 jpg
+python src/psd_renderer.py 1 jpg                           # 默认输出到 export/ 目录
+python src/psd_renderer.py 1 jpg output/custom            # 自定义相对路径输出目录
+python src/psd_renderer.py 1 jpg /absolute/path/to/output # 自定义绝对路径输出目录
 ```
 
-**说明**：字体文件通过项目根目录的`fonts.json`配置。如未配置，将使用默认字体`assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
+**说明**：字体文件通过`workspace/fonts.json`配置。如未配置，将使用默认字体`workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
+
+**输出目录选项**：
+- 未指定输出目录时，图片保存到默认的 `export/` 目录
+- 提供相对路径（如 `output/custom`）时，路径相对于项目根目录
+- 提供绝对路径（如 `/Users/用户名/Desktop/rendered`）时，图片保存到该位置
+- 每次导出都会创建带时间戳的子目录以避免文件冲突（例如 `20260402_162657_1/`）
 
 ## 感谢
 

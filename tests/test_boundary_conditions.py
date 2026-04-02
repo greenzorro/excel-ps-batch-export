@@ -25,7 +25,7 @@ from test_utils import TestEnvironment
 test_env = TestEnvironment()
 test_env.setup_psd_renderer_args('test', 'jpg')
 
-from psd_renderer import calculate_text_position, read_excel_file
+from src.psd_renderer import calculate_text_position, read_excel_file
 
 # 恢复原始环境
 test_env.cleanup()

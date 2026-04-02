@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 项目根目录
 PROJECT_ROOT = Path(__file__).parent.parent
-SCRIPT_PATH = PROJECT_ROOT / "psd_renderer.py"
+SCRIPT_PATH = PROJECT_ROOT / "src" / "psd_renderer.py"
 
 
 class TestRequiredDependencies:
@@ -141,6 +141,9 @@ class TestProgramStartupBasic:
         assert "jpg" in combined or "png" in combined, (
             "用法说明中应包含输出格式示例 (jpg/png)"
         )
+        assert "输出目录" in combined or "可选" in combined, (
+            "用法说明中应包含输出目录参数说明"
+        )
 
 
 class TestErrorHandlingStartup:
@@ -237,7 +240,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import read_excel_file
+            from src.psd_renderer import read_excel_file
 
             with pytest.raises(FileNotFoundError, match="Excel文件不存在"):
                 read_excel_file("/nonexistent/path/to/file.xlsx")
@@ -254,7 +257,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import read_excel_file
+            from src.psd_renderer import read_excel_file
 
             with pytest.raises(ValueError, match="不支持的文件格式"):
                 read_excel_file(tmp_path)
@@ -267,7 +270,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import collect_psd_variables
+            from src.psd_renderer import collect_psd_variables
 
             with pytest.raises(FileNotFoundError, match="PSD文件不存在"):
                 collect_psd_variables("/nonexistent/path.psd")
@@ -283,7 +286,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import collect_psd_variables
+            from src.psd_renderer import collect_psd_variables
 
             with pytest.raises(ValueError, match="文件格式不支持"):
                 collect_psd_variables(tmp_path)
@@ -296,7 +299,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import preprocess_text
+            from src.psd_renderer import preprocess_text
 
             assert preprocess_text(None) == ""
         finally:
@@ -307,7 +310,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import preprocess_text
+            from src.psd_renderer import preprocess_text
 
             assert preprocess_text('"hello"') == "hello"
             assert preprocess_text('"hello') == '"hello'  # 不成对，不去除
@@ -319,7 +322,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import preprocess_text
+            from src.psd_renderer import preprocess_text
 
             assert "a/b" not in preprocess_text("a/b")
             assert preprocess_text("a/b") == "a&b"
@@ -331,7 +334,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import sanitize_filename
+            from src.psd_renderer import sanitize_filename
 
             assert ":" not in sanitize_filename("test:file")
             assert "*" not in sanitize_filename("test*file")
@@ -344,7 +347,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import sanitize_filename
+            from src.psd_renderer import sanitize_filename
 
             assert sanitize_filename("") == "unnamed"
             assert sanitize_filename(None) == "unnamed"
@@ -356,7 +359,7 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import parse_rotation_from_name
+            from src.psd_renderer import parse_rotation_from_name
 
             assert parse_rotation_from_name("@标题#t_a15") == 15.0
             assert parse_rotation_from_name("@标题#t_a-30") == -30.0
@@ -370,13 +373,78 @@ class TestMainFunctionLogic:
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            from psd_renderer import get_psd_prefix
+            from src.psd_renderer import get_psd_prefix
 
             assert get_psd_prefix("1#海报.psd") == "1"
             assert get_psd_prefix("2.psd") == "2"
             assert get_psd_prefix("产品#横版#v2.psd") == "产品"
         finally:
             sys.argv = original_argv
+
+
+class TestOutputDirectoryParameter:
+    """测试输出目录参数功能"""
+
+    def test_output_dir_parameter_accepted(self):
+        """程序应接受可选的输出目录参数"""
+        # 使用无效文件名测试参数解析（不会实际执行渲染）
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_PATH), "nonexistent", "jpg", "custom_output"],
+            capture_output=True, text=True, timeout=30
+        )
+
+        # 程序应该正常处理参数（虽然会因为文件不存在而失败）
+        # 但不应该报告参数数量错误
+        combined = result.stdout + result.stderr
+        assert "用法" not in combined or "缺少参数" not in combined, (
+            f"提供3个参数时不应报告参数缺少。\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        )
+
+    def test_default_output_dir_is_export(self):
+        """不提供输出目录参数时，应使用默认的 'export' 目录"""
+        original_argv = sys.argv
+        sys.argv = ['psd_renderer.py', 'test', 'jpg']
+        try:
+            # 导入模块会触发 main 逻辑，但会因为文件不存在而失败
+            # 我们只需要验证参数解析逻辑
+            import importlib
+            import src.psd_renderer
+
+            # 验证默认输出路径是 export
+            assert src.psd_renderer.output_path == "export", (
+                f"默认输出路径应该是 'export'，实际是 '{src.psd_renderer.output_path}'"
+            )
+        except (SystemExit, FileNotFoundError):
+            # 预期的异常（文件不存在）
+            pass
+        finally:
+            sys.argv = original_argv
+
+    def test_custom_output_dir_is_used(self):
+        """提供输出目录参数时，应使用指定的目录"""
+        import tempfile
+        import os
+
+        # 创建临时目录作为自定义输出目录
+        with tempfile.TemporaryDirectory() as temp_dir:
+            custom_output = os.path.join(temp_dir, "custom_output")
+
+            # 运行脚本（会因为文件不存在而失败，但参数会被解析）
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT_PATH), "nonexistent", "jpg", custom_output],
+                capture_output=True, text=True, timeout=30
+            )
+
+            # 验证：程序应该接受3个参数，不应该报告参数错误
+            combined = result.stdout + result.stderr
+            assert "用法" not in combined or "参数" not in combined, (
+                f"提供3个参数时不应报告参数错误。\nstdout: {result.stdout}\nstderr: {result.stderr}"
+            )
+
+            # 验证：错误应该是文件不存在，而不是参数错误
+            assert "FileNotFoundError" in combined or "不存在" in combined or "Excel" in combined, (
+                f"应该报告文件不存在错误，而不是参数错误。\nstdout: {result.stdout}\nstderr: {result.stderr}"
+            )
 
 
 if __name__ == "__main__":

@@ -75,7 +75,8 @@ def run_all_tests():
         "test_boolean_issues.py", "test_integration.py",
         "test_platform_compatibility.py", "test_precise_text_position.py",
         "test_real_scenarios.py", "test_logging_functionality.py",
-        "test_font_config.py", "test_transform.py", "-v"
+        "test_font_config.py", "test_transform.py",
+        "test_integration_real.py", "-v"
     ], "Running all tests")
 
 

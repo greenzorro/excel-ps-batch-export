@@ -17,7 +17,7 @@ from unittest.mock import Mock
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from psd_renderer import set_layer_visibility
+from src.psd_renderer import set_layer_visibility
 
 
 def _make_mock_layer():
