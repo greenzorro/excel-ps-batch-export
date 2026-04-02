@@ -16,17 +16,14 @@
 
 ```
 excel-ps-batch-export/
-├── xlsx_generator.py        # Excel生成器 - PSD模板扫描和Excel配置文件生成
-├── psd_renderer.py          # 核心PSD渲染脚本
-├── transform.py             # 数据变换引擎 - CSV+JSON规则→xlsx
-├── file_monitor.py          # 文件监控脚本
-├── clipboard_importer.py    # 剪贴板导入器 - 从剪贴板读取数据写入Excel
+├── src/                     # 源代码目录
+│   ├── xlsx_generator.py    # Excel生成器 - PSD模板扫描和Excel配置文件生成
+│   ├── psd_renderer.py      # 核心PSD渲染脚本
+│   ├── transform.py         # 数据变换引擎 - CSV+JSON规则→xlsx
+│   ├── file_monitor.py      # 文件监控脚本
+│   └── clipboard_importer.py # 剪贴板导入器 - 从剪贴板读取数据写入Excel
 ├── transform_guide.md       # 数据变换规则系统文档
 ├── requirements.txt         # 项目依赖管理
-├── fonts.json               # 字体配置文件（可选）
-├── assets/                  # 资源目录
-│   ├── fonts/               # 字体文件
-│   └── 1_img/               # 示例图片素材
 ├── workspace/               # 工作目录 - 存放PSD模板和Excel数据文件
 │   ├── 1.psd + 1.xlsx       # 配对的PSD模板和Excel数据
 │   ├── 1.json               # 变换规则（有此文件则走transform管道）
@@ -35,7 +32,11 @@ excel-ps-batch-export/
 │   ├── 2.json + 2_raw.csv
 │   ├── 3#1.psd + 3#2.psd + 3.xlsx
 │   ├── 3.json + 3_raw.csv
-│   └── ...
+│   ├── fonts.json           # 字体配置文件
+│   └── assets/              # 资源目录
+│       ├── fonts/           # 字体文件
+│       ├── 1_img/           # 图片素材1
+│       └── 2_img/           # 图片素材2
 ├── export/                  # 导出图片目录（格式：export/日期时间_模板名/）
 ├── log.csv                  # 导出日志
 ├── tests/                   # 测试套件目录
@@ -147,15 +148,16 @@ excel-ps-batch-export/
 - **健壮的异常处理**：分层级的错误处理机制，提供智能解决方案建议
 - **稳定的文件生成**：无并发冲突，确保所有图片都能正确生成
 - **跨平台文件名兼容性**：自动处理特殊字符，控制长度，确保在所有操作系统上都能正常保存
+- **资源文件管理**：字体和其他资源文件统一存储在 `workspace/assets/` 目录下
 
 ### 4.7 数据变换规则系统
 
 对于需要复杂数据处理的模板，系统支持基于 JSON 的数据变换功能。
 
 **工作流程**：
-1. 用户/agent 编辑 `_raw.csv` 原始数据
-2. 系统自动应用 `.json` 中定义的变换规则
-3. 处理后的数据写入 `.xlsx` 供渲染使用
+1. 用户/agent 编辑 `workspace/_raw.csv` 原始数据
+2. 系统自动应用 `workspace/.json` 中定义的变换规则
+3. 处理后的数据写入 `workspace/.xlsx` 供渲染使用
 
 **支持的变换类型**：
 - `direct` - 直接映射
@@ -186,6 +188,7 @@ excel-ps-batch-export/
 - **剪贴板数据解析**：智能识别制表符和逗号分隔格式，自动转换为DataFrame
 - **安全文件操作**：使用openpyxl进行Excel文件读写，避免数据损坏
 - **跨平台编码处理**：安全处理Windows和macOS的编码差异，确保中文显示正常
+- **模块化结构**：所有Python脚本集中于`src/`目录，便于维护
 
 ### 5.3 性能优化
 - **简化架构**：单进程避免进程间通信开销和并发冲突，适合10-50张图片的批量导出
@@ -195,26 +198,28 @@ excel-ps-batch-export/
 ## 6. 使用方法
 
 ### 6.1 首次设置
-1. **准备PSD模板**：将PSD文件放入项目根目录，命名格式为`[前缀]#[后缀].psd`
+1. **准备PSD模板**：将PSD文件放入 `workspace/` 目录，命名格式为`[前缀]#[后缀].psd`
 2. **命名变量图层**：按照`@变量名#操作符`规则重命名需要动态修改的图层
-3. **生成Excel配置**：运行`python xlsx_generator.py`生成Excel配置文件
-4. **准备资源**：将字体文件放入`assets/fonts`目录
-5. **配置字体**：在项目根目录创建或编辑 `fonts.json` 文件，为每个PSD模板前缀指定字体
+3. **生成Excel配置**：运行`python src/xlsx_generator.py`生成Excel配置文件
+4. **准备资源**：将字体文件放入`workspace/assets/fonts`目录
+5. **配置字体**：在workspace目录创建或编辑 `fonts.json` 文件，为每个PSD模板前缀指定字体
 
 ### 6.2 批量导出
 ```bash
 # 手动导出
-python psd_renderer.py [模板名] [格式]
-# 示例：python psd_renderer.py 1 jpg
+python src/psd_renderer.py [模板名] [格式] [输出目录(可选)]
+# 示例：python src/psd_renderer.py 1 jpg
+# 示例：python src/psd_renderer.py 1 jpg output/custom
+# 示例：python src/psd_renderer.py 1 jpg /Users/username/Desktop/rendered
 
 # 自动监控导出
-python file_monitor.py
+python src/file_monitor.py
 ```
 
 ### 6.3 剪贴板导入器使用
 ```bash
 # 从剪贴板导入数据到Excel并自动生成图片
-python clipboard_importer.py
+python src/clipboard_importer.py
 ```
 **使用流程：**
 1. 复制表格数据到剪贴板（支持Excel、网页表格等）
@@ -309,16 +314,16 @@ python clipboard_importer.py
 ### 6.8 字体配置规则
 
 **fonts.json 配置文件：**
-- 字体配置通过项目根目录的 `fonts.json` 文件管理
+- 字体配置通过 workspace/ 目录下的 `fonts.json` 文件管理
 - 每个 PSD 模板前缀可以配置独立的字体
-- 字体文件必须位于 `assets/fonts/` 目录
+- 字体文件必须位于 `workspace/assets/fonts/` 目录
 
 **配置格式：**
 ```json
 {
   "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
   "_usage": "键名为PSD文件前缀（不含扩展名和#后缀），值为字体文件名",
-  "_path_rules": "字体文件必须位于 assets/fonts/ 目录",
+  "_path_rules": "字体文件必须位于 workspace/assets/fonts/ 目录",
   "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
   "2": "SourceHanSansCN-Medium.otf",
   "产品": "CustomFont.ttf"
@@ -348,11 +353,11 @@ fonts.json配置：
 
 ### 6.9 图片路径规则
 
-图片路径必须相对于项目根目录。
+图片路径必须相对于 workspace 目录。
 
 - **脚本运行位置**：Python 脚本从项目根目录运行
 - **Excel 文件位置**：`workspace/` 目录
-- **路径基准**：Excel 中的图片路径应以项目根目录为基准
+- **路径基准**：Excel 中的图片路径应以 workspace 目录为基准
 
 **正确示例**：
 ```
@@ -369,8 +374,8 @@ workspace/../assets/...    # 不要包含 workspace 路径
 **目录结构**：
 ```
 项目根目录/          # 脚本从此处运行
-├── assets/2_img/横.jpg
-└── workspace/
+└── workspace/      # 工作目录
+    ├── assets/2_img/横.jpg
     └── 5_image.xlsx  # Excel 中填写 assets/2_img/横.jpg
 ```
 

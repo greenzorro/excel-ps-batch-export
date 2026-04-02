@@ -29,7 +29,7 @@ test_env = TestEnvironment()
 test_env.setup_psd_renderer_args('test', 'jpg')
 
 # 导入需要测试的函数
-from psd_renderer import (
+from src.psd_renderer import (
     read_excel_file,
     validate_data,
     update_text_layer,
@@ -212,7 +212,7 @@ class TestTextRenderingErrors:
         mock_image = Mock()
         
         # Mock ImageFont.truetype to raise OSError
-        with patch('psd_renderer.ImageFont.truetype') as mock_font:
+        with patch('src.psd_renderer.ImageFont.truetype') as mock_font:
             mock_font.side_effect = OSError("Font not found")
             
             # Test invalid font will throw exception
@@ -240,8 +240,8 @@ class TestTextRenderingErrors:
         mock_image = Mock()
         
         # Test empty string
-        with patch('psd_renderer.ImageFont.truetype') as mock_font:
-            with patch('psd_renderer.ImageDraw.Draw') as mock_draw:
+        with patch('src.psd_renderer.ImageFont.truetype') as mock_font:
+            with patch('src.psd_renderer.ImageDraw.Draw') as mock_draw:
                 update_text_layer(mock_layer, "", mock_image)
                 # Should still handle empty string
                 # Note: new algorithm calls font multiple times (calculate_text_position + update_text_layer)
@@ -270,8 +270,8 @@ class TestTextRenderingErrors:
         mock_image = Mock()
         
         # Test special characters
-        with patch('psd_renderer.ImageFont.truetype') as mock_font:
-            with patch('psd_renderer.ImageDraw.Draw') as mock_draw:
+        with patch('src.psd_renderer.ImageFont.truetype') as mock_font:
+            with patch('src.psd_renderer.ImageDraw.Draw') as mock_draw:
                 special_text = "Special chars: @#$%^&*()_+-=[]{}|;':\",./<>?"
                 update_text_layer(mock_layer, special_text, mock_image)
                 # Should handle special characters
@@ -362,10 +362,10 @@ class TestValidationErrorHandling:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('psd_renderer.collect_psd_variables') as mock_collect:
+        with patch('src.psd_renderer.collect_psd_variables') as mock_collect:
             mock_collect.return_value = {"title", "visibility"}
             
-            with patch('psd_renderer.is_image_column') as mock_is_image:
+            with patch('src.psd_renderer.is_image_column') as mock_is_image:
                 mock_is_image.return_value = False
                 
                 errors, warnings = validate_data(df, ["test.psd"])
@@ -377,7 +377,7 @@ class TestValidationErrorHandling:
         """Test empty DataFrame validation"""
         df = pd.DataFrame()
         
-        with patch('psd_renderer.collect_psd_variables') as mock_collect:
+        with patch('src.psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = set()

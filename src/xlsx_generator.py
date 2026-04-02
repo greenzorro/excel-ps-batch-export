@@ -17,7 +17,7 @@ def main():
 
     # 按前缀分组PSD文件（从workspace目录读取）
     psd_groups = {}
-    workspace_dir = "workspace"
+    workspace_dir = "../workspace"
     for file in os.listdir(workspace_dir):
         if file.endswith('.psd'):
             base_name = os.path.splitext(file)[0]

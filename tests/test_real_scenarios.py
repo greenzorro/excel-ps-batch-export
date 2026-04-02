@@ -21,7 +21,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from transform import (
+from src.transform import (
     transform,
     transform_row,
     load_rules,
@@ -36,8 +36,9 @@ class TestExcelIOBenchmark:
 
     def setup_method(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.workspace = os.path.join(self.tmpdir, "workspace")
-        os.makedirs(self.workspace)
+        # Create workspace as a sibling to tmpdir so ../workspace works from tmpdir
+        self.workspace = os.path.join(os.path.dirname(self.tmpdir), "workspace")
+        os.makedirs(self.workspace, exist_ok=True)
 
     def teardown_method(self):
         shutil.rmtree(self.tmpdir)
@@ -168,8 +169,9 @@ class TestResourceUsageMonitoring:
 
     def setup_method(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.workspace = os.path.join(self.tmpdir, "workspace")
-        os.makedirs(self.workspace)
+        # Create workspace as a sibling to tmpdir so ../workspace works from tmpdir
+        self.workspace = os.path.join(os.path.dirname(self.tmpdir), "workspace")
+        os.makedirs(self.workspace, exist_ok=True)
 
     def teardown_method(self):
         shutil.rmtree(self.tmpdir)
@@ -281,8 +283,9 @@ class TestSerialExecutionVerification:
 
     def setup_method(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.workspace = os.path.join(self.tmpdir, "workspace")
-        os.makedirs(self.workspace)
+        # Create workspace as a sibling to tmpdir so ../workspace works from tmpdir
+        self.workspace = os.path.join(os.path.dirname(self.tmpdir), "workspace")
+        os.makedirs(self.workspace, exist_ok=True)
 
     def teardown_method(self):
         shutil.rmtree(self.tmpdir)

@@ -9,6 +9,7 @@ Description: 监控数据文件并自动执行批量图片输出
 
 # 设置项
 image_format = 'jpg'  # jpg/png
+output_dir = '../export'  # 输出目录（默认../export）
 
 import os
 import sys
@@ -62,7 +63,10 @@ async def monitor_excel_file(base_name, file_path, psd_files):
             # 核心判断：只有内容哈希变了，才视为真正修改
             if current_hash and current_hash != last_hash:
                 print(f"\n[{base_name}] 内容已更新，开始渲染...")
-                subprocess.run([sys.executable, 'psd_renderer.py', base_name, image_format])
+                cmd = [sys.executable, 'psd_renderer.py', base_name, image_format]
+                if output_dir != '../export':
+                    cmd.append(output_dir)
+                subprocess.run(cmd)
                 
                 # 更新状态
                 last_hash = current_hash
@@ -85,7 +89,7 @@ if __name__ == "__main__":
 
     # 自动获取 workspace 文件夹中所有.xlsx或.xls文件，并匹配对应的PSD模板（支持多个模板）
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    workspace_dir = "workspace"
+    workspace_dir = "../workspace"
     excel_psd_pairs = []
     for file in os.listdir(workspace_dir):
         if file.endswith(('.xlsx', '.xls')):

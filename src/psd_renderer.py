@@ -25,7 +25,7 @@ validation_warnings = []
 
 # 字体配置全局变量
 fonts_config: Dict[str, str] = {}
-DEFAULT_FONT = "assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
+DEFAULT_FONT = "../workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
 
 # 模块级配置变量
 file_name = None
@@ -52,7 +52,7 @@ def load_fonts_config():
     :return dict: 字体配置字典 {psd_prefix: font_file_name}
     """
     global fonts_config
-    config_path = "fonts.json"
+    config_path = "../workspace/fonts.json"
 
     if not os.path.exists(config_path):
         safe_print_message(f"警告：字体配置文件不存在: {config_path}")
@@ -122,8 +122,8 @@ def get_font_for_psd(psd_file_name: str) -> str:
     # 从配置中查找字体
     if psd_prefix in fonts_config:
         font_file_name = fonts_config[psd_prefix]
-        # 拼接完整路径（字体文件必须位于 assets/fonts/ 目录）
-        font_path = os.path.join("assets/fonts", font_file_name)
+        # 拼接完整路径（字体文件必须位于 workspace/assets/fonts/ 目录）
+        font_path = os.path.join("../workspace/assets/fonts", font_file_name)
 
         # 检查字体文件是否存在
         if not os.path.exists(font_path):
@@ -131,7 +131,7 @@ def get_font_for_psd(psd_file_name: str) -> str:
                 f"错误：字体配置文件中指定的字体不存在: {font_path}\n"
                 f"  PSD前缀: {psd_prefix}\n"
                 f"  配置的字体: {font_file_name}\n"
-                f"  请检查 fonts.json 配置或添加字体文件到 assets/fonts/ 目录"
+                f"  请检查 workspace/fonts.json 配置或添加字体文件到 workspace/assets/fonts/ 目录"
             )
 
         safe_print_message(f"  [{psd_prefix}] 使用字体: {font_file_name}")
@@ -318,6 +318,56 @@ def parse_rotation_from_name(layer_name: str):
     return None
 
 
+def parse_text_params(layer_name: str) -> dict:
+    """从图层名解析文本参数
+
+    :param str layer_name: 图层名称，如 "@标题#t_c_p"
+    :return dict: 包含 align, valign, paragraph 的字典
+    """
+    # 默认值
+    params = {
+        "align": "left",      # 水平对齐: left, center, right
+        "valign": "top",      # 垂直对齐: top, middle, bottom
+        "paragraph": False    # 是否为段落文本
+    }
+
+    if not layer_name or "#" not in layer_name:
+        return params
+
+    # 提取操作类型后的参数
+    parts = layer_name.split("#", 1)
+    if len(parts) != 2:
+        return params
+
+    param_str = parts[1]  # "t_c_p" 或类似
+
+    # 解析水平对齐
+    if "_c" in param_str:
+        params["align"] = "center"
+    elif "_r" in param_str:
+        params["align"] = "right"
+
+    # 解析段落文本和垂直对齐
+    # 段落标志处理 - 使用字符串匹配而不是子字符串搜索
+    has_p = param_str == 'p' or param_str.startswith('p_') or param_str.endswith('_p') or '_p_' in param_str
+    has_pm = param_str == 'pm' or param_str.startswith('pm_') or param_str.endswith('_pm') or '_pm_' in param_str
+    has_pb = param_str == 'pb' or param_str.startswith('pb_') or param_str.endswith('_pb') or '_pb_' in param_str
+
+    # 段落标志
+    if has_p:
+        params["paragraph"] = True
+    elif has_pm or has_pb:
+        params["paragraph"] = False
+
+    # 垂直对齐处理
+    if has_pm:
+        params["valign"] = "middle"
+    elif has_pb:
+        params["valign"] = "bottom"
+
+    return params
+
+
 def preprocess_text(text_content):
     """预处理文本内容，在写入图片前进行统一清理
 
@@ -360,7 +410,7 @@ def update_text_layer(
     layer,
     text_content,
     pil_image,
-    text_font="assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf",
+    text_font="../workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf",
 ):
     """更新文字图层内容
 
@@ -404,6 +454,12 @@ def update_text_layer(
     # 解析旋转角度
     rotation_angle = parse_rotation_from_name(layer.name)
 
+    # 解析文本参数（对齐、段落模式等）
+    text_params = parse_text_params(layer.name)
+    alignment = text_params["align"]
+    is_paragraph = text_params["paragraph"]
+    valign = text_params["valign"]
+
     # 根据是否有旋转决定绘制策略
     if rotation_angle is not None:
         # 有旋转：创建带 padding 的临时画布
@@ -438,14 +494,7 @@ def update_text_layer(
         current_width = layer_width
         current_height = layer_height
 
-    # 判断对齐方向
-    alignment = "left"
-    if "_c" in layer.name:
-        alignment = "center"
-    elif "_r" in layer.name:
-        alignment = "right"
-
-    if "_p" in layer.name:
+    if is_paragraph:
         # 段落文本处理
         if any("\u4e00" <= char <= "\u9fff" for char in text_content):
             wrapped_text = textwrap.fill(
@@ -468,9 +517,9 @@ def update_text_layer(
         # 计算段落文本的总高度
         total_height = len(lines) * font_size * 1.2 - font_size * 0.2
         # 根据垂直对齐方式调整y_position_line
-        if "_pm" in layer.name:
+        if valign == "middle":
             y_position_line += (current_height - total_height) / 2
-        elif "_pb" in layer.name:
+        elif valign == "bottom":
             y_position_line += current_height - total_height
 
         # 逐行绘制
@@ -784,7 +833,11 @@ def export_single_image(row, index, psd_object, psd_file_name, font):
                         update_text_layer(layer, str(row[field_name]), pil_image, font)
                     # 修改图片图层内容
                     elif operation_type.startswith("i"):
-                        update_image_layer(layer, str(row[field_name]), pil_image)
+                        # 转换相对路径：assets/ -> ../workspace/assets/
+                        image_path = str(row[field_name])
+                        if image_path.startswith("assets/"):
+                            image_path = os.path.join("../workspace", image_path)
+                        update_image_layer(layer, image_path, pil_image)
             if layer.is_visible():
                 if layer.is_group():
                     # 如果是组，递归处理其子图层
@@ -839,9 +892,17 @@ def get_matching_psds(excel_file):
     filename = os.path.basename(excel_file)
     base_name = os.path.splitext(filename)[0]
     matching_psds = []
-    workspace_dir = "workspace"
-    if not os.path.exists(workspace_dir):
+
+    # 查找workspace目录（优先当前目录下的workspace，其次../workspace）
+    workspace_dir = None
+    for possible_dir in ["workspace", "../workspace"]:
+        if os.path.exists(possible_dir):
+            workspace_dir = possible_dir
+            break
+
+    if not workspace_dir:
         return matching_psds
+
     for f in os.listdir(workspace_dir):
         if f.endswith(".psd"):
             # 提取文件名前缀（第一个井号前的部分）
@@ -937,7 +998,7 @@ def validate_data(
     image_columns = set()
 
     for psd_file in psd_templates:
-        psd_file_path = os.path.join("workspace", psd_file)
+        psd_file_path = os.path.join("../workspace", psd_file)
         if not os.path.exists(psd_file_path):
             validation_errors.append(f"PSD template file does not exist: {psd_file}")
             continue
@@ -986,8 +1047,13 @@ def validate_data(
         if image_col in dataframe.columns:
             for idx, file_path in enumerate(dataframe[image_col]):
                 if pd.notna(file_path) and str(file_path).strip():
+                    # 转换相对路径：assets/ -> ../workspace/assets/
+                    check_path = str(file_path)
+                    if check_path.startswith("assets/"):
+                        check_path = os.path.join("../workspace", check_path)
+
                     # 检查文件是否存在
-                    if not os.path.exists(str(file_path)):
+                    if not os.path.exists(check_path):
                         validation_errors.append(
                             f"Image file does not exist: Row {idx + 2}, Column '{image_col}', Path: {file_path}"
                         )
@@ -1034,7 +1100,7 @@ def preload_psd_templates(psd_files: List[str]) -> dict:
     print("\n预加载PSD模板...")
 
     for psd_file in psd_files:
-        psd_file_path = os.path.join("workspace", psd_file)
+        psd_file_path = os.path.join("../workspace", psd_file)
         try:
             psd_objects[psd_file] = PSDImage.open(psd_file_path)
             print(f"  已加载: {psd_file}")
@@ -1051,7 +1117,11 @@ def log_export_activity(excel_file, image_count):
     :param str excel_file: 使用的Excel文件名
     :param int image_count: 导出的图片数量
     """
-    log_file = "log.csv"
+    # 确保日志文件始终写入到项目根目录
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # src目录
+    project_root = os.path.dirname(script_dir)  # 项目根目录
+    log_file = os.path.join(project_root, "log.csv")
 
     # 检查日志文件是否存在
     file_exists = os.path.exists(log_file)
@@ -1189,9 +1259,10 @@ if __name__ == "__main__":
 
     # 设置项
     if len(sys.argv) < 3:
-        print("用法: python psd_renderer.py [模板名] [输出格式]")
+        print("用法: python psd_renderer.py [模板名] [输出格式] [输出目录(可选)]")
         print("示例: python psd_renderer.py 1 jpg")
-        print("\n字体配置请使用项目根目录的 fonts.json 文件")
+        print("      python psd_renderer.py 1 jpg output/custom")
+        print("\n字体配置请使用 workspace/fonts.json 文件")
         sys.exit(1)
 
     file_name = sys.argv[1]  # 从命令行参数获取使用第几套数据和模版
@@ -1200,11 +1271,14 @@ if __name__ == "__main__":
     quality = 95
 
     # 文件路径
-    output_path = "export"
-    excel_file_path = f"workspace/{file_name}.xlsx"
+    output_path = sys.argv[3] if len(sys.argv) >= 4 else "../export"
+    excel_file_path = f"../workspace/{file_name}.xlsx"
+
+    # 确保输出目录存在
+    os.makedirs(output_path, exist_ok=True)
 
     # 如果存在变换规则文件，先执行数据变换
-    json_rule_path = f"workspace/{file_name}.json"
+    json_rule_path = f"../workspace/{file_name}.json"
     if os.path.exists(json_rule_path):
         from transform import transform
         print("检测到变换规则文件，执行数据变换...")

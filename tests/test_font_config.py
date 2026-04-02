@@ -28,7 +28,7 @@ from test_utils import TestEnvironment
 test_env = TestEnvironment()
 test_env.setup_psd_renderer_args('test', 'jpg')
 
-import psd_renderer
+import src.psd_renderer as psd_renderer
 
 # Restore environment
 test_env.cleanup()
@@ -39,13 +39,17 @@ class TestLoadFontsConfig:
 
     def test_load_fonts_config_normal(self, tmp_path):
         """Test loading fonts.json with valid configuration"""
-        config_file = tmp_path / "fonts.json"
+        # Create workspace directory as sibling to tmp_path
+        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
+        os.makedirs(workspace_dir, exist_ok=True)
+        config_file = os.path.join(workspace_dir, "fonts.json")
         config_content = {
             "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
             "2": "SourceHanSansCN-Medium.otf",
             "_comment": "This should be filtered"
         }
-        config_file.write_text(json.dumps(config_content, ensure_ascii=False))
+        with open(config_file, 'w') as f:
+            f.write(json.dumps(config_content, ensure_ascii=False))
 
         original_cwd = os.getcwd()
         try:
@@ -72,8 +76,11 @@ class TestLoadFontsConfig:
 
     def test_load_fonts_config_invalid_json(self, tmp_path):
         """Test handling when fonts.json has invalid JSON"""
-        config_file = tmp_path / "fonts.json"
-        config_file.write_text("{invalid json content")
+        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
+        os.makedirs(workspace_dir, exist_ok=True)
+        config_file = os.path.join(workspace_dir, "fonts.json")
+        with open(config_file, 'w') as f:
+            f.write("{invalid json content")
 
         original_cwd = os.getcwd()
         try:
@@ -95,8 +102,11 @@ class TestLoadFontsConfig:
             "1": "font1.ttf",
             "2": "font2.otf"
         }
-        config_file = tmp_path / "fonts.json"
-        config_file.write_text(json.dumps(config_content, ensure_ascii=False))
+        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
+        os.makedirs(workspace_dir, exist_ok=True)
+        config_file = os.path.join(workspace_dir, "fonts.json")
+        with open(config_file, 'w') as f:
+            f.write(json.dumps(config_content, ensure_ascii=False))
 
         original_cwd = os.getcwd()
         try:
@@ -160,7 +170,7 @@ class TestGetFontForPsd:
             font_path = psd_renderer.get_font_for_psd("1#海报.psd")
 
             # Should return full path
-            assert font_path == "assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
+            assert font_path == "../workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
 
     def test_get_font_for_psd_font_file_not_exists(self):
         """Test error when configured font file does not exist"""
@@ -200,18 +210,24 @@ class TestFontConfigIntegration:
 
     def test_font_config_with_real_files(self, tmp_path):
         """Test font loading with actual file operations"""
-        # Create a temporary fonts.json
-        config_file = tmp_path / "fonts.json"
+        # Create workspace directory as sibling to tmp_path
+        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
+        os.makedirs(workspace_dir, exist_ok=True)
+
+        # Create a temporary fonts.json in workspace
+        config_file = os.path.join(workspace_dir, "fonts.json")
         config_content = {
             "test": "test_font.ttf",
             "_comment": "Comment should be filtered"
         }
-        config_file.write_text(json.dumps(config_content, ensure_ascii=False))
+        with open(config_file, 'w') as f:
+            f.write(json.dumps(config_content, ensure_ascii=False))
 
         # Create the font file
-        font_dir = tmp_path / "assets" / "fonts"
-        font_dir.mkdir(parents=True)
-        (font_dir / "test_font.ttf").write_text("dummy font content")
+        font_dir = os.path.join(workspace_dir, "assets", "fonts")
+        os.makedirs(font_dir, exist_ok=True)
+        with open(os.path.join(font_dir, "test_font.ttf"), 'w') as f:
+            f.write("dummy font content")
 
         # Change to temp directory
         original_cwd = os.getcwd()

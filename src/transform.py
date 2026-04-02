@@ -24,7 +24,7 @@ def load_rules(template: str) -> dict:
     :return dict: 规则字典
     :raises FileNotFoundError: 规则文件不存在
     """
-    json_path = os.path.join("workspace", f"{template}.json")
+    json_path = os.path.join("../workspace", f"{template}.json")
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"规则文件不存在: {json_path}")
     with open(json_path, "r", encoding="utf-8") as f:
@@ -38,10 +38,11 @@ def load_raw_data(template: str) -> pd.DataFrame:
     :return pd.DataFrame: 原始数据
     :raises FileNotFoundError: CSV文件不存在
     """
-    csv_path = os.path.join("workspace", f"{template}_raw.csv")
+    csv_path = os.path.join("../workspace", f"{template}_raw.csv")
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"原始数据文件不存在: {csv_path}")
     return pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+
 
 
 def remove_spaces(value: Any) -> str:
@@ -246,7 +247,7 @@ def transform(template: str) -> int:
 
     product_df = pd.DataFrame(product_rows, columns=output_columns)
 
-    xlsx_path = os.path.join("workspace", f"{template}.xlsx")
+    xlsx_path = os.path.join("../workspace", f"{template}.xlsx")
 
     # 始终使用JSON配置中定义的列顺序，不读取现有xlsx
     product_df.to_excel(xlsx_path, index=False, sheet_name="Sheet1")

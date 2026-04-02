@@ -22,14 +22,14 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入业务代码函数
-from psd_renderer import get_matching_psds, read_excel_file, sanitize_filename, preprocess_text, parse_rotation_from_name
+from src.psd_renderer import get_matching_psds, read_excel_file, sanitize_filename, preprocess_text, parse_rotation_from_name
 
 # 导入共享测试工具
 from test_utils import (
-    parse_layer_name, validate_layer_name_parsing, create_mock_layer, create_mock_psd,
+    validate_layer_name_parsing, create_mock_layer, create_mock_psd,
     create_test_excel_data, create_temp_excel_file, create_temp_image_file,
     assert_text_position_accuracy, parse_boolean_value, TestEnvironment,
-    create_complex_test_data
+    create_complex_test_data, create_test_rendering_context
 )
 
 # 使用测试环境管理器处理sys.argv依赖
@@ -37,7 +37,7 @@ test_env = TestEnvironment()
 test_env.setup_psd_renderer_args('test', 'jpg')
 
 # 导入需要测试的函数
-from psd_renderer import (
+from src.psd_renderer import (
     read_excel_file,
     set_layer_visibility,
     get_font_color,
@@ -74,30 +74,49 @@ class TestLayerParsingAdvanced:
     
     def test_edge_case_layer_names(self):
         """Test edge case layer names"""
-        # Test empty string
-        assert parse_layer_name("") is None
-        assert parse_layer_name(None) is None
-        
-        # Test only @ symbol
-        assert parse_layer_name("@") is None
-        
-        # Test only # symbol
-        assert parse_layer_name("#") is None
-        
+        from src.psd_renderer import parse_text_params, parse_rotation_from_name
+
+        # Test empty string - 业务代码返回默认值
+        result = parse_text_params("")
+        assert result["align"] == "left"
+        assert result["valign"] == "top"
+        assert result["paragraph"] == False
+
+        # Test only @ symbol - 业务代码返回默认值
+        result = parse_text_params("@")
+        assert result["align"] == "left"
+
+        # Test only # symbol - 业务代码返回默认值
+        result = parse_text_params("#")
+        assert result["align"] == "left"
+
         # Test special characters
         validate_layer_name_parsing("@special-chars_123#t", "text", "special-chars_123")
-        
+
         # Test Chinese variable name
         validate_layer_name_parsing("@中文标题#t_c", "text", "中文标题", expected_align="center")
-    
+
     def test_invalid_operation_types(self):
         """Test invalid operation types"""
-        # Test unknown operation types
-        assert parse_layer_name("@variable#x") is None
-        assert parse_layer_name("@variable#unknown") is None
-        
+        from src.psd_renderer import parse_text_params, parse_image_params
+
+        # Test unknown operation types - 业务代码返回默认值
+        result = parse_text_params("@variable#x")
+        assert result["align"] == "left"  # 默认值
+        assert result["paragraph"] == False  # 默认值
+
+        result = parse_text_params("@variable#unknown")
+        assert result["align"] == "left"  # 默认值
+
         # Test incomplete operation types
-        assert parse_layer_name("@variable#") is None
+        result = parse_text_params("@variable#")
+        assert result["align"] == "left"  # 默认值
+
+        # 图片参数测试
+        result = parse_image_params("@variable#x")
+        # 未知操作符会被忽略，返回默认值
+        assert result["mode"] == "cover"
+        assert result["alignment"] == "cm"
 
 
 class TestExcelDataValidation:
@@ -109,13 +128,13 @@ class TestExcelDataValidation:
         test_data = {
             "File_name": ["test1", "test2"],
             "title": ["title1", "title2"],
-            "background": ["assets/1_img/null.jpg", "assets/1_img/null.jpg"],
+            "background": ["workspace/assets/1_img/null.jpg", "workspace/assets/1_img/null.jpg"],
             "watermark": [True, False]
         }
         df = pd.DataFrame(test_data)
         
         # Mock PSD variables
-        with patch('psd_renderer.collect_psd_variables') as mock_collect:
+        with patch('src.psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title", "background", "watermark"}
@@ -123,7 +142,7 @@ class TestExcelDataValidation:
                     mock_psd.return_value = Mock()
                     mock_psd.return_value.__iter__ = Mock(return_value=iter([]))
                     
-                    with patch('psd_renderer.is_image_column') as mock_is_image:
+                    with patch('src.psd_renderer.is_image_column') as mock_is_image:
                         mock_is_image.return_value = True
                         
                         errors, warnings = validate_data(df, ["test.psd"])
@@ -140,7 +159,7 @@ class TestExcelDataValidation:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('psd_renderer.collect_psd_variables') as mock_collect:
+        with patch('src.psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title", "background"}
@@ -162,7 +181,7 @@ class TestExcelDataValidation:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('psd_renderer.collect_psd_variables') as mock_collect:
+        with patch('src.psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title", "background"}
@@ -170,7 +189,7 @@ class TestExcelDataValidation:
                     mock_psd.return_value = Mock()
                     mock_psd.return_value.__iter__ = Mock(return_value=iter([]))
                     
-                    with patch('psd_renderer.is_image_column') as mock_is_image:
+                    with patch('src.psd_renderer.is_image_column') as mock_is_image:
                         mock_is_image.return_value = True
                         
                         errors, warnings = validate_data(df, ["test.psd"])
@@ -188,7 +207,7 @@ class TestExcelDataValidation:
         }
         df = pd.DataFrame(test_data)
         
-        with patch('psd_renderer.collect_psd_variables') as mock_collect:
+        with patch('src.psd_renderer.collect_psd_variables') as mock_collect:
             with patch('os.path.exists') as mock_exists:
                 with patch('psd_tools.api.psd_image.PSDImage.open') as mock_psd:
                     mock_collect.return_value = {"title"}
@@ -212,10 +231,8 @@ class TestTextRendering:
         text = "中文测试"
         layer_width = 200
         font_size = 20
-        # 创建测试用的 draw 和 font
-        test_img = Image.new("RGB", (layer_width, 50))
-        draw = ImageDraw.Draw(test_img)
-        font = ImageFont.load_default()
+        # 使用 fixture 函数创建测试环境
+        _, draw, font = create_test_rendering_context(layer_width, 50)
 
         x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "center", draw, font)
 
@@ -228,10 +245,8 @@ class TestTextRendering:
         text = "Hello World"
         layer_width = 200
         font_size = 20
-        # 创建测试用的 draw 和 font
-        test_img = Image.new("RGB", (layer_width, 50))
-        draw = ImageDraw.Draw(test_img)
-        font = ImageFont.load_default()
+        # 使用 fixture 函数创建测试环境
+        _, draw, font = create_test_rendering_context(layer_width, 50)
 
         x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "right", draw, font)
 
@@ -244,10 +259,8 @@ class TestTextRendering:
         text = "Test"
         layer_width = 100
         font_size = 16
-        # 创建测试用的 draw 和 font
-        test_img = Image.new("RGB", (layer_width, 50))
-        draw = ImageDraw.Draw(test_img)
-        font = ImageFont.load_default()
+        # 使用 fixture 函数创建测试环境
+        _, draw, font = create_test_rendering_context(layer_width, 50)
 
         # Test left alignment - should account for offset calculation
         x_left, _ = calculate_text_position(text, layer_width, font_size, "left", draw, font)
@@ -805,20 +818,23 @@ class TestRotationFunctionality:
 
     def test_rotation_layer_name_parsing(self):
         """测试带旋转参数的图层名完整解析"""
+        from src.psd_renderer import parse_text_params, parse_rotation_from_name
+
         # 旋转 + 居中
-        result = parse_layer_name("@标题#t_c_a15")
-        assert result is not None
-        assert result["type"] == "text"
-        assert result["name"] == "标题"
+        result = parse_text_params("@标题#t_c_a15")
         assert result["align"] == "center"
+        assert result["paragraph"] is False
+
+        rotation = parse_rotation_from_name("@标题#t_c_a15")
+        assert rotation == 15.0
 
         # 旋转 + 右对齐 + 段落
-        result = parse_layer_name("@内容#t_r_a30_p")
-        assert result is not None
-        assert result["type"] == "text"
-        assert result["name"] == "内容"
+        result = parse_text_params("@内容#t_r_a30_p")
         assert result["align"] == "right"
         assert result["paragraph"] is True
+
+        rotation = parse_rotation_from_name("@内容#t_r_a30_p")
+        assert rotation == 30.0
 
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ class TestParseImageParams:
 
     def test_default_params(self):
         """测试默认参数"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i")
         assert result["mode"] == "cover"
@@ -35,7 +35,7 @@ class TestParseImageParams:
 
     def test_cover_mode(self):
         """测试 cover 模式解析"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i_cover")
         assert result["mode"] == "cover"
@@ -43,7 +43,7 @@ class TestParseImageParams:
 
     def test_contain_mode(self):
         """测试 contain 模式解析"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i_contain")
         assert result["mode"] == "contain"
@@ -51,28 +51,28 @@ class TestParseImageParams:
 
     def test_alignment_lt(self):
         """测试左上对齐"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i_cover_lt")
         assert result["alignment"] == "lt"
 
     def test_alignment_cm(self):
         """测试居中对齐"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i_cover_cm")
         assert result["alignment"] == "cm"
 
     def test_alignment_rb(self):
         """测试右下对齐"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i_contain_rb")
         assert result["alignment"] == "rb"
 
     def test_all_alignments(self):
         """测试所有九宫格对齐"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         alignments = ["lt", "ct", "rt", "lm", "cm", "rm", "lb", "cb", "rb"]
         for align in alignments:
@@ -81,7 +81,7 @@ class TestParseImageParams:
 
     def test_combined_params(self):
         """测试组合参数"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("@产品图#i_contain_lt")
         assert result["mode"] == "contain"
@@ -89,7 +89,7 @@ class TestParseImageParams:
 
     def test_invalid_layer_name(self):
         """测试无效图层名"""
-        from psd_renderer import parse_image_params
+        from src.psd_renderer import parse_image_params
 
         result = parse_image_params("产品图")  # 没有 @ 和 #
         assert result["mode"] == "cover"
@@ -131,7 +131,7 @@ class TestScaleImageByMode:
 
     def test_cover_mode_landscape(self, sample_images):
         """测试 cover 模式 + 横向图"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["landscape"])  # 1600x900
         result = scale_image_by_mode(image, (1000, 1000), mode="cover", alignment="cm")
@@ -143,7 +143,7 @@ class TestScaleImageByMode:
 
     def test_cover_mode_portrait(self, sample_images):
         """测试 cover 模式 + 纵向图"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["portrait"])  # 900x1600
         result = scale_image_by_mode(image, (1000, 1000), mode="cover", alignment="cm")
@@ -158,7 +158,7 @@ class TestScaleImageByMode:
 
     def test_contain_mode_landscape(self, sample_images):
         """测试 contain 模式 + 横向图"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["landscape"])  # 1600x900
         result = scale_image_by_mode(
@@ -174,7 +174,7 @@ class TestScaleImageByMode:
 
     def test_contain_mode_portrait(self, sample_images):
         """测试 contain 模式 + 纵向图"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["portrait"])  # 900x1600
         result = scale_image_by_mode(
@@ -194,7 +194,7 @@ class TestScaleImageByMode:
 
     def test_cover_alignment_left(self, sample_images):
         """测试 cover 模式 + 左对齐（横向图）"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["landscape"])  # 1600x900
         result = scale_image_by_mode(image, (1000, 1000), mode="cover", alignment="lm")
@@ -205,7 +205,7 @@ class TestScaleImageByMode:
 
     def test_cover_alignment_right(self, sample_images):
         """测试 cover 模式 + 右对齐（横向图）"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["landscape"])  # 1600x900
         result = scale_image_by_mode(image, (1000, 1000), mode="cover", alignment="rm")
@@ -216,7 +216,7 @@ class TestScaleImageByMode:
 
     def test_contain_alignment_top(self, sample_images):
         """测试 contain 模式 + 上对齐（横向图）"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["landscape"])  # 1600x900
         result = scale_image_by_mode(
@@ -232,7 +232,7 @@ class TestScaleImageByMode:
 
     def test_contain_alignment_bottom(self, sample_images):
         """测试 contain 模式 + 下对齐（横向图）"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["landscape"])  # 1600x900
         result = scale_image_by_mode(
@@ -248,7 +248,7 @@ class TestScaleImageByMode:
 
     def test_square_image(self, sample_images):
         """测试正方形图"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         image = Image.open(sample_images["square"])  # 1000x1000
 
@@ -268,7 +268,7 @@ class TestScaleImageByMode:
 
     def test_aspect_ratio_preserved(self, sample_images):
         """测试宽高比保持"""
-        from psd_renderer import scale_image_by_mode
+        from src.psd_renderer import scale_image_by_mode
 
         # 创建测试图片（16:9）
         test_image = Image.new("RGB", (160, 90), color="yellow")
@@ -324,7 +324,7 @@ class TestUpdateImageLayer:
 
     def test_update_with_valid_image(self, mock_layer, sample_image):
         """测试使用有效图片更新图层"""
-        from psd_renderer import update_image_layer
+        from src.psd_renderer import update_image_layer
 
         pil_image = Image.new("RGBA", (2000, 2000), (0, 0, 0, 0))
 
@@ -340,7 +340,7 @@ class TestUpdateImageLayer:
 
     def test_update_with_invalid_path(self, mock_layer):
         """测试使用无效路径"""
-        from psd_renderer import update_image_layer
+        from src.psd_renderer import update_image_layer
 
         pil_image = Image.new("RGBA", (2000, 2000), (0, 0, 0, 0))
         invalid_path = "/nonexistent/path/to/image.png"
@@ -352,7 +352,7 @@ class TestUpdateImageLayer:
 
     def test_update_with_params(self, sample_image):
         """测试使用不同参数"""
-        from psd_renderer import update_image_layer
+        from src.psd_renderer import update_image_layer
 
         # 测试 contain 模式
         layer_contain = Mock()

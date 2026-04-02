@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## Test Suite Status
 
-**350 passed** ✅
+**360 passed** ✅
 
-**Last Updated**: 2026-04-01
+**Last Updated**: 2026-04-02
 **Status**: All tests passing. No Excel application required.
 
 ## Test Files Description
@@ -150,6 +150,14 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Image layer update tests (valid/invalid paths, different parameters)
   - Aspect ratio preservation tests
 
+- **test_integration_real.py** - Real-file integration tests
+  - Real Excel file read/write tests (no mocking)
+  - Text parameter parsing tests with actual business code functions
+  - Image parameter parsing tests with actual business code functions
+  - Data validation with specific value assertions
+  - Text preprocessing with specific replacement verification
+  - Reduced mock usage for better integration coverage
+
 ### Test Coverage
 
 #### Functionality Tests (test_simple.py)
@@ -211,16 +219,17 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 350
-- **Passed**: 350 ✅
+- **Total Tests**: 360
+- **Passed**: 360 ✅
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
-- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, text rotation, font configuration system, and image scaling/alignment parameters
+- **Coverage**: Complete coverage of core functionality, error handling, boundary conditions, edge cases, integration, platform compatibility, real scenarios, clipboard import functionality, logging functionality, text rotation, font configuration system, image scaling/alignment parameters, and real-file integration tests
 - **Path Handling**: Verified no hardcoded absolute paths in business code
 - **Cross-platform**: Compatible with Windows and macOS
 - **Architecture**: Single-process serial execution for optimal stability and simplicity
 - **No Excel Dependency**: All tests pass without requiring Excel application
+- **Business Code Integration**: Tests use business code's parsing functions (parse_text_params, parse_image_params) instead of test-only implementations
 
 ## Running Tests
 
@@ -307,6 +316,7 @@ tests/
 ├── test_logging_functionality.py # Logging functionality tests
 ├── test_image_params.py   # Image parameters tests
 ├── test_transform.py      # Data transformation engine tests
+├── test_integration_real.py # Real-file integration tests
 └── test_utils.py          # Test utility functions
 ```
 
@@ -315,7 +325,7 @@ tests/
 Tests use actual files from the `workspace/` directory:
 - `workspace/1.psd`, `workspace/1.xlsx` - Basic functionality tests
 - `workspace/3#1.psd`, `workspace/3#2.psd`, `workspace/3.xlsx` - Multi-template tests
-- `assets/` - Resource files directory
+- `workspace/assets/` - Resource files directory
 
 ## Test Configuration
 
@@ -331,24 +341,25 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Distribution
 
-- **Total Tests**: 350
-- **Passed**: 350 ✅
+- **Total Tests**: 360
+- **Passed**: 360 ✅
 - **Failed**: 0
 - **Test Breakdown**:
   - Boolean value handling: 67 tests
   - Business logic: 51 tests
-  - Image parameters: 27 tests
+  - Image parameters: 22 tests
   - Platform compatibility: 36 tests
-  - Precise text position: 26 tests
-  - Data transformation: 41 tests
+  - Precise text position: 8 tests
+  - Data transformation: 48 tests
   - Logging functionality: 23 tests
-  - Error handling: 17 tests
-  - Font configuration: 18 tests
-  - Clipboard importer: 17 tests
-  - Integration: 4 tests
+  - Error handling: 20 tests
+  - Font configuration: 22 tests
+  - Clipboard importer: 13 tests
+  - Integration: 34 tests
+  - Real-file integration: 7 tests
   - Real scenarios: 9 tests
-  - Performance: 4 tests
-  - Core functionality: 6 tests
+  - Performance: 5 tests
+  - Core functionality: 17 tests
   - Boundary conditions: 6 tests
   - Test utilities: (fixture class, not counted)
 

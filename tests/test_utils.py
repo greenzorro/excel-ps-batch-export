@@ -17,83 +17,6 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 
 
-def parse_layer_name(layer_name):
-    """解析图层名称，提取变量信息
-    
-    :param str layer_name: 图层名称
-    :return dict or None: 变量信息字典，解析失败返回None
-    """
-    if not layer_name or not layer_name.startswith('@'):
-        return None
-    
-    try:
-        # 提取变量名和操作符
-        parts = layer_name[1:].split('#')
-        if len(parts) != 2:
-            return None
-        
-        var_name = parts[0]
-        operation = parts[1]
-        
-        # 解析操作类型和参数
-        if operation.startswith('t'):
-            # 文本变量
-            result = {
-                "type": "text",
-                "name": var_name,
-                "align": "left",
-                "valign": "top",
-                "paragraph": False
-            }
-            
-            # 解析参数
-            params = operation[2:] if len(operation) > 2 else ''
-            if 'c' in params:
-                result["align"] = "center"
-            elif 'r' in params:
-                result["align"] = "right"
-            
-            # 段落文本处理 - 改进的优先级逻辑
-            # 使用字符串匹配而不是子字符串搜索
-            has_p = params == 'p' or params.startswith('p_') or params.endswith('_p') or '_p_' in params
-            has_pm = params == 'pm' or params.startswith('pm_') or params.endswith('_pm') or '_pm_' in params
-            has_pb = params == 'pb' or params.startswith('pb_') or params.endswith('_pb') or '_pb_' in params
-            
-            # 段落标志处理
-            if has_p:
-                result["paragraph"] = True
-            elif has_pm or has_pb:
-                result["paragraph"] = False
-            
-            # 垂直对齐处理
-            if has_pm:
-                result["valign"] = "middle"
-            elif has_pb:
-                result["valign"] = "bottom"
-            
-            return result
-            
-        elif operation.startswith('i'):
-            # 图片变量
-            return {
-                "type": "image",
-                "name": var_name
-            }
-            
-        elif operation.startswith('v'):
-            # 可见性变量
-            return {
-                "type": "visibility",
-                "name": var_name
-            }
-            
-        else:
-            return None
-            
-    except Exception:
-        return None
-
-
 def create_mock_layer(name="@test#t", size=(100, 50), offset=(0, 0), 
                      font_size=16, is_visible=True, is_group=False):
     """创建模拟图层对象
@@ -167,8 +90,8 @@ def create_test_excel_data(rows=5, include_image_cols=True, include_bool_cols=Tr
     }
     
     if include_image_cols:
-        data["background"] = ["assets/1_img/null.jpg"] * rows
-        data["logo"] = ["assets/1_img/null.jpg"] * rows
+        data["background"] = ["workspace/assets/1_img/null.jpg"] * rows
+        data["logo"] = ["workspace/assets/1_img/null.jpg"] * rows
     
     if include_bool_cols:
         data["show_watermark"] = [i % 2 == 0 for i in range(rows)]
@@ -318,7 +241,7 @@ def create_complex_test_data(rows=10):
     
     # 添加一些图片路径
     data.update({
-        "valid_image": ["assets/1_img/null.jpg"] * rows,
+        "valid_image": ["workspace/assets/1_img/null.jpg"] * rows,
         "invalid_image": ["nonexistent.jpg"] * rows,
         "empty_image": [""] * rows,
     })
@@ -326,32 +249,74 @@ def create_complex_test_data(rows=10):
     return pd.DataFrame(data)
 
 
-def validate_layer_name_parsing(layer_name, expected_type, expected_name, 
-                                expected_align=None, expected_valign=None, 
+def validate_layer_name_parsing(layer_name, expected_type, expected_name,
+                                expected_align=None, expected_valign=None,
                                 expected_paragraph=None):
     """验证图层名称解析结果
-    
+
     :param str layer_name: 图层名称
-    :param str expected_type: 期望的类型
+    :param str expected_type: 期望的类型 (text/image/visibility)
     :param str expected_name: 期望的变量名
-    :param str expected_align: 期望的对齐方式
-    :param str expected_valign: 期望的垂直对齐
+    :param str expected_align: 期望的对齐方式 (left/center/right)
+    :param str expected_valign: 期望的垂直对齐 (top/middle/bottom)
     :param bool expected_paragraph: 期望是否为段落
     """
-    result = parse_layer_name(layer_name)
-    
-    assert result is not None, f"图层名称解析失败: {layer_name}"
-    assert result["type"] == expected_type, f"类型不匹配: 期望{expected_type}, 实际{result['type']}"
-    assert result["name"] == expected_name, f"变量名不匹配: 期望{expected_name}, 实际{result['name']}"
-    
-    if expected_align is not None:
-        assert result["align"] == expected_align, f"对齐方式不匹配: 期望{expected_align}, 实际{result['align']}"
-    
-    if expected_valign is not None:
-        assert result["valign"] == expected_valign, f"垂直对齐不匹配: 期望{expected_valign}, 实际{result['valign']}"
-    
-    if expected_paragraph is not None:
-        assert result["paragraph"] == expected_paragraph, f"段落设置不匹配: 期望{expected_paragraph}, 实际{result['paragraph']}"
+    # 验证图层名称格式
+    if not layer_name or not layer_name.startswith('@'):
+        raise AssertionError(f"图层名称格式错误: {layer_name}")
+
+    if '#' not in layer_name:
+        raise AssertionError(f"图层名称缺少操作符: {layer_name}")
+
+    # 提取变量名和操作符
+    parts = layer_name[1:].split('#', 1)
+    if len(parts) != 2:
+        raise AssertionError(f"图层名称格式错误: {layer_name}")
+
+    var_name = parts[0]
+    operation = parts[1]
+
+    # 验证变量名
+    assert var_name == expected_name, f"变量名不匹配: 期望{expected_name}, 实际{var_name}"
+
+    # 验证操作类型
+    if not operation:
+        raise AssertionError(f"操作符为空: {layer_name}")
+
+    op_type = operation[0]  # 't', 'i', 'v'
+
+    if expected_type == "text":
+        assert op_type == 't', f"类型不匹配: 期望text (t), 实际{op_type}"
+
+        # 对于文本类型，使用业务代码的 parse_text_params 验证参数
+        from src.psd_renderer import parse_text_params
+        params = parse_text_params(layer_name)
+
+        if expected_align is not None:
+            assert params["align"] == expected_align, f"对齐方式不匹配: 期望{expected_align}, 实际{params['align']}"
+
+        if expected_valign is not None:
+            assert params["valign"] == expected_valign, f"垂直对齐不匹配: 期望{expected_valign}, 实际{params['valign']}"
+
+        if expected_paragraph is not None:
+            assert params["paragraph"] == expected_paragraph, f"段落设置不匹配: 期望{expected_paragraph}, 实际{params['paragraph']}"
+
+    elif expected_type == "image":
+        assert op_type == 'i', f"类型不匹配: 期望image (i), 实际{op_type}"
+
+        # 使用业务代码的 parse_image_params 验证参数
+        from src.psd_renderer import parse_image_params
+        params = parse_image_params(layer_name)
+
+        # 图片参数至少应该有 mode 和 alignment
+        assert "mode" in params, "图片参数缺少 mode"
+        assert "alignment" in params, "图片参数缺少 alignment"
+
+    elif expected_type == "visibility":
+        assert op_type == 'v', f"类型不匹配: 期望visibility (v), 实际{op_type}"
+
+    else:
+        raise AssertionError(f"未知的类型: {expected_type}")
 
 
 # 兼容性函数 - 保持原有API
@@ -368,7 +333,7 @@ def create_test_data(rows=10):
         "时间框": [True] * rows,
         "站内标": [True] * rows,
         "小标签内容": ["标签内容"] * rows,
-        "背景图": ["assets/1_img/null.jpg"] * rows,
+        "背景图": ["workspace/assets/1_img/null.jpg"] * rows,
         "小标签": [True] * rows,
         "站外标": [False] * rows,
     }
@@ -379,18 +344,18 @@ def create_test_environment(base_dir, include_psd=False):
     """创建测试环境（兼容性函数）"""
     test_dir = Path(base_dir) / "test_env"
     test_dir.mkdir(exist_ok=True)
-    
-    # 创建目录结构
-    (test_dir / "assets" / "fonts").mkdir(parents=True, exist_ok=True)
-    (test_dir / "assets" / "1_img").mkdir(parents=True, exist_ok=True)
-    (test_dir / "export").mkdir(exist_ok=True)
+
+    # 创建目录结构（匹配新结构）
+    (test_dir / "workspace" / "assets" / "fonts").mkdir(parents=True, exist_ok=True)
+    (test_dir / "workspace" / "assets" / "1_img").mkdir(parents=True, exist_ok=True)
+    (test_dir / "export").mkdir(parents=True, exist_ok=True)
     
     # 创建测试数据
     test_data = create_test_data()
     test_data.to_excel(test_dir / "test.xlsx", index=False)
     
     # 创建虚拟图片文件
-    null_img = test_dir / "assets" / "1_img" / "null.jpg"
+    null_img = test_dir / "workspace" / "assets" / "1_img" / "null.jpg"
     with open(null_img, 'w') as f:
         f.write("dummy image file")
     
@@ -406,23 +371,23 @@ def cleanup_test_environment(test_dir):
 def validate_test_setup():
     """验证测试设置（兼容性函数）"""
     project_root = Path(__file__).parent.parent
-    
+
     required_files = [
-        "xlsx_generator.py",
-        "psd_renderer.py", 
-        "file_monitor.py",
+        "src/xlsx_generator.py",
+        "src/psd_renderer.py",
+        "src/file_monitor.py",
         "requirements.txt"
     ]
-    
+
     missing_files = []
     for file in required_files:
         if not (project_root / file).exists():
             missing_files.append(file)
-    
+
     if missing_files:
         print(f"缺少必需文件: {missing_files}")
         return False
-    
+
     return True
 
 
@@ -444,6 +409,60 @@ def run_test_suite():
             print(f"测试环境创建在: {test_env}")
             print("测试完成")
             return True
-            
+
         finally:
             cleanup_test_environment(test_env)
+
+
+# ============== Fixture 函数 - 减少测试代码重复 ==============
+
+def create_test_image(width=200, height=50, mode="RGB", color=None):
+    """创建测试用图像对象
+
+    :param int width: 图像宽度
+    :param int height: 图像高度
+    :param str mode: 图像模式 (RGB, RGBA, etc.)
+    :param color: 图像颜色
+    :return Image: PIL Image 对象
+    """
+    from PIL import Image
+    if color is None:
+        color = (255, 255, 255) if mode == "RGB" else (255, 255, 255, 255)
+    return Image.new(mode, (width, height), color)
+
+
+def create_test_draw(image=None, width=200, height=50):
+    """创建测试用 Draw 对象
+
+    :param Image image: PIL Image 对象，如果为 None 则创建新的
+    :param int width: 图像宽度（创建新图像时使用）
+    :param int height: 图像高度（创建新图像时使用）
+    :return ImageDraw: PIL ImageDraw 对象
+    """
+    from PIL import ImageDraw
+    if image is None:
+        image = create_test_image(width, height)
+    return ImageDraw.Draw(image)
+
+
+def create_test_font(size=16):
+    """创建测试用字体对象
+
+    :param int size: 字体大小
+    :return ImageFont: PIL ImageFont 对象
+    """
+    from PIL import ImageFont
+    return ImageFont.load_default()
+
+
+def create_test_rendering_context(width=200, height=50):
+    """创建测试用渲染环境（图像、Draw、字体）
+
+    :param int width: 图像宽度
+    :param int height: 图像高度
+    :return tuple: (image, draw, font)
+    """
+    image = create_test_image(width, height)
+    draw = create_test_draw(image)
+    font = create_test_font()
+    return image, draw, font

@@ -29,7 +29,7 @@ This is [what you do using Photoshop](https://victor42.eth.limo/post-en/3650/):
 Here's what you do using my Python script.
 
 1. Edit content in a spreadsheet.
-2. Run psd_renderer.py
+2. Run src/psd_renderer.py
 
 That's it. Images will be just there for you. All you need is a Python environment with a few packages.
 
@@ -74,10 +74,10 @@ For the first time, you'll need some basic setup:
     - Notes:
         - **Do not use cmd/ctrl+T to scale changeable text layers**. Adjust their sizes only via font size attribute, otherwise the script will get wrong text sizes from the PSD file. If you already did, make new text layers to replace them.
         - For text that needs rotation, only add the rotation parameter in the layer name. **Keep the text layer horizontal/straight in PSD**, do not rotate it manually, otherwise the script may not be able to correctly read the layer's position information, causing the output to be misaligned.
-3. Run `xlsx_generator.py`. Your XLSX files will appear, with columns ready.
+3. Run `src/xlsx_generator.py`. Your XLSX files will appear, with columns ready.
 4. Edit XLSX file. Python reads the first sheet, put your data there. Or you may follow the example, put your data in another sheet and use Excel formulas in the first one to read and calculate everything. It's especially useful when you want to toggle layer visibility. DO NOT delete the first `File_name` column, leave it blank to use the default file name format(image_1, image_2, etc).
-5. Put everything else the templates need in `assets` folder, including fonts in `assets/fonts/`, background images, etc. Make sure the path to image assets match the data in the spreadsheet. Image paths must be relative to the project root directory (e.g., `assets/2_img/image.jpg`), not relative to the workspace directory (do not use `../assets/...`).
-6. Configure fonts in `fonts.json` (optional). If you have multiple PSD templates with different font requirements, create a `fonts.json` file in the project root to specify which font file each template should use:
+5. Put everything else the templates need in `workspace/assets` folder, including fonts in `workspace/assets/fonts/`, background images, etc. Make sure the path to image assets match the data in the spreadsheet. Image paths must be relative to the workspace directory (e.g., `assets/1_img/image.jpg`).
+6. Configure fonts in `workspace/fonts.json` (optional). If you have multiple PSD templates with different font requirements, create a `fonts.json` file in the workspace directory to specify which font file each template should use:
    ```json
    {
      "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
@@ -86,7 +86,7 @@ For the first time, you'll need some basic setup:
      "product": "CustomFont.ttf"
    }
    ```
-   The key is the PSD file prefix (part before the first `#`), and the value is the font filename in `assets/fonts/`. If not configured, the default font `AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
+   The key is the PSD file prefix (part before the first `#`), and the value is the font filename in `workspace/assets/fonts/`. If not configured, the default font `workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
 
 Looks complicated huh? Trust me, it's way more complicated doing the same thing using Photoshop. And once you've done setting up, this would be your life saver.
 
@@ -95,16 +95,16 @@ Looks complicated huh? Trust me, it's way more complicated doing the same thing 
 When it comes to exporting. Things become a piece of cake:
 
 1. Paste content in the spreadsheet.
-2. Run psd_renderer.py
+2. Run src/psd_renderer.py
 
-I even made another script (file_monitor.py) to monitor the spreadsheet and export images automatically once the spreadsheets are modified.
+I even made another script (src/file_monitor.py) to monitor the spreadsheet and export images automatically once the spreadsheets are modified.
 
 ## Clipboard Importer
 
 For even faster workflow, you can use the clipboard_importer.py script:
 
 1. Copy table data to clipboard (from Excel, web tables, etc.)
-2. Run `python clipboard_importer.py`
+2. Run `python src/clipboard_importer.py`
 3. Select target Excel file (if multiple)
 4. Data is automatically written to Excel and images are generated
 
@@ -117,12 +117,12 @@ This tool supports processing multiple PSD templates with one Excel file. Here's
 - **Grouping by Prefix**: All PSD files in the same directory are grouped by their prefix. The prefix is defined as the part of the filename before the first hash (`#`). For example:
   - `product_intro#templateA.psd` and `product_intro#templateB.psd` share the same prefix `product_intro`
 - **Shared Excel**: For each group, a single Excel file (named `[prefix].xlsx`) is created. This Excel file contains variables from all PSDs in the group.
-- **Batch Export**: When running `psd_renderer.py [prefix] ...`, the script will process all PSDs in the group. Each row in the Excel will generate one image for every PSD in the group. The output image filenames include the PSD's suffix (e.g., `image_1_templateA.jpg`).
+- **Batch Export**: When running `src/psd_renderer.py [prefix] ...`, the script will process all PSDs in the group. Each row in the Excel will generate one image for every PSD in the group. The output image filenames include the PSD's suffix (e.g., `image_1_templateA.jpg`).
 
 Example:
   - PSD files: `campaign#summer.psd`, `campaign#winter.psd`
   - Excel file: `campaign.xlsx`
-  - Command: `python psd_renderer.py campaign jpg`
+  - Command: `python src/psd_renderer.py campaign jpg`
   - Output: For each row in `campaign.xlsx`, two images are generated: `image_1_summer.jpg`, `image_1_winter.jpg`, etc. (assuming File_name column is empty, otherwise uses the File_name value)
 
 ## Advanced Features
@@ -161,13 +161,21 @@ pip install -r requirements.txt
 
 ```bash
 # Basic command format
-python psd_renderer.py [Excel_file_prefix] [output_format]
+python src/psd_renderer.py [Excel_file_prefix] [output_format] [output_directory (optional)]
 
-# Example
-python psd_renderer.py 1 jpg
+# Examples
+python src/psd_renderer.py 1 jpg                              # Default output to export/ directory
+python src/psd_renderer.py 1 jpg output/custom               # Custom output directory
+python src/psd_renderer.py 1 jpg /absolute/path/to/output    # Absolute path output directory
 ```
 
-**Note**: Font files are configured via `fonts.json` in the project root. If not configured, the default font `assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
+**Note**: Font files are configured via `workspace/fonts.json`. If not configured, the default font `workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
+
+**Output Directory Options**:
+- When no output directory is specified, images are saved to the default `export/` directory
+- When a relative path is provided (like `output/custom`), it's relative to the project root directory
+- When an absolute path is provided (like `/Users/username/Desktop/rendered`), images are saved to that location
+- Each export creates a timestamped subdirectory to prevent file conflicts (e.g., `20260402_162657_1/`)
 
 ## Thanks
 

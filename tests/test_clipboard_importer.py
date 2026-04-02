@@ -19,7 +19,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the module to test
-import clipboard_importer
+import src.clipboard_importer as clipboard_importer
 
 
 class TestClipboardDataParsing:
@@ -76,7 +76,7 @@ class TestExcelFileSelection:
 
         with patch('builtins.input', return_value='1'):
             result = clipboard_importer.find_target_excel_file()
-            assert result == ('test1.xlsx', 'workspace/test1.xlsx')
+            assert result == ('test1.xlsx', '../workspace/test1.xlsx')
 
     @patch('os.listdir')
     def test_no_excel_files_found(self, mock_listdir):
@@ -141,8 +141,8 @@ class TestExcelWriting:
             })
 
             # Mock the clipboard_importer functions
-            with patch('clipboard_importer.get_target_sheet', return_value='Sheet1'):
-                with patch('clipboard_importer.safe_print_message'):
+            with patch('src.clipboard_importer.get_target_sheet', return_value='Sheet1'):
+                with patch('src.clipboard_importer.safe_print_message'):
                     result = clipboard_importer.write_to_excel(tmp_path, test_df)
 
             # Verify the function returns expected values
@@ -182,9 +182,9 @@ class TestErrorHandling:
 class TestPSDRendererIntegration:
     """Test PSD renderer integration functionality"""
 
-    @patch('clipboard_importer.subprocess.run')
-    @patch('clipboard_importer.os.listdir')
-    @patch('clipboard_importer.safe_print_message')
+    @patch('src.clipboard_importer.subprocess.run')
+    @patch('src.clipboard_importer.os.listdir')
+    @patch('src.clipboard_importer.safe_print_message')
     def test_run_psd_renderer_success(self, mock_print, mock_listdir, mock_run):
         """Test successful PSD renderer execution"""
         # Mock listdir to return PSD files
@@ -199,9 +199,9 @@ class TestPSDRendererIntegration:
         mock_run.assert_called_once()
         mock_print.assert_called()
 
-    @patch('clipboard_importer.subprocess.run')
-    @patch('clipboard_importer.os.listdir')
-    @patch('clipboard_importer.safe_print_message')
+    @patch('src.clipboard_importer.subprocess.run')
+    @patch('src.clipboard_importer.os.listdir')
+    @patch('src.clipboard_importer.safe_print_message')
     def test_run_psd_renderer_failure(self, mock_print, mock_listdir, mock_run):
         """Test PSD renderer execution failure"""
         # Mock listdir to return PSD files
@@ -221,18 +221,18 @@ class TestPSDRendererIntegration:
 class TestMainFunction:
     """Test main function execution"""
 
-    @patch('clipboard_importer.get_clipboard_data')
-    @patch('clipboard_importer.parse_clipboard_data')
-    @patch('clipboard_importer.find_target_excel_file')
-    @patch('clipboard_importer.write_to_excel')
-    @patch('clipboard_importer.run_psd_renderer')
-    @patch('clipboard_importer.safe_print_message')
+    @patch('src.clipboard_importer.get_clipboard_data')
+    @patch('src.clipboard_importer.parse_clipboard_data')
+    @patch('src.clipboard_importer.find_target_excel_file')
+    @patch('src.clipboard_importer.write_to_excel')
+    @patch('src.clipboard_importer.run_psd_renderer')
+    @patch('src.clipboard_importer.safe_print_message')
     def test_main_success(self, mock_print, mock_run_psd, mock_write, mock_find, mock_parse, mock_get):
         """Test successful main function execution with PSD rendering"""
         # Setup mocks
         mock_get.return_value = "姓名\t年龄\n张三\t25"
         mock_parse.return_value = pd.DataFrame({'姓名': ['张三'], '年龄': ['25']})
-        mock_find.return_value = ('test.xlsx', 'workspace/test.xlsx')
+        mock_find.return_value = ('test.xlsx', '../workspace/test.xlsx')
         mock_write.return_value = ('Sheet1', 2, 1)
         mock_run_psd.return_value = True
 
@@ -244,8 +244,8 @@ class TestMainFunction:
         mock_write.assert_called_once()
         mock_run_psd.assert_called_once_with('test.xlsx')
 
-    @patch('clipboard_importer.get_clipboard_data')
-    @patch('clipboard_importer.safe_print_message')
+    @patch('src.clipboard_importer.get_clipboard_data')
+    @patch('src.clipboard_importer.safe_print_message')
     def test_main_error_handling(self, mock_print, mock_get):
         """Test main function error handling"""
         # Setup mock to raise exception

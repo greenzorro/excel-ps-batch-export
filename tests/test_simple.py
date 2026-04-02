@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 导入共享测试工具
-from test_utils import parse_layer_name, validate_layer_name_parsing, create_test_data, validate_test_setup
+from test_utils import validate_layer_name_parsing, create_test_data, validate_test_setup
 
 
 class TestLayerParsing:
@@ -59,18 +59,36 @@ class TestLayerParsing:
         validate_layer_name_parsing("@水印#v", "visibility", "水印")
     
     def test_invalid_layer_names(self):
-        """测试无效图层名称"""
-        # 测试不以@开头的图层
-        result = parse_layer_name("普通图层")
+        """测试无效图层名称的处理"""
+        from src.psd_renderer import parse_text_params, parse_image_params, parse_rotation_from_name
+
+        # 测试不以@开头的图层 - 业务代码函数应该返回默认值
+        result = parse_text_params("普通图层")
+        # 应该返回默认的 left/top/False
+        assert result["align"] == "left"
+        assert result["valign"] == "top"
+        assert result["paragraph"] == False
+
+        # 测试空字符串
+        result = parse_text_params("")
+        assert result["align"] == "left"
+
+        # 测试没有#的图层名
+        result = parse_text_params("@变量名")
+        assert result["align"] == "left"
+
+        # 测试 parse_rotation_from_name 对无效输入的处理
+        result = parse_rotation_from_name("")
         assert result is None
-        
-        # 测试缺少操作符的图层
-        result = parse_layer_name("@变量名")
+
+        result = parse_rotation_from_name("普通图层")
         assert result is None
-        
-        # 测试无效的操作符
-        result = parse_layer_name("@变量名#x")
-        assert result is None
+
+        # 测试 parse_image_params 对无效输入的处理
+        result = parse_image_params("普通图层")
+        # 应该返回默认值
+        assert result["mode"] == "cover"
+        assert result["alignment"] == "cm"
 
 
 class TestExcelOperations:
@@ -151,18 +169,18 @@ class TestFileOperations:
     def test_assets_directory(self):
         """测试资源目录"""
         project_root = Path(__file__).parent.parent
-        assets_dir = project_root / "assets"
-        
+        assets_dir = project_root / "workspace" / "assets"
+
         assert assets_dir.exists(), "assets目录不存在"
-        
+
         # 验证子目录
         fonts_dir = assets_dir / "fonts"
         images_dir = assets_dir / "1_img"
-        
+
         if fonts_dir.exists():
             font_files = list(fonts_dir.glob("*.ttf")) + list(fonts_dir.glob("*.otf"))
             assert len(font_files) > 0, "fonts目录中没有字体文件"
-        
+
         if images_dir.exists():
             image_files = list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.png"))
             assert len(image_files) > 0, "images目录中没有图片文件"
@@ -295,7 +313,7 @@ class TestEndToEndSimple:
 
         # 导入业务代码中的safe_print_message函数
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from psd_renderer import safe_print_message
+        from src.psd_renderer import safe_print_message
 
         # 测试正常消息
         buf = io.StringIO()
@@ -322,7 +340,7 @@ class TestEndToEndSimple:
     def test_business_code_improvements(self):
         """测试业务代码改进效果"""
         # 验证业务代码中已经修复的问题
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "psd_renderer.py")
         
         # 检查脚本文件是否存在且可读
         assert os.path.exists(script_path)

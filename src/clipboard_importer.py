@@ -38,9 +38,7 @@ import subprocess
 # 渲染配置
 DEFAULT_FORMAT = 'jpg'      # 默认输出格式
 RENDER_TIMEOUT = 300        # 渲染超时时间（秒）
-
-# 文件路径配置
-EXPORT_DIR = "export"       # 输出目录
+OUTPUT_DIR = "../export"       # 输出目录（默认../export）
 
 def safe_print_message(message):
     """安全打印消息，处理Windows控制台编码问题
@@ -112,7 +110,7 @@ def find_target_excel_file():
     :return tuple: (文件名, 完整路径)
     :raises FileNotFoundError: 当找不到Excel文件时抛出异常
     """
-    workspace_dir = "workspace"
+    workspace_dir = "../workspace"
     excel_files = [f for f in os.listdir(workspace_dir) if f.endswith(('.xlsx', '.xls'))]
 
     # 按文件名排序
@@ -228,7 +226,7 @@ def get_matching_psds(excel_file):
     """
     base_name = os.path.splitext(excel_file)[0]
     matching_psds = []
-    workspace_dir = "workspace"
+    workspace_dir = "../workspace"
     for f in os.listdir(workspace_dir):
         if f.endswith('.psd'):
             # 提取文件名前缀（第一个井号前的部分）
@@ -274,6 +272,8 @@ def run_psd_renderer(excel_file):
         template_name,
         DEFAULT_FORMAT
     ]
+    if OUTPUT_DIR != '../export':
+        cmd.append(OUTPUT_DIR)
 
     # 运行PSD渲染器（输出直接显示到终端）
     try:
@@ -281,7 +281,7 @@ def run_psd_renderer(excel_file):
 
         if result.returncode == 0:
             safe_print_message("\n✓ 图片渲染成功!")
-            safe_print_message(f"输出目录: {EXPORT_DIR}/")
+            safe_print_message(f"输出目录: {OUTPUT_DIR}/")
             safe_print_message(f"输出格式: {DEFAULT_FORMAT}")
             safe_print_message(f"处理的PSD模板: {len(matching_psds)} 个")
             return True
@@ -318,11 +318,11 @@ def main():
 
         # 检查是否有变换规则文件
         template_name = os.path.splitext(excel_file)[0]
-        json_rule_path = os.path.join("workspace", f"{template_name}.json")
+        json_rule_path = os.path.join("../workspace", f"{template_name}.json")
 
         if os.path.exists(json_rule_path):
             # 有变换规则：写入 _raw.csv，psd_renderer 内部会调 transform
-            raw_csv_path = os.path.join("workspace", f"{template_name}_raw.csv")
+            raw_csv_path = os.path.join("../workspace", f"{template_name}_raw.csv")
             safe_print_message("检测到变换规则文件，写入原始数据...")
 
             # 读取原 CSV 的表头（如果存在）

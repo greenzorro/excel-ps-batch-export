@@ -143,6 +143,9 @@
       "template": "assets/1_img/{分类}.jpg",
       "remove_spaces": ["分类"]
     }
+```
+
+**注意**：模板中的路径（如 `assets/1_img/{分类}.jpg`）是相对于 `workspace/` 目录的。系统会自动处理路径转换。
   }
 }
 ```
