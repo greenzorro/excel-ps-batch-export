@@ -1,3 +1,5 @@
+.projectroot
+
 # Python
 __pycache__/
 *.py[cod]
