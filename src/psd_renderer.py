@@ -406,6 +406,29 @@ def preprocess_text(text_content):
     return text_content
 
 
+def preprocess_image_path(path):
+    """预处理图像路径，在加载图片前清理Excel转义字符
+
+    :param str path: 原始图像路径
+    :return str: 预处理后的路径
+    """
+    if path is None:
+        return ""
+
+    # 转换为字符串（处理非字符串类型）
+    path = str(path)
+
+    # 清理Excel特殊字符转义字符串
+    path = path.replace("_x000D_", "")  # 回车符
+    path = path.replace("_x000A_", "")  # 换行符
+    path = path.replace("_x0009_", "")  # 制表符
+
+    # 清理首尾空白字符（空格、制表符、换行符等）
+    path = path.strip()
+
+    return path
+
+
 def update_text_layer(
     layer,
     text_content,
@@ -728,6 +751,7 @@ def update_image_layer(layer, new_image_path, pil_image):
     :param PIL.Image pil_image: PIL图像对象
     """
     layer.visible = False  # 防止PSD原始图层被输出到PIL
+
     if os.path.exists(new_image_path):
         new_image = Image.open(new_image_path).convert("RGBA")
 
@@ -835,6 +859,8 @@ def export_single_image(row, index, psd_object, psd_file_name, font):
                     elif operation_type.startswith("i"):
                         # 转换相对路径：assets/ -> ../workspace/assets/
                         image_path = str(row[field_name])
+                        # 预处理图像路径，清理Excel转义字符
+                        image_path = preprocess_image_path(image_path)
                         if image_path.startswith("assets/"):
                             image_path = os.path.join("../workspace", image_path)
                         update_image_layer(layer, image_path, pil_image)
@@ -1049,6 +1075,8 @@ def validate_data(
                 if pd.notna(file_path) and str(file_path).strip():
                     # 转换相对路径：assets/ -> ../workspace/assets/
                     check_path = str(file_path)
+                    # 预处理图像路径，清理Excel转义字符
+                    check_path = preprocess_image_path(check_path)
                     if check_path.startswith("assets/"):
                         check_path = os.path.join("../workspace", check_path)
 
