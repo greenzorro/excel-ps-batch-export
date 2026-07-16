@@ -38,17 +38,19 @@ class TestLayerParsing:
         validate_layer_name_parsing("@标题#t_r", "text", "标题", expected_align="right")
         
         # 测试段落文本
-        # 测试段落文本
         validate_layer_name_parsing("@描述#t_p", "text", "描述", expected_paragraph=True)
         
-        # 测试垂直居中
+        # 垂直对齐修饰符（与 _p 组合时在段落内生效）
         validate_layer_name_parsing("@描述#t_pm", "text", "描述", expected_valign="middle")
-        
-        # 测试垂直底部
         validate_layer_name_parsing("@描述#t_pb", "text", "描述", expected_valign="bottom")
-        
-        # 测试组合参数
-        validate_layer_name_parsing("@描述#t_c_p", "text", "描述", expected_align="center", expected_paragraph=True)
+        validate_layer_name_parsing(
+            "@描述#t_p_pm", "text", "描述",
+            expected_valign="middle", expected_paragraph=True
+        )
+        validate_layer_name_parsing(
+            "@描述#t_c_p", "text", "描述",
+            expected_align="center", expected_paragraph=True
+        )
     
     def test_image_variable_parsing(self):
         """测试图片变量解析"""

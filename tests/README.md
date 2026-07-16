@@ -4,7 +4,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## Test Suite Status
 
-**360 passed** ✅
+**361 passed** ✅
 
 **Last Updated**: 2026-04-02
 **Status**: All tests passing. No Excel application required.
@@ -137,6 +137,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Error handling and user interaction tests
 
 - **test_logging_functionality.py** - Logging functionality tests
+  - Writes to project-root `log.csv` (independent of cwd)
   - Log export activity basic functionality tests
   - Duplicate record prevention tests
   - Zero count handling tests
@@ -219,8 +220,8 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 360
-- **Passed**: 360 ✅
+- **Total Tests**: 361
+- **Passed**: 361 ✅
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
@@ -341,8 +342,8 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Distribution
 
-- **Total Tests**: 360
-- **Passed**: 360 ✅
+- **Total Tests**: 361
+- **Passed**: 361 ✅
 - **Failed**: 0
 - **Test Breakdown**:
   - Boolean value handling: 67 tests
@@ -351,7 +352,7 @@ Tests automatically create temporary workspaces without affecting project files.
   - Platform compatibility: 36 tests
   - Precise text position: 8 tests
   - Data transformation: 48 tests
-  - Logging functionality: 23 tests
+  - Logging functionality: 7 tests
   - Error handling: 20 tests
   - Font configuration: 22 tests
   - Clipboard importer: 13 tests

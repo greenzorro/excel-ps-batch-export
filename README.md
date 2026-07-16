@@ -57,10 +57,9 @@ For the first time, you'll need some basic setup:
         - `_c` for horizontally center alignment
         - `_r` for horizontally right alignment
         - `_a[angle]` to rotate text by specified angle (e.g., `_a15` rotates 15° clockwise, `_a-30` rotates 30° counterclockwise)
-        - `_p` for paragraph with text wraping, fill the paragraph text layer in PSD with at least one line
-        - `_pm` for vertically middle alignment
-        - `_pb` for vertically bottom alignment
-        - All these parameters work together, like `#t_c_a15`, `#t_r_p`
+        - `_p` for paragraph with text wrapping; fill the paragraph text layer in PSD with at least one line
+        - `_pm` / `_pb` for vertical middle / bottom alignment within a paragraph (use with `_p`, e.g. `#t_p_pm`, `#t_c_p_pb`)
+        - Parameters can be combined, e.g. `#t_c_a15`, `#t_r_p`, `#t_p_pm`
         - Alignment set in PSD will not affect the result, the program only checks layer names
     - `#i` to fill a pixel layer with the image whose file path is written in the spreadsheet, parameters including:
         - Scale mode: `_cover` (crop mode, default) fills the layer by cropping excess, `_contain` (letterbox mode) fits the entire image with transparent padding

@@ -347,19 +347,30 @@ def parse_text_params(layer_name: str) -> dict:
     elif "_r" in param_str:
         params["align"] = "right"
 
-    # 解析段落文本和垂直对齐
-    # 段落标志处理 - 使用字符串匹配而不是子字符串搜索
-    has_p = param_str == 'p' or param_str.startswith('p_') or param_str.endswith('_p') or '_p_' in param_str
-    has_pm = param_str == 'pm' or param_str.startswith('pm_') or param_str.endswith('_pm') or '_pm_' in param_str
-    has_pb = param_str == 'pb' or param_str.startswith('pb_') or param_str.endswith('_pb') or '_pb_' in param_str
+    # 段落换行（_p）与段落垂直对齐（_pm/_pb）正交：
+    # _p 开启换行；_pm/_pb 仅设置 valign，需与 _p 组合才生效（如 #t_p_pm）
+    has_p = (
+        param_str == "p"
+        or param_str.startswith("p_")
+        or param_str.endswith("_p")
+        or "_p_" in param_str
+    )
+    has_pm = (
+        param_str == "pm"
+        or param_str.startswith("pm_")
+        or param_str.endswith("_pm")
+        or "_pm_" in param_str
+    )
+    has_pb = (
+        param_str == "pb"
+        or param_str.startswith("pb_")
+        or param_str.endswith("_pb")
+        or "_pb_" in param_str
+    )
 
-    # 段落标志
     if has_p:
         params["paragraph"] = True
-    elif has_pm or has_pb:
-        params["paragraph"] = False
 
-    # 垂直对齐处理
     if has_pm:
         params["valign"] = "middle"
     elif has_pb:
@@ -450,8 +461,8 @@ def update_text_layer(
     - @变量名#t_r - 水平右对齐
     - @变量名#t_a[角度] - 旋转指定角度（如 _a15 旋转15°，_a-30 逆时针30°）
     - @变量名#t_p - 段落文本（自动换行）
-    - @变量名#t_pm - 段落垂直居中
-    - @变量名#t_pb - 段落垂直底部
+    - @变量名#t_p_pm - 段落 + 垂直居中（_pm 需与 _p 组合）
+    - @变量名#t_p_pb / #t_c_p_pb - 段落 + 垂直底部
     - 参数可组合使用，如 @标题#t_c_a15（居中+旋转15°）
     """
     import os
