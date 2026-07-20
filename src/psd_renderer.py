@@ -1177,7 +1177,7 @@ def log_export_activity(excel_file, image_count):
 
 
 def psd_renderer_images():
-    """批量输出图片"""
+    """批量输出图片；全部任务成功时返回 True。"""
     # 加载字体配置
     load_fonts_config()
 
@@ -1219,7 +1219,7 @@ def psd_renderer_images():
     # 如果没有找到任何任务，直接退出
     if total_images == 0:
         safe_print_message("\n警告：没有找到匹配的PSD模板或数据，跳过图片生成")
-        return
+        return False
 
     # 开始串行处理
     print(f"\n开始单进程串行处理 {total_images} 个任务...")
@@ -1290,6 +1290,8 @@ def psd_renderer_images():
     else:  # Linux
         os.system(f'xdg-open "{first_image_output_dir}"')
 
+    return success_count > 0 and error_count == 0
+
 
 if __name__ == "__main__":
     # 切换到脚本所在目录
@@ -1325,4 +1327,5 @@ if __name__ == "__main__":
 
     # 批量输出图片
     current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-    psd_renderer_images()
+    if not psd_renderer_images():
+        sys.exit(1)

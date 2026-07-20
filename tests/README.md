@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## Test Suite Status
 
-**361 passed** ✅
+**364 passed** ✅
 
-**Last Updated**: 2026-04-02
+**Last Updated**: 2026-07-20
 **Status**: All tests passing. No Excel application required.
 
 ## Test Files Description
@@ -52,6 +52,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - PSD template error handling tests
   - Validation error handling tests
   - Export task error handling tests
+  - Batch exit status for full success, partial failure, and empty batches
   - Boundary condition error handling tests
 
 - **test_boundary_conditions.py** - Boundary conditions tests

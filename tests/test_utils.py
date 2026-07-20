@@ -179,6 +179,8 @@ def parse_boolean_value(value):
 
 class TestEnvironment:
     """测试环境管理器"""
+
+    __test__ = False
     
     def __init__(self):
         self.original_argv = None

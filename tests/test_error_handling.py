@@ -16,6 +16,7 @@ import pandas as pd
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 import textwrap
+from contextlib import ExitStack
 from PIL import Image, ImageDraw, ImageFont
 
 # 添加项目根目录到Python路径
@@ -36,7 +37,8 @@ from src.psd_renderer import (
     update_image_layer,
     get_matching_psds,
     preload_psd_templates,
-    export_single_image  # 改为导入串行函数
+    export_single_image,
+    psd_renderer_images,
 )
 
 # 恢复原始环境
@@ -311,29 +313,62 @@ class TestPSDTemplateErrors:
             
             # 应该打印错误信息
             assert mock_print.called
-    
+
     def test_preload_psd_templates_with_corrupted_files(self):
         """测试预加载损坏的PSD文件"""
         original_cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
                 os.chdir(tmp_dir)
-                
-                # 创建损坏的PSD文件
                 corrupted_psd = "corrupted.psd"
                 with open(corrupted_psd, 'w') as f:
                     f.write("Corrupted PSD data")
-                
+
                 with patch('builtins.print') as mock_print:
                     result = preload_psd_templates([corrupted_psd])
-                    
-                    # 应该返回None
                     assert result[corrupted_psd] is None
-                    
-                    # 应该打印错误信息
                     assert mock_print.called
             finally:
                 os.chdir(original_cwd)
+
+
+class TestBatchExportExitStatus:
+    """批量导出的返回状态必须反映逐行任务结果。"""
+
+    @staticmethod
+    def _run_export(export_side_effect=None, rows=1):
+        frame = pd.DataFrame([{"File_name": f"row-{index}"} for index in range(rows)])
+        patches = [
+            patch("src.psd_renderer.load_fonts_config"),
+            patch("src.psd_renderer.get_matching_psds", return_value=["template.psd"]),
+            patch("src.psd_renderer.read_excel_file", return_value=frame),
+            patch("src.psd_renderer.validate_data", return_value=([], [])),
+            patch("src.psd_renderer.report_validation_results", return_value=True),
+            patch("src.psd_renderer.preload_psd_templates", return_value={"template.psd": object()}),
+            patch("src.psd_renderer.get_font_for_psd", return_value="font.ttf"),
+            patch("src.psd_renderer.export_single_image", side_effect=export_side_effect),
+            patch("src.psd_renderer.log_export_activity"),
+            patch("src.psd_renderer.os.system"),
+            patch("src.psd_renderer.excel_file_path", "input.xlsx", create=True),
+            patch("src.psd_renderer.file_name", "test", create=True),
+            patch("src.psd_renderer.output_path", "output", create=True),
+            patch("src.psd_renderer.current_datetime", "20260720_120000", create=True),
+        ]
+        with ExitStack() as stack:
+            for active_patch in patches:
+                stack.enter_context(active_patch)
+            return psd_renderer_images()
+
+    def test_all_rows_succeed(self):
+        assert self._run_export(rows=2) is True
+
+    def test_any_row_failure_marks_batch_failed(self):
+        assert self._run_export(
+            export_side_effect=[None, RuntimeError("render failed")], rows=2
+        ) is False
+
+    def test_empty_batch_is_not_successful(self):
+        assert self._run_export(rows=0) is False
 
 
 class TestValidationErrorHandling:
