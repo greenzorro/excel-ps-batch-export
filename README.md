@@ -202,3 +202,47 @@ Special thanks to [psd-tools](https://github.com/psd-tools/psd-tools) for provid
 ---
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
+
+# For Agent
+
+Run batch PSD→image export with Python on this machine (no Adobe Photoshop app required). Use the bundled `demo/` data first, then point at a real data directory if the human provides one.
+
+## Prerequisites
+
+- Python 3 + pip
+- `pip install -r requirements.txt`
+- Readable PSD/Excel (or CSV) inputs under the data directory’s `workspace/`
+
+## Steps
+
+1. Clone the repo. Install dependencies from `requirements.txt`.
+2. Default data root is `demo/` (PSD templates, sample sheets, fonts). Confirm `demo/workspace/` exists.
+3. Optional custom data root: copy `.env.example` → `.env` and set `EPS_DATA_DIR` to an absolute path. Layout:
+   ```text
+   <EPS_DATA_DIR>/
+   ├── workspace/   # PSD, xlsx/csv, fonts.json, assets/
+   ├── export/      # outputs
+   └── log.csv      # auto-created
+   ```
+   If `EPS_DATA_DIR` is set but missing on disk, the tools will **not** fall back to `demo/`—fix the path or unset the variable.
+4. Smoke-test render (prefixes match files in `workspace/`, e.g. `1`):
+   ```bash
+   python src/psd_renderer.py 1 jpg
+   ```
+   Check a new timestamped folder under `<data-dir>/export/`.
+5. Other entry points when asked: `src/file_monitor.py` (watch), `src/clipboard_importer.py` (clipboard → sheet helpers), `src/transform.py` / `transform_guide.md` for rule JSON.
+6. Stop when sample or requested export succeeds. Filling business Excel content, designing PSD layer names, and picking production assets are human tasks unless they explicitly ask you to edit those files.
+
+## Hand off to the human
+
+- Authoring spreadsheet rows and PSD `@variable#ops` layer names
+- Choosing production `EPS_DATA_DIR` on their machine
+- Reviewing exported images for design QA
+
+## Red lines
+
+- Do not require or automate a Photoshop GUI install—this stack is `psd-tools` + Pillow
+- Do not commit `.env` or client data directories
+- Layer naming, fonts, and transform contracts: see `notes.md` / `transform_guide.md` when exports look wrong
+
+For Chinese readers, see [README_ZH_CN.md](README_ZH_CN.md) (human-facing only).
