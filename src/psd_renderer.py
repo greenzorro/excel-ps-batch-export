@@ -19,18 +19,23 @@ import json
 from typing import Set, List, Tuple, Dict, Optional
 from tqdm import tqdm
 
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import config
+
 # 全局变量存储错误和警告
 validation_errors = []
 validation_warnings = []
 
 # 字体配置全局变量
 fonts_config: Dict[str, str] = {}
-DEFAULT_FONT = "../workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
 
 # 模块级配置变量
 file_name = None
 current_datetime = ""
-output_path = "export"
+output_path = config.EXPORT_DIR
 
 
 def safe_print_message(message):
@@ -52,28 +57,28 @@ def load_fonts_config():
     :return dict: 字体配置字典 {psd_prefix: font_file_name}
     """
     global fonts_config
-    config_path = "../workspace/fonts.json"
+    config_path = config.FONTS_CONFIG_PATH
 
     if not os.path.exists(config_path):
         safe_print_message(f"警告：字体配置文件不存在: {config_path}")
-        safe_print_message(f"  将使用默认字体: {DEFAULT_FONT}")
+        safe_print_message(f"  将使用默认字体: {config.DEFAULT_FONT_PATH}")
         return {}
 
     try:
         with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
+            fonts_json = json.load(f)
 
         # 过滤掉注释字段（以 _ 开头的键）
-        fonts_config = {k: v for k, v in config.items() if not k.startswith("_")}
+        fonts_config = {k: v for k, v in fonts_json.items() if not k.startswith("_")}
         safe_print_message(f"已加载字体配置: {len(fonts_config)} 个PSD模板")
         return fonts_config
     except json.JSONDecodeError as e:
         safe_print_message(f"错误：字体配置文件格式错误: {e}")
-        safe_print_message(f"  将使用默认字体: {DEFAULT_FONT}")
+        safe_print_message(f"  将使用默认字体: {config.DEFAULT_FONT_PATH}")
         return {}
     except Exception as e:
         safe_print_message(f"错误：加载字体配置失败: {e}")
-        safe_print_message(f"  将使用默认字体: {DEFAULT_FONT}")
+        safe_print_message(f"  将使用默认字体: {config.DEFAULT_FONT_PATH}")
         return {}
 
 
@@ -112,7 +117,7 @@ def get_font_for_psd(psd_file_name: str) -> str:
 
     优先级：
     1. fonts.json 中配置的字体
-    2. 默认字体 DEFAULT_FONT（仅当配置不存在时，配置存在但文件不存在则报错）
+    2. config.DEFAULT_FONT_PATH（仅当配置不存在时；配置存在但文件不存在则报错）
     """
     global fonts_config
 
@@ -123,7 +128,7 @@ def get_font_for_psd(psd_file_name: str) -> str:
     if psd_prefix in fonts_config:
         font_file_name = fonts_config[psd_prefix]
         # 拼接完整路径（字体文件必须位于 workspace/assets/fonts/ 目录）
-        font_path = os.path.join("../workspace/assets/fonts", font_file_name)
+        font_path = os.path.join(config.FONTS_DIR, font_file_name)
 
         # 检查字体文件是否存在
         if not os.path.exists(font_path):
@@ -138,8 +143,10 @@ def get_font_for_psd(psd_file_name: str) -> str:
         return font_path
 
     # 未找到配置，使用默认字体
-    safe_print_message(f"  [{psd_prefix}] 未配置字体，使用默认字体: {DEFAULT_FONT}")
-    return DEFAULT_FONT
+    safe_print_message(
+        f"  [{psd_prefix}] 未配置字体，使用默认字体: {config.DEFAULT_FONT_PATH}"
+    )
+    return config.DEFAULT_FONT_PATH
 
 
 def read_excel_file(file_path):
@@ -444,7 +451,7 @@ def update_text_layer(
     layer,
     text_content,
     pil_image,
-    text_font="../workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf",
+    text_font=None,
 ):
     """更新文字图层内容
 
@@ -465,15 +472,11 @@ def update_text_layer(
     - @变量名#t_p_pb / #t_c_p_pb - 段落 + 垂直底部
     - 参数可组合使用，如 @标题#t_c_a15（居中+旋转15°）
     """
-    import os
-
     # 预处理文本内容，统一清理空白字符
     text_content = preprocess_text(text_content)
 
-    # 处理字体路径：相对路径转换为绝对路径
-    if not os.path.isabs(text_font):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        text_font = os.path.join(script_dir, text_font)
+    if text_font is None:
+        text_font = config.DEFAULT_FONT_PATH
 
     layer.visible = False  # 防止PSD原始图层被输出到PIL
     font_info = layer.engine_dict
@@ -868,12 +871,12 @@ def export_single_image(row, index, psd_object, psd_file_name, font):
                         update_text_layer(layer, str(row[field_name]), pil_image, font)
                     # 修改图片图层内容
                     elif operation_type.startswith("i"):
-                        # 转换相对路径：assets/ -> ../workspace/assets/
+                        # 转换相对路径：assets/ -> <WORKSPACE_DIR>/assets/
                         image_path = str(row[field_name])
                         # 预处理图像路径，清理Excel转义字符
                         image_path = preprocess_image_path(image_path)
                         if image_path.startswith("assets/"):
-                            image_path = os.path.join("../workspace", image_path)
+                            image_path = os.path.join(config.WORKSPACE_DIR, image_path)
                         update_image_layer(layer, image_path, pil_image)
             if layer.is_visible():
                 if layer.is_group():
@@ -930,14 +933,8 @@ def get_matching_psds(excel_file):
     base_name = os.path.splitext(filename)[0]
     matching_psds = []
 
-    # 查找workspace目录（优先当前目录下的workspace，其次../workspace）
-    workspace_dir = None
-    for possible_dir in ["workspace", "../workspace"]:
-        if os.path.exists(possible_dir):
-            workspace_dir = possible_dir
-            break
-
-    if not workspace_dir:
+    workspace_dir = config.WORKSPACE_DIR
+    if not os.path.isdir(workspace_dir):
         return matching_psds
 
     for f in os.listdir(workspace_dir):
@@ -1035,7 +1032,7 @@ def validate_data(
     image_columns = set()
 
     for psd_file in psd_templates:
-        psd_file_path = os.path.join("../workspace", psd_file)
+        psd_file_path = os.path.join(config.WORKSPACE_DIR, psd_file)
         if not os.path.exists(psd_file_path):
             validation_errors.append(f"PSD template file does not exist: {psd_file}")
             continue
@@ -1084,12 +1081,12 @@ def validate_data(
         if image_col in dataframe.columns:
             for idx, file_path in enumerate(dataframe[image_col]):
                 if pd.notna(file_path) and str(file_path).strip():
-                    # 转换相对路径：assets/ -> ../workspace/assets/
+                    # 转换相对路径：assets/ -> <WORKSPACE_DIR>/assets/
                     check_path = str(file_path)
                     # 预处理图像路径，清理Excel转义字符
                     check_path = preprocess_image_path(check_path)
                     if check_path.startswith("assets/"):
-                        check_path = os.path.join("../workspace", check_path)
+                        check_path = os.path.join(config.WORKSPACE_DIR, check_path)
 
                     # 检查文件是否存在
                     if not os.path.exists(check_path):
@@ -1139,7 +1136,7 @@ def preload_psd_templates(psd_files: List[str]) -> dict:
     print("\n预加载PSD模板...")
 
     for psd_file in psd_files:
-        psd_file_path = os.path.join("../workspace", psd_file)
+        psd_file_path = os.path.join(config.WORKSPACE_DIR, psd_file)
         try:
             psd_objects[psd_file] = PSDImage.open(psd_file_path)
             print(f"  已加载: {psd_file}")
@@ -1156,11 +1153,10 @@ def log_export_activity(excel_file, image_count):
     :param str excel_file: 使用的Excel文件名
     :param int image_count: 导出的图片数量
     """
-    # 确保日志文件始终写入到项目根目录
-    import os
-    script_dir = os.path.dirname(os.path.abspath(__file__))  # src目录
-    project_root = os.path.dirname(script_dir)  # 项目根目录
-    log_file = os.path.join(project_root, "log.csv")
+    log_file = config.LOG_PATH
+    log_dir = os.path.dirname(log_file)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
 
     # 检查日志文件是否存在
     file_exists = os.path.exists(log_file)
@@ -1294,16 +1290,13 @@ def psd_renderer_images():
 
 
 if __name__ == "__main__":
-    # 切换到脚本所在目录
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(script_dir)
-
     # 设置项
     if len(sys.argv) < 3:
         print("用法: python psd_renderer.py [模板名] [输出格式] [输出目录(可选)]")
         print("示例: python psd_renderer.py 1 jpg")
-        print("      python psd_renderer.py 1 jpg output/custom")
+        print("      python psd_renderer.py 1 jpg /path/to/custom/export")
         print("\n字体配置请使用 workspace/fonts.json 文件")
+        print(f"当前数据目录: {config.DATA_DIR}")
         sys.exit(1)
 
     file_name = sys.argv[1]  # 从命令行参数获取使用第几套数据和模版
@@ -1312,14 +1305,14 @@ if __name__ == "__main__":
     quality = 95
 
     # 文件路径
-    output_path = sys.argv[3] if len(sys.argv) >= 4 else "../export"
-    excel_file_path = f"../workspace/{file_name}.xlsx"
+    output_path = sys.argv[3] if len(sys.argv) >= 4 else config.EXPORT_DIR
+    excel_file_path = os.path.join(config.WORKSPACE_DIR, f"{file_name}.xlsx")
 
     # 确保输出目录存在
     os.makedirs(output_path, exist_ok=True)
 
     # 如果存在变换规则文件，先执行数据变换
-    json_rule_path = f"../workspace/{file_name}.json"
+    json_rule_path = os.path.join(config.WORKSPACE_DIR, f"{file_name}.json")
     if os.path.exists(json_rule_path):
         from transform import transform
         print("检测到变换规则文件，执行数据变换...")

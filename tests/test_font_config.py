@@ -22,7 +22,8 @@ from unittest.mock import patch, Mock
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from test_utils import TestEnvironment
+from test_utils import TestEnvironment, temporary_data_dir
+from src import config as eps_config
 
 # Setup test environment before importing psd_renderer
 test_env = TestEnvironment()
@@ -39,21 +40,16 @@ class TestLoadFontsConfig:
 
     def test_load_fonts_config_normal(self, tmp_path):
         """Test loading fonts.json with valid configuration"""
-        # Create workspace directory as sibling to tmp_path
-        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
-        os.makedirs(workspace_dir, exist_ok=True)
-        config_file = os.path.join(workspace_dir, "fonts.json")
-        config_content = {
-            "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
-            "2": "SourceHanSansCN-Medium.otf",
-            "_comment": "This should be filtered"
-        }
-        with open(config_file, 'w') as f:
-            f.write(json.dumps(config_content, ensure_ascii=False))
+        with temporary_data_dir(str(tmp_path / "data")) as cfg:
+            config_file = cfg.FONTS_CONFIG_PATH
+            config_content = {
+                "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
+                "2": "SourceHanSansCN-Medium.otf",
+                "_comment": "This should be filtered"
+            }
+            with open(config_file, 'w') as f:
+                f.write(json.dumps(config_content, ensure_ascii=False))
 
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmp_path)
             psd_renderer.fonts_config = {}  # Reset global state
             result = psd_renderer.load_fonts_config()
 
@@ -62,8 +58,6 @@ class TestLoadFontsConfig:
             assert "1" in result
             assert "2" in result
             assert len(result) == 2
-        finally:
-            os.chdir(original_cwd)
 
     def test_load_fonts_config_file_not_exists(self):
         """Test handling when fonts.json does not exist"""
@@ -76,22 +70,15 @@ class TestLoadFontsConfig:
 
     def test_load_fonts_config_invalid_json(self, tmp_path):
         """Test handling when fonts.json has invalid JSON"""
-        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
-        os.makedirs(workspace_dir, exist_ok=True)
-        config_file = os.path.join(workspace_dir, "fonts.json")
-        with open(config_file, 'w') as f:
-            f.write("{invalid json content")
+        with temporary_data_dir(str(tmp_path / "data")) as cfg:
+            with open(cfg.FONTS_CONFIG_PATH, 'w') as f:
+                f.write("{invalid json content")
 
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmp_path)
             psd_renderer.fonts_config = {}
             result = psd_renderer.load_fonts_config()
 
             # Should return empty dict on error
             assert result == {}
-        finally:
-            os.chdir(original_cwd)
 
     def test_load_fonts_config_filters_comments(self, tmp_path):
         """Test that _comment and other _ prefixed keys are filtered"""
@@ -102,15 +89,10 @@ class TestLoadFontsConfig:
             "1": "font1.ttf",
             "2": "font2.otf"
         }
-        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
-        os.makedirs(workspace_dir, exist_ok=True)
-        config_file = os.path.join(workspace_dir, "fonts.json")
-        with open(config_file, 'w') as f:
-            f.write(json.dumps(config_content, ensure_ascii=False))
+        with temporary_data_dir(str(tmp_path / "data")) as cfg:
+            with open(cfg.FONTS_CONFIG_PATH, 'w') as f:
+                f.write(json.dumps(config_content, ensure_ascii=False))
 
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmp_path)
             psd_renderer.fonts_config = {}
             result = psd_renderer.load_fonts_config()
 
@@ -121,8 +103,6 @@ class TestLoadFontsConfig:
             assert "1" in result
             assert "2" in result
             assert len(result) == 2
-        finally:
-            os.chdir(original_cwd)
 
 
 class TestGetPsdPrefix:
@@ -170,7 +150,7 @@ class TestGetFontForPsd:
             font_path = psd_renderer.get_font_for_psd("1#海报.psd")
 
             # Should return full path
-            assert font_path == "../workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf"
+            assert font_path == os.path.join(eps_config.FONTS_DIR, "AlibabaPuHuiTi-2-85-Bold.ttf")
 
     def test_get_font_for_psd_font_file_not_exists(self):
         """Test error when configured font file does not exist"""
@@ -189,7 +169,7 @@ class TestGetFontForPsd:
         font_path = psd_renderer.get_font_for_psd("unconfigured#poster.psd")
 
         # Should return default font
-        assert font_path == psd_renderer.DEFAULT_FONT
+        assert font_path == eps_config.DEFAULT_FONT_PATH
 
     def test_get_font_for_psd_matches_correct_prefix(self):
         """Test that correct prefix is matched"""
@@ -210,43 +190,25 @@ class TestFontConfigIntegration:
 
     def test_font_config_with_real_files(self, tmp_path):
         """Test font loading with actual file operations"""
-        # Create workspace directory as sibling to tmp_path
-        workspace_dir = os.path.join(os.path.dirname(tmp_path), "workspace")
-        os.makedirs(workspace_dir, exist_ok=True)
+        with temporary_data_dir(str(tmp_path / "data")) as cfg:
+            config_content = {
+                "test": "test_font.ttf",
+                "_comment": "Comment should be filtered"
+            }
+            with open(cfg.FONTS_CONFIG_PATH, 'w') as f:
+                f.write(json.dumps(config_content, ensure_ascii=False))
 
-        # Create a temporary fonts.json in workspace
-        config_file = os.path.join(workspace_dir, "fonts.json")
-        config_content = {
-            "test": "test_font.ttf",
-            "_comment": "Comment should be filtered"
-        }
-        with open(config_file, 'w') as f:
-            f.write(json.dumps(config_content, ensure_ascii=False))
+            os.makedirs(cfg.FONTS_DIR, exist_ok=True)
+            with open(os.path.join(cfg.FONTS_DIR, "test_font.ttf"), 'w') as f:
+                f.write("dummy font content")
 
-        # Create the font file
-        font_dir = os.path.join(workspace_dir, "assets", "fonts")
-        os.makedirs(font_dir, exist_ok=True)
-        with open(os.path.join(font_dir, "test_font.ttf"), 'w') as f:
-            f.write("dummy font content")
-
-        # Change to temp directory
-        original_cwd = os.getcwd()
-        try:
-            os.chdir(tmp_path)
-
-            # Load config
             psd_renderer.fonts_config = {}
             psd_renderer.load_fonts_config()
 
-            # Get font for PSD
             font_path = psd_renderer.get_font_for_psd("test#poster.psd")
 
-            # Verify correct font is returned
             assert "test_font.ttf" in font_path
             assert os.path.exists(font_path)
-
-        finally:
-            os.chdir(original_cwd)
 
     def test_multiple_psds_same_prefix(self):
         """Test that multiple PSDs with same prefix use same font"""
@@ -268,12 +230,12 @@ class TestFontConfigIntegration:
         # Case 1: Config exists but prefix not found
         psd_renderer.fonts_config = {"other": "font.ttf"}
         font = psd_renderer.get_font_for_psd("missing#poster.psd")
-        assert font == psd_renderer.DEFAULT_FONT
+        assert font == eps_config.DEFAULT_FONT_PATH
 
         # Case 2: Config is empty
         psd_renderer.fonts_config = {}
         font = psd_renderer.get_font_for_psd("test.psd")
-        assert font == psd_renderer.DEFAULT_FONT
+        assert font == eps_config.DEFAULT_FONT_PATH
 
 
 class TestFontConfigErrorMessages:

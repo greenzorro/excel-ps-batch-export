@@ -99,7 +99,7 @@ class TestExcelOperations:
     def test_excel_file_reading(self):
         """测试Excel文件读取"""
         project_root = Path(__file__).parent.parent
-        test_excel = project_root / "workspace" / "1.xlsx"
+        test_excel = project_root / "demo" / "workspace" / "1.xlsx"
 
         if not test_excel.exists():
             pytest.skip(f"测试Excel文件不存在: {test_excel}")
@@ -134,7 +134,7 @@ class TestExcelOperations:
     def test_excel_data_validation(self):
         """测试Excel数据验证"""
         project_root = Path(__file__).parent.parent
-        test_excel = project_root / "workspace" / "1.xlsx"
+        test_excel = project_root / "demo" / "workspace" / "1.xlsx"
 
         if not test_excel.exists():
             pytest.skip(f"测试Excel文件不存在: {test_excel}")
@@ -171,7 +171,7 @@ class TestFileOperations:
     def test_assets_directory(self):
         """测试资源目录"""
         project_root = Path(__file__).parent.parent
-        assets_dir = project_root / "workspace" / "assets"
+        assets_dir = project_root / "demo" / "workspace" / "assets"
 
         assert assets_dir.exists(), "assets目录不存在"
 
@@ -190,7 +190,7 @@ class TestFileOperations:
     def test_psd_files_exist(self):
         """测试PSD文件存在性"""
         project_root = Path(__file__).parent.parent
-        workspace_dir = project_root / "workspace"
+        workspace_dir = project_root / "demo" / "workspace"
 
         # 查找PSD文件
         psd_files = list(workspace_dir.glob("*.psd"))
@@ -234,7 +234,7 @@ class TestDependencyCheck:
 
         # Try to load a real PSD file if one exists
         project_root = Path(__file__).parent.parent
-        test_psd = project_root / "workspace" / "1.psd"
+        test_psd = project_root / "demo" / "workspace" / "1.psd"
 
         if test_psd.exists():
             psd = PSDImage.open(test_psd)

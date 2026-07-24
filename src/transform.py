@@ -5,7 +5,6 @@ Author: Victor Cheng
 Email: hi@victor42.work
 Description: 数据变换引擎 — 读取原始CSV + JSON规则 → 计算成品数据 → 写入xlsx
 
-将Excel公式中的业务逻辑迁移到Python，脱离GUI依赖。
 支持5种变换类型：direct, conditional, template, derived, derived_raw
 """
 
@@ -16,6 +15,12 @@ import re
 import pandas as pd
 from typing import Any
 
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import config
+
 
 def load_rules(template: str) -> dict:
     """加载JSON规则文件
@@ -24,7 +29,7 @@ def load_rules(template: str) -> dict:
     :return dict: 规则字典
     :raises FileNotFoundError: 规则文件不存在
     """
-    json_path = os.path.join("../workspace", f"{template}.json")
+    json_path = os.path.join(config.WORKSPACE_DIR, f"{template}.json")
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"规则文件不存在: {json_path}")
     with open(json_path, "r", encoding="utf-8") as f:
@@ -38,7 +43,7 @@ def load_raw_data(template: str) -> pd.DataFrame:
     :return pd.DataFrame: 原始数据
     :raises FileNotFoundError: CSV文件不存在
     """
-    csv_path = os.path.join("../workspace", f"{template}_raw.csv")
+    csv_path = os.path.join(config.WORKSPACE_DIR, f"{template}_raw.csv")
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"原始数据文件不存在: {csv_path}")
     return pd.read_csv(csv_path, dtype=str, keep_default_na=False)
@@ -247,7 +252,7 @@ def transform(template: str) -> int:
 
     product_df = pd.DataFrame(product_rows, columns=output_columns)
 
-    xlsx_path = os.path.join("../workspace", f"{template}.xlsx")
+    xlsx_path = os.path.join(config.WORKSPACE_DIR, f"{template}.xlsx")
 
     # 始终使用JSON配置中定义的列顺序，不读取现有xlsx
     product_df.to_excel(xlsx_path, index=False, sheet_name="Sheet1")
@@ -256,11 +261,10 @@ def transform(template: str) -> int:
 
 
 if __name__ == "__main__":
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
     if len(sys.argv) < 2:
         print("用法: python transform.py <模板前缀>")
         print("示例: python transform.py 1")
+        print(f"当前数据目录: {config.DATA_DIR}")
         sys.exit(1)
 
     template_name = sys.argv[1]

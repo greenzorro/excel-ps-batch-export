@@ -57,6 +57,11 @@ keys.json
 config.json.local
 .env
 
+# Demo / data outputs (keep directory placeholders)
+demo/export/*
+!demo/export/.gitkeep
+demo/log.csv
+
 # Node.js (if applicable)
 node_modules/
 npm-debug.log*

@@ -42,9 +42,28 @@ Two ways of downloading:
 
 ## Setup
 
+The repo ships with sample data under `demo/`. By default the scripts use `demo/` as the data directory.
+
+To use a custom data directory, copy `.env.example` to `.env` and set:
+
+```bash
+EPS_DATA_DIR=/path/to/your/data
+```
+
+Your data directory should contain:
+
+```
+<EPS_DATA_DIR>/
+├── workspace/     # PSD templates, Excel/CSV, fonts.json, assets/
+├── export/        # rendered images
+└── log.csv        # export log (auto-created)
+```
+
+Without `EPS_DATA_DIR`, the system uses `demo/` inside the project.
+
 For the first time, you'll need some basic setup:
 
-1. Place your PSD template files in the `workspace/` directory.
+1. Place your PSD template files in the data directory's `workspace/` folder (e.g. `demo/workspace/` or `$EPS_DATA_DIR/workspace/`).
 2. Edit PSD template file. Rename all changeable layers or groups with this pattern:
     - Format: `@Variable_name#Operation_Parameter`
     - A layer name may be like: `@badge#v`, `@description#t_p` or `@bg#i`
@@ -163,7 +182,7 @@ pip install -r requirements.txt
 python src/psd_renderer.py [Excel_file_prefix] [output_format] [output_directory (optional)]
 
 # Examples
-python src/psd_renderer.py 1 jpg                              # Default output to export/ directory
+python src/psd_renderer.py 1 jpg                              # Default: <data-dir>/export/
 python src/psd_renderer.py 1 jpg output/custom               # Custom output directory
 python src/psd_renderer.py 1 jpg /absolute/path/to/output    # Absolute path output directory
 ```
@@ -171,8 +190,8 @@ python src/psd_renderer.py 1 jpg /absolute/path/to/output    # Absolute path out
 **Note**: Font files are configured via `workspace/fonts.json`. If not configured, the default font `workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf` will be used.
 
 **Output Directory Options**:
-- When no output directory is specified, images are saved to the default `export/` directory
-- When a relative path is provided (like `output/custom`), it's relative to the project root directory
+- When no output directory is specified, images are saved to `<data-dir>/export/` (`demo/export/` when using sample data)
+- When a relative path is provided (like `output/custom`), it is resolved relative to the current working directory
 - When an absolute path is provided (like `/Users/username/Desktop/rendered`), images are saved to that location
 - Each export creates a timestamped subdirectory to prevent file conflicts (e.g., `20260402_162657_1/`)
 

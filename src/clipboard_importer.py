@@ -22,7 +22,7 @@ Description:
 - 实现"数据导入→图片生成"的一键式工作流程
 
 运行方式：
-python clipboard_importer.py
+python src/clipboard_importer.py
 """
 
 import sys
@@ -31,14 +31,19 @@ import pandas as pd
 import pyperclip
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
-import re
 import subprocess
+
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import config
 
 # ===== 配置项 =====
 # 渲染配置
 DEFAULT_FORMAT = 'jpg'      # 默认输出格式
 RENDER_TIMEOUT = 300        # 渲染超时时间（秒）
-OUTPUT_DIR = "../export"       # 输出目录（默认../export）
+OUTPUT_DIR = config.EXPORT_DIR
 
 def safe_print_message(message):
     """安全打印消息，处理Windows控制台编码问题
@@ -110,14 +115,17 @@ def find_target_excel_file():
     :return tuple: (文件名, 完整路径)
     :raises FileNotFoundError: 当找不到Excel文件时抛出异常
     """
-    workspace_dir = "../workspace"
+    workspace_dir = config.WORKSPACE_DIR
+    if not os.path.isdir(workspace_dir):
+        raise FileNotFoundError(f"工作目录不存在: {workspace_dir}")
+
     excel_files = [f for f in os.listdir(workspace_dir) if f.endswith(('.xlsx', '.xls'))]
 
     # 按文件名排序
     excel_files.sort()
 
     if not excel_files:
-        raise FileNotFoundError("当前目录未找到Excel文件")
+        raise FileNotFoundError("workspace 中未找到 Excel 文件")
 
     # 如果有多个Excel文件，让用户选择
     if len(excel_files) > 1:
@@ -226,7 +234,9 @@ def get_matching_psds(excel_file):
     """
     base_name = os.path.splitext(excel_file)[0]
     matching_psds = []
-    workspace_dir = "../workspace"
+    workspace_dir = config.WORKSPACE_DIR
+    if not os.path.isdir(workspace_dir):
+        return matching_psds
     for f in os.listdir(workspace_dir):
         if f.endswith('.psd'):
             # 提取文件名前缀（第一个井号前的部分）
@@ -268,16 +278,16 @@ def run_psd_renderer(excel_file):
     # 构建命令行参数
     cmd = [
         sys.executable,  # 使用当前Python解释器
-        "psd_renderer.py",
+        os.path.join(config.SCRIPT_DIR, "psd_renderer.py"),
         template_name,
         DEFAULT_FORMAT
     ]
-    if OUTPUT_DIR != '../export':
+    if OUTPUT_DIR != config.EXPORT_DIR:
         cmd.append(OUTPUT_DIR)
 
     # 运行PSD渲染器（输出直接显示到终端）
     try:
-        result = subprocess.run(cmd, timeout=RENDER_TIMEOUT)
+        result = subprocess.run(cmd, timeout=RENDER_TIMEOUT, cwd=config.SCRIPT_DIR)
 
         if result.returncode == 0:
             safe_print_message("\n✓ 图片渲染成功!")
@@ -295,11 +305,8 @@ def run_psd_renderer(excel_file):
 def main():
     """主函数"""
     try:
-        # 切换到脚本所在目录
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        os.chdir(script_dir)
-
         safe_print_message("剪贴板导入器启动...")
+        safe_print_message(f"当前数据目录: {config.DATA_DIR}")
 
         # 1. 读取剪贴板数据
         safe_print_message("正在读取剪贴板数据...")
@@ -318,11 +325,11 @@ def main():
 
         # 检查是否有变换规则文件
         template_name = os.path.splitext(excel_file)[0]
-        json_rule_path = os.path.join("../workspace", f"{template_name}.json")
+        json_rule_path = os.path.join(config.WORKSPACE_DIR, f"{template_name}.json")
 
         if os.path.exists(json_rule_path):
             # 有变换规则：写入 _raw.csv，psd_renderer 内部会调 transform
-            raw_csv_path = os.path.join("../workspace", f"{template_name}_raw.csv")
+            raw_csv_path = os.path.join(config.WORKSPACE_DIR, f"{template_name}_raw.csv")
             safe_print_message("检测到变换规则文件，写入原始数据...")
 
             # 读取原 CSV 的表头（如果存在）
@@ -362,10 +369,9 @@ def main():
         safe_print_message(f"\n✗ 错误: {str(e)}")
         safe_print_message("\n使用提示:")
         safe_print_message("  1. 请确保剪贴板中有表格数据")
-        safe_print_message("  2. 请确保当前目录有Excel文件")
+        safe_print_message("  2. 请确保数据目录 workspace 中有 Excel 文件")
         safe_print_message("  3. 如果Excel文件已打开，请先关闭或确保未锁定")
         return 1
 
 if __name__ == "__main__":
     sys.exit(main())
-

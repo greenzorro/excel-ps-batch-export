@@ -9,14 +9,22 @@ Description: 监控数据文件并自动执行批量图片输出
 
 # 设置项
 image_format = 'jpg'  # jpg/png
-output_dir = '../export'  # 输出目录（默认../export）
 
 import os
 import sys
 import subprocess
 import asyncio
 import hashlib
+
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import config
 import xlsx_generator
+
+# 输出目录（默认 config.EXPORT_DIR；也可设为其他绝对路径）
+output_dir = config.EXPORT_DIR
 
 def get_file_hash(file_path):
     """计算文件的 MD5 哈希值"""
@@ -63,10 +71,15 @@ async def monitor_excel_file(base_name, file_path, psd_files):
             # 核心判断：只有内容哈希变了，才视为真正修改
             if current_hash and current_hash != last_hash:
                 print(f"\n[{base_name}] 内容已更新，开始渲染...")
-                cmd = [sys.executable, 'psd_renderer.py', base_name, image_format]
-                if output_dir != '../export':
+                cmd = [
+                    sys.executable,
+                    os.path.join(config.SCRIPT_DIR, 'psd_renderer.py'),
+                    base_name,
+                    image_format,
+                ]
+                if output_dir != config.EXPORT_DIR:
                     cmd.append(output_dir)
-                subprocess.run(cmd)
+                subprocess.run(cmd, cwd=config.SCRIPT_DIR)
                 
                 # 更新状态
                 last_hash = current_hash
@@ -88,9 +101,12 @@ if __name__ == "__main__":
     xlsx_generator.main()
 
     # 自动获取 workspace 文件夹中所有.xlsx或.xls文件，并匹配对应的PSD模板（支持多个模板）
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    workspace_dir = "../workspace"
+    workspace_dir = config.WORKSPACE_DIR
     excel_psd_pairs = []
+    if not os.path.isdir(workspace_dir):
+        print(f"工作目录不存在: {workspace_dir}")
+        sys.exit(1)
+
     for file in os.listdir(workspace_dir):
         if file.endswith(('.xlsx', '.xls')):
             base_name = os.path.splitext(file)[0]
@@ -120,4 +136,5 @@ if __name__ == "__main__":
                     # 无变换规则：监控 .xlsx
                     excel_psd_pairs.append((base_name, excel_file_path, matching_psds))
 
+    print(f"当前数据目录: {config.DATA_DIR}")
     asyncio.run(main())

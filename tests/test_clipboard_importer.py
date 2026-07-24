@@ -76,14 +76,18 @@ class TestExcelFileSelection:
 
         with patch('builtins.input', return_value='1'):
             result = clipboard_importer.find_target_excel_file()
-            assert result == ('test1.xlsx', '../workspace/test1.xlsx')
+            expected = (
+                'test1.xlsx',
+                os.path.join(clipboard_importer.config.WORKSPACE_DIR, 'test1.xlsx'),
+            )
+            assert result == expected
 
     @patch('os.listdir')
     def test_no_excel_files_found(self, mock_listdir):
         """Test when no Excel files are found"""
         mock_listdir.return_value = ['file1.txt', 'file2.pdf']
 
-        with pytest.raises(FileNotFoundError, match="当前目录未找到Excel文件"):
+        with pytest.raises(FileNotFoundError, match="workspace 中未找到 Excel 文件"):
             clipboard_importer.find_target_excel_file()
 
     @patch('os.listdir')
@@ -232,7 +236,10 @@ class TestMainFunction:
         # Setup mocks
         mock_get.return_value = "姓名\t年龄\n张三\t25"
         mock_parse.return_value = pd.DataFrame({'姓名': ['张三'], '年龄': ['25']})
-        mock_find.return_value = ('test.xlsx', '../workspace/test.xlsx')
+        mock_find.return_value = (
+            'test.xlsx',
+            os.path.join(clipboard_importer.config.WORKSPACE_DIR, 'test.xlsx'),
+        )
         mock_write.return_value = ('Sheet1', 2, 1)
         mock_run_psd.return_value = True
 

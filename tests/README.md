@@ -138,7 +138,7 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
   - Error handling and user interaction tests
 
 - **test_logging_functionality.py** - Logging functionality tests
-  - Writes to project-root `log.csv` (independent of cwd)
+  - Writes to `<DATA_DIR>/log.csv` (independent of cwd; suite uses `demo/`)
   - Log export activity basic functionality tests
   - Duplicate record prevention tests
   - Zero count handling tests
@@ -324,10 +324,10 @@ tests/
 
 ## Test Data
 
-Tests use actual files from the `workspace/` directory:
-- `workspace/1.psd`, `workspace/1.xlsx` - Basic functionality tests
-- `workspace/3#1.psd`, `workspace/3#2.psd`, `workspace/3.xlsx` - Multi-template tests
-- `workspace/assets/` - Resource files directory
+Tests use sample files under `demo/workspace/`:
+- `demo/workspace/1.psd`, `demo/workspace/1.xlsx` - Basic functionality tests
+- `demo/workspace/3#1.psd`, `demo/workspace/3#2.psd`, `demo/workspace/3.xlsx` - Multi-template tests
+- `demo/workspace/assets/` - Resource files directory
 
 ## Test Configuration
 
@@ -336,10 +336,11 @@ Tests automatically create temporary workspaces without affecting project files.
 ## Notes
 
 1. **Recommended** to use `test_simple.py` and `test_performance.py` for testing
-2. Tests require PSD and Excel files from the `workspace/` directory
+2. Tests require PSD and Excel files from `demo/workspace/`
 3. Some tests may be skipped due to missing actual resources
 4. **Windows Note**: All Windows temporary file permission issues have been fixed. Tests now run at 100% pass rate.
 5. **Architecture**: Project uses single-process serial execution for optimal stability and simplicity
+6. **Data dir**: `tests/conftest.py` sets `EPS_DATA_DIR` to `demo/` so a local `.env` does not affect the suite
 
 ## Test Distribution
 
@@ -370,7 +371,7 @@ Tests automatically create temporary workspaces without affecting project files.
 ### Common Issues
 
 1. **ImportError**: Ensure all dependency packages are installed
-2. **FileNotFoundError**: Ensure test files exist in the `workspace/` directory
+2. **FileNotFoundError**: Ensure test files exist in `demo/workspace/`
 3. **PermissionError**: Ensure write permissions
 
 ### Debug Mode

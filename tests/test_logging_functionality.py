@@ -3,7 +3,7 @@
 """
 测试日志记录功能
 
-log_export_activity 始终写入项目根目录的 log.csv（与 cwd 无关）。
+log_export_activity 始终写入 DATA_DIR/log.csv（与 cwd 无关）。
 测试通过临时替换该文件验证行为，结束后恢复原内容。
 """
 
@@ -16,14 +16,15 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from src import config as eps_config
 from src.psd_renderer import log_export_activity
 
-LOG_CSV = project_root / "log.csv"
+LOG_CSV = Path(eps_config.LOG_PATH)
 
 
 @contextmanager
 def isolated_export_log():
-    """隔离项目根目录 log.csv，避免污染真实导出日志"""
+    """隔离 DATA_DIR/log.csv，避免污染现有导出日志"""
     backup = LOG_CSV.read_bytes() if LOG_CSV.exists() else None
     if LOG_CSV.exists():
         LOG_CSV.unlink()
@@ -33,6 +34,7 @@ def isolated_export_log():
         if LOG_CSV.exists():
             LOG_CSV.unlink()
         if backup is not None:
+            LOG_CSV.parent.mkdir(parents=True, exist_ok=True)
             LOG_CSV.write_bytes(backup)
 
 
@@ -41,7 +43,7 @@ def test_log_export_activity_basic_functionality():
     with isolated_export_log() as log_path:
         log_export_activity("test1.xlsx", 5)
 
-        assert log_path.exists(), "日志文件应该被创建在项目根目录"
+        assert log_path.exists(), "日志文件应该被创建在 DATA_DIR"
 
         with open(log_path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -174,7 +176,7 @@ def test_log_export_activity_ignores_cwd():
             finally:
                 os.chdir(original_dir)
 
-            assert log_path.exists(), "即使 cwd 变化，也应写入项目根目录 log.csv"
+            assert log_path.exists(), "即使 cwd 变化，也应写入 DATA_DIR/log.csv"
             assert not temp_log.exists(), "不应在 cwd 下创建 log.csv"
 
             with open(log_path, "r", encoding="utf-8") as f:

@@ -18,6 +18,7 @@ import pandas as pd
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from test_utils import temporary_data_dir
 from src.transform import (
     is_empty, remove_spaces,
     apply_direct, apply_conditional, apply_template,
@@ -277,13 +278,12 @@ class TestEndToEnd:
     """使用临时目录运行完整的 transform → 对比流程"""
 
     def setup_method(self):
-        self.tmpdir = tempfile.mkdtemp()
-        # Create workspace as a sibling to tmpdir so ../workspace works from tmpdir
-        self.workspace = os.path.join(os.path.dirname(self.tmpdir), "workspace")
-        os.makedirs(self.workspace, exist_ok=True)
+        self._data_cm = temporary_data_dir()
+        self._eps_config = self._data_cm.__enter__()
+        self.workspace = self._eps_config.WORKSPACE_DIR
 
     def teardown_method(self):
-        shutil.rmtree(self.tmpdir)
+        self._data_cm.__exit__(None, None, None)
 
     def _write_files(self, template, json_rules, csv_data):
         """写入规则和原始数据文件"""
@@ -306,22 +306,16 @@ class TestEndToEnd:
         csv = "name\nAlice\nBob\n"
         self._write_files("t1", rules, csv)
 
-        # 切换到临时目录运行
-        old_cwd = os.getcwd()
-        os.chdir(self.tmpdir)
-        try:
-            count = transform("t1")
-            assert count == 2
+        count = transform("t1")
+        assert count == 2
 
-            df = pd.read_excel(
-                os.path.join(self.workspace, "t1.xlsx"), dtype=str
-            )
-            assert len(df) == 2
-            assert df.iloc[0]["name"] == "Alice"
-            assert df.iloc[0]["active"] == "True"
-            assert df.iloc[1]["name"] == "Bob"
-        finally:
-            os.chdir(old_cwd)
+        df = pd.read_excel(
+            os.path.join(self.workspace, "t1.xlsx"), dtype=str
+        )
+        assert len(df) == 2
+        assert df.iloc[0]["name"] == "Alice"
+        assert df.iloc[0]["active"] == "True"
+        assert df.iloc[1]["name"] == "Bob"
 
     def test_full_pipeline_with_primary_guard(self):
         """测试 primary_field 行级守卫跳过空行"""
@@ -334,13 +328,8 @@ class TestEndToEnd:
         csv = "name\nAlice\n\nCharlie\n"
         self._write_files("t2", rules, csv)
 
-        old_cwd = os.getcwd()
-        os.chdir(self.tmpdir)
-        try:
-            count = transform("t2")
-            assert count == 2  # 空行被跳过
-        finally:
-            os.chdir(old_cwd)
+        count = transform("t2")
+        assert count == 2  # 空行被跳过
 
     def test_full_pipeline_template_and_conditional(self):
         """测试 template + conditional 组合"""
@@ -363,20 +352,15 @@ class TestEndToEnd:
         csv = "title,subtitle\nMain Title,Sub\nAnother,\n"
         self._write_files("t3", rules, csv)
 
-        old_cwd = os.getcwd()
-        os.chdir(self.tmpdir)
-        try:
-            count = transform("t3")
-            assert count == 2
+        count = transform("t3")
+        assert count == 2
 
-            df = pd.read_excel(
-                os.path.join(self.workspace, "t3.xlsx"), dtype=str
-            )
-            assert df.iloc[0]["File_name"] == "1-MainTitle"
-            assert df.iloc[0]["subtitle"] == "Sub"
-            assert str(df.iloc[1]["subtitle"]).strip() in ("", "nan")
-        finally:
-            os.chdir(old_cwd)
+        df = pd.read_excel(
+            os.path.join(self.workspace, "t3.xlsx"), dtype=str
+        )
+        assert df.iloc[0]["File_name"] == "1-MainTitle"
+        assert df.iloc[0]["subtitle"] == "Sub"
+        assert str(df.iloc[1]["subtitle"]).strip() in ("", "nan")
 
     def test_template_for_path_generation(self):
         """测试 template 生成路径（原 lookup_template 场景）"""
@@ -394,17 +378,12 @@ class TestEndToEnd:
         csv = "cat\nA B\nC D\n"
         self._write_files("t4", rules, csv)
 
-        old_cwd = os.getcwd()
-        os.chdir(self.tmpdir)
-        try:
-            transform("t4")
-            df = pd.read_excel(
-                os.path.join(self.workspace, "t4.xlsx"), dtype=str
-            )
-            assert df.iloc[0]["bg"] == "img/AB.png"
-            assert df.iloc[1]["bg"] == "img/CD.png"
-        finally:
-            os.chdir(old_cwd)
+        transform("t4")
+        df = pd.read_excel(
+            os.path.join(self.workspace, "t4.xlsx"), dtype=str
+        )
+        assert df.iloc[0]["bg"] == "img/AB.png"
+        assert df.iloc[1]["bg"] == "img/CD.png"
 
     def test_derived_raw_boolean(self):
         """测试 derived_raw 从原始字段推导布尔值"""
@@ -418,17 +397,12 @@ class TestEndToEnd:
         csv = "name,flag\nA,1\nB,\n"
         self._write_files("t5", rules, csv)
 
-        old_cwd = os.getcwd()
-        os.chdir(self.tmpdir)
-        try:
-            transform("t5")
-            df = pd.read_excel(
-                os.path.join(self.workspace, "t5.xlsx"), dtype=str
-            )
-            assert df.iloc[0]["flag"] == "True"
-            assert df.iloc[1]["flag"] == "False"
-        finally:
-            os.chdir(old_cwd)
+        transform("t5")
+        df = pd.read_excel(
+            os.path.join(self.workspace, "t5.xlsx"), dtype=str
+        )
+        assert df.iloc[0]["flag"] == "True"
+        assert df.iloc[1]["flag"] == "False"
 
 
 # ── 文件缺失处理 ──────────────────────────────────────────

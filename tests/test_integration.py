@@ -401,18 +401,17 @@ class TestOutputDirectoryParameter:
         )
 
     def test_default_output_dir_is_export(self):
-        """不提供输出目录参数时，应使用默认的 'export' 目录"""
+        """不提供输出目录参数时，应使用默认的 DATA_DIR/export 目录"""
+        from src import config as eps_config
+
         original_argv = sys.argv
         sys.argv = ['psd_renderer.py', 'test', 'jpg']
         try:
-            # 导入模块会触发 main 逻辑，但会因为文件不存在而失败
-            # 我们只需要验证参数解析逻辑
-            import importlib
             import src.psd_renderer
 
-            # 验证默认输出路径是 export
-            assert src.psd_renderer.output_path == "export", (
-                f"默认输出路径应该是 'export'，实际是 '{src.psd_renderer.output_path}'"
+            assert src.psd_renderer.output_path == eps_config.EXPORT_DIR, (
+                f"默认输出路径应该是 '{eps_config.EXPORT_DIR}'，"
+                f"实际是 '{src.psd_renderer.output_path}'"
             )
         except (SystemExit, FileNotFoundError):
             # 预期的异常（文件不存在）

@@ -1,10 +1,12 @@
 # Excel-PS 批量导出工具备忘录
 
+给维护者 / agent 看的内部备忘。面向使用者的操作说明见 `README.md` / `README_ZH_CN.md`。
+
 ## 1. 目的
 
-本文档旨在详细记录本项目批量导出工具的全部细节，为本项目的未来开发提供便利。
+记录架构、路径约定、图层与数据处理不变量，方便后续改代码时对齐现状。
 
-**重要提示：** 每次新增或修改功能后，请务必更新此备忘录，确保文档的准确性和时效性。
+**重要提示：** 每次新增或修改功能后，请务必更新此备忘录。
 
 ## 2. 项目概述
 
@@ -17,28 +19,19 @@
 ```
 excel-ps-batch-export/
 ├── src/                     # 源代码目录
+│   ├── config.py            # .env / EPS_DATA_DIR 路径配置
 │   ├── xlsx_generator.py    # Excel生成器 - PSD模板扫描和Excel配置文件生成
 │   ├── psd_renderer.py      # 核心PSD渲染脚本
 │   ├── transform.py         # 数据变换引擎 - CSV+JSON规则→xlsx
 │   ├── file_monitor.py      # 文件监控脚本
 │   └── clipboard_importer.py # 剪贴板导入器 - 从剪贴板读取数据写入Excel
+├── demo/                    # 默认数据目录（未设置 EPS_DATA_DIR 时使用）
+│   ├── workspace/           # 示例 PSD / Excel / 变换规则 / assets
+│   ├── export/              # 示例导出目录
+│   └── log.csv              # 导出日志
 ├── transform_guide.md       # 数据变换规则系统文档
 ├── requirements.txt         # 项目依赖管理
-├── workspace/               # 工作目录 - 存放PSD模板和Excel数据文件
-│   ├── 1.psd + 1.xlsx       # 配对的PSD模板和Excel数据
-│   ├── 1.json               # 变换规则（有此文件则走transform管道）
-│   ├── 1_raw.csv            # 原始数据（用户/agent编辑）
-│   ├── 2.psd + 2.xlsx
-│   ├── 2.json + 2_raw.csv
-│   ├── 3#1.psd + 3#2.psd + 3.xlsx
-│   ├── 3.json + 3_raw.csv
-│   ├── fonts.json           # 字体配置文件
-│   └── assets/              # 资源目录
-│       ├── fonts/           # 字体文件
-│       ├── 1_img/           # 图片素材1
-│       └── 2_img/           # 图片素材2
-├── export/                  # 导出图片目录（格式：export/日期时间_模板名/）
-├── log.csv                  # 导出日志（固定写在项目根目录，与 cwd 无关）
+├── .env.example             # EPS_DATA_DIR 配置示例
 ├── tests/                   # 测试套件目录
 │   ├── README.md            # 测试套件文档
 │   ├── run_tests.py         # 统一测试运行器
@@ -46,6 +39,16 @@ excel-ps-batch-export/
 ├── notes.md                 # 本备忘录
 └── (其他项目文件)
 ```
+
+### 代码与数据分离
+
+通过 `.env` 或环境变量 `EPS_DATA_DIR` 可将数据目录与代码分离（默认使用项目内 `demo/`）：
+
+| 变量 | 说明 |
+|------|------|
+| `EPS_DATA_DIR` | 数据目录；未设置时使用项目内 `demo/` |
+
+数据目录包含：`workspace/`、`export/`、`log.csv`。
 
 ## 4. 核心功能
 
@@ -195,42 +198,26 @@ excel-ps-batch-export/
 - **内存优化**：无并发问题，无需深拷贝操作
 - **IO优化**：预加载PSD模板减少磁盘读取次数
 
-## 6. 使用方法
+## 6. 实现约定
 
-### 6.1 首次设置
-1. **准备PSD模板**：将PSD文件放入 `workspace/` 目录，命名格式为`[前缀]#[后缀].psd`
-2. **命名变量图层**：按照`@变量名#操作符`规则重命名需要动态修改的图层
-3. **生成Excel配置**：运行`python src/xlsx_generator.py`生成Excel配置文件
-4. **准备资源**：将字体文件放入`workspace/assets/fonts`目录
-5. **配置字体**：在workspace目录创建或编辑 `fonts.json` 文件，为每个PSD模板前缀指定字体
+使用者操作说明见 `README.md` / `README_ZH_CN.md`。本节记录维护相关的路径与处理不变量。
 
-### 6.2 批量导出
-```bash
-# 手动导出
-python src/psd_renderer.py [模板名] [格式] [输出目录(可选)]
-# 示例：python src/psd_renderer.py 1 jpg
-# 示例：python src/psd_renderer.py 1 jpg output/custom
-# 示例：python src/psd_renderer.py 1 jpg /Users/username/Desktop/rendered
+### 6.1 路径解析
 
-# 自动监控导出
-python src/file_monitor.py
-```
+`src/config.py` 是唯一路径来源：
 
-### 6.3 剪贴板导入器使用
-```bash
-# 从剪贴板导入数据到Excel并自动生成图片
-python src/clipboard_importer.py
-```
-**使用流程：**
-1. 复制表格数据到剪贴板（支持Excel、网页表格等）
-2. 运行剪贴板导入器
-3. 选择目标Excel文件（如有多个）
-4. 数据写入逻辑：
-   - **无变换规则**：写入Excel文件的第一个sheet，保留表头行，从A2开始追加数据
-   - **有变换规则**（存在 `.json`）：写入 `_raw.csv` 原始数据文件
-5. **自动启动PSD渲染器生成图片**，输出到export目录
+| 符号 | 含义 |
+|------|------|
+| `EPS_DATA_DIR` / `DATA_DIR` | 数据根；未设置时为项目内 `demo/` |
+| `WORKSPACE_DIR` | `DATA_DIR/workspace` — 模板、表格、素材、fonts.json |
+| `EXPORT_DIR` | `DATA_DIR/export` — 默认出图目录 |
+| `LOG_PATH` | `DATA_DIR/log.csv` |
 
-### 6.4 图层命名规则
+入口脚本把 `src/` 加入 `sys.path` 后 `import config`。`config.py` 将自身同时注册为 `config` 与 `src.config`，保证测试与运行时共用同一模块对象。路径一律由 `config` 解析，不依赖 cwd。
+
+Excel 中图片路径相对于 `WORKSPACE_DIR`（如 `assets/1_img/x.jpg`）。CLI 第 3 参可覆盖输出目录。
+
+### 6.2 图层命名规则
 - **文本变量**：`@标题#t`（基本文本替换）
 - **文本居中**：`@标题#t_c`（居中对齐文本）
 - **文本旋转**：`@标题#t_a15`（旋转 15 度）
@@ -251,7 +238,7 @@ python src/clipboard_importer.py
 - `_a[角度]`：旋转指定角度（如 `_a15` 旋转15度，`_a-30` 逆时针30度）
 - 可与对齐参数组合：`@标题#t_c_a45`（居中 + 旋转45度）
 
-### 6.5 多PSD模板命名规则
+### 6.3 多PSD模板命名规则
 
 **多模板支持：**
 - 命名格式：`[前缀]#[后缀].psd`
@@ -259,7 +246,7 @@ python src/clipboard_importer.py
 - 例如：`产品.xlsx` 配合 `产品#海报.psd` 和 `产品#方图.psd`
 - 输出文件会自动使用PSD后缀区分：`产品1海报.jpg`、`产品1方图.jpg`（假设Excel中File_name为"产品1"）
 
-### 6.6 文本预处理规则
+### 6.4 文本预处理规则
 
 **数据处理原则：**
 项目采用纯文本数据处理策略，确保"复制来什么内容，输出到图片上就是什么内容"。从Excel读取数据时强制所有列为字符串类型，避免数据类型转换导致的格式丢失。
@@ -289,7 +276,7 @@ python src/clipboard_importer.py
 - `产品"名称"` → `产品「名称」`
 - `A/B/C` → `A&B&C`
 
-### 6.7 文件名处理规则
+### 6.5 文件名处理规则
 
 **输出文件名生成：**
 - **基础名称**：使用Excel表格第一列的值作为文件名基础
@@ -312,7 +299,7 @@ python src/clipboard_importer.py
 - `  leading spaces  ` → `leading spaces`
 - `file:name` → `file_name`
 
-### 6.8 字体配置规则
+### 6.6 字体配置规则
 
 **fonts.json 配置文件：**
 - 字体配置通过 workspace/ 目录下的 `fonts.json` 文件管理
@@ -352,13 +339,14 @@ fonts.json配置：
 }
 ```
 
-### 6.9 图片路径规则
+### 6.7 图片路径规则
 
 图片路径必须相对于 workspace 目录。
 
-- **脚本运行位置**：Python 脚本从项目根目录运行
-- **Excel 文件位置**：`workspace/` 目录
-- **路径基准**：Excel 中的图片路径应以 workspace 目录为基准
+- **Excel 文件位置**：`WORKSPACE_DIR`
+- **路径基准**：Excel 中的图片路径以 workspace 为基准
+- **导出位置**：默认 `EXPORT_DIR`（CLI 第 3 参可覆盖）
+- **日志位置**：`LOG_PATH`
 
 **正确示例**：
 ```
@@ -374,8 +362,8 @@ workspace/../assets/...    # 不要包含 workspace 路径
 
 **目录结构**：
 ```
-项目根目录/          # 脚本从此处运行
-└── workspace/      # 工作目录
+<DATA_DIR>/
+└── workspace/      # 工作目录（模板、表格、素材）
     ├── assets/2_img/横.jpg
     └── 5_image.xlsx  # Excel 中填写 assets/2_img/横.jpg
 ```

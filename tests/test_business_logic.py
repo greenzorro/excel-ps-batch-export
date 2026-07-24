@@ -29,7 +29,7 @@ from test_utils import (
     validate_layer_name_parsing, create_mock_layer, create_mock_psd,
     create_test_excel_data, create_temp_excel_file, create_temp_image_file,
     assert_text_position_accuracy, parse_boolean_value, TestEnvironment,
-    create_complex_test_data, create_test_rendering_context
+    create_complex_test_data, create_test_rendering_context, temporary_data_dir
 )
 
 # 使用测试环境管理器处理sys.argv依赖
@@ -368,53 +368,26 @@ class TestPSDFileMatching:
     
     def test_get_matching_psds_single_file(self):
         """测试单个PSD文件匹配"""
-        original_cwd = os.getcwd()
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            os.chdir(tmp_dir)
-
-            try:
-                # 创建 workspace 目录和测试文件
-                os.makedirs("workspace")
-                Path("workspace/test.psd").touch()
-
-                matching = get_matching_psds("test")
-                assert matching == ["test.psd"]
-            finally:
-                os.chdir(original_cwd)
+        with temporary_data_dir() as cfg:
+            Path(cfg.WORKSPACE_DIR, "test.psd").touch()
+            matching = get_matching_psds("test")
+            assert matching == ["test.psd"]
     
     def test_get_matching_psds_multiple_files(self):
         """测试多个PSD文件匹配"""
-        original_cwd = os.getcwd()
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            os.chdir(tmp_dir)
-
-            try:
-                # 创建 workspace 目录和测试文件
-                os.makedirs("workspace")
-                Path("workspace/test#1.psd").touch()
-                Path("workspace/test#2.psd").touch()
-                Path("workspace/other.psd").touch()
-
-                matching = get_matching_psds("test")
-                assert set(matching) == {"test#1.psd", "test#2.psd"}
-            finally:
-                os.chdir(original_cwd)
+        with temporary_data_dir() as cfg:
+            Path(cfg.WORKSPACE_DIR, "test#1.psd").touch()
+            Path(cfg.WORKSPACE_DIR, "test#2.psd").touch()
+            Path(cfg.WORKSPACE_DIR, "other.psd").touch()
+            matching = get_matching_psds("test")
+            assert set(matching) == {"test#1.psd", "test#2.psd"}
     
     def test_get_matching_psds_no_match(self):
         """测试无匹配PSD文件"""
-        original_cwd = os.getcwd()
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            os.chdir(tmp_dir)
-
-            try:
-                # 创建 workspace 目录和测试文件
-                os.makedirs("workspace")
-                Path("workspace/other.psd").touch()
-
-                matching = get_matching_psds("test")
-                assert matching == []
-            finally:
-                os.chdir(original_cwd)
+        with temporary_data_dir() as cfg:
+            Path(cfg.WORKSPACE_DIR, "other.psd").touch()
+            matching = get_matching_psds("test")
+            assert matching == []
 
 
 class TestValidationReporting:

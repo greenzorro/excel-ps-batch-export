@@ -11,13 +11,23 @@ import os
 import pandas as pd
 from psd_tools import PSDImage
 
+import sys
+
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import config
+
 
 def main():
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
     # 按前缀分组PSD文件（从workspace目录读取）
     psd_groups = {}
-    workspace_dir = "../workspace"
+    workspace_dir = config.WORKSPACE_DIR
+    if not os.path.isdir(workspace_dir):
+        print(f"工作目录不存在: {workspace_dir}")
+        return
+
     for file in os.listdir(workspace_dir):
         if file.endswith('.psd'):
             base_name = os.path.splitext(file)[0]

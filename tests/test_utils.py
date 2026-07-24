@@ -12,9 +12,58 @@ import sys
 import tempfile
 import shutil
 from pathlib import Path
+from contextlib import contextmanager
 from unittest.mock import Mock, MagicMock
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
+
+
+@contextmanager
+def temporary_data_dir(data_dir=None):
+    """Point src.config data paths at a temporary (or given) DATA_DIR.
+
+    DATA_DIR layout: workspace/, export/, log.csv
+    """
+    from src import config as eps_config
+
+    created = False
+    if data_dir is None:
+        data_dir = tempfile.mkdtemp(prefix="eps_data_")
+        created = True
+
+    workspace = os.path.join(data_dir, "workspace")
+    export = os.path.join(data_dir, "export")
+    os.makedirs(workspace, exist_ok=True)
+    os.makedirs(export, exist_ok=True)
+
+    originals = {
+        "DATA_DIR": eps_config.DATA_DIR,
+        "WORKSPACE_DIR": eps_config.WORKSPACE_DIR,
+        "EXPORT_DIR": eps_config.EXPORT_DIR,
+        "LOG_PATH": eps_config.LOG_PATH,
+        "FONTS_DIR": eps_config.FONTS_DIR,
+        "FONTS_CONFIG_PATH": eps_config.FONTS_CONFIG_PATH,
+        "DEFAULT_FONT_PATH": eps_config.DEFAULT_FONT_PATH,
+    }
+
+    eps_config.DATA_DIR = data_dir
+    eps_config.WORKSPACE_DIR = workspace
+    eps_config.EXPORT_DIR = export
+    eps_config.LOG_PATH = os.path.join(data_dir, "log.csv")
+    eps_config.FONTS_DIR = os.path.join(workspace, "assets", "fonts")
+    eps_config.FONTS_CONFIG_PATH = os.path.join(workspace, "fonts.json")
+    eps_config.DEFAULT_FONT_PATH = os.path.join(
+        eps_config.FONTS_DIR, "AlibabaPuHuiTi-2-85-Bold.ttf"
+    )
+
+    try:
+        yield eps_config
+    finally:
+        for key, value in originals.items():
+            setattr(eps_config, key, value)
+        if created:
+            shutil.rmtree(data_dir, ignore_errors=True)
+
 
 
 def create_mock_layer(name="@test#t", size=(100, 50), offset=(0, 0), 

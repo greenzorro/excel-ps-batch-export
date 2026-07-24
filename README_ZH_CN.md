@@ -42,9 +42,28 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 ## 设置
 
+仓库自带 `demo/` 示例数据。未配置时，脚本默认使用 `demo/` 作为数据目录。
+
+若要使用自定义数据目录，复制 `.env.example` 为 `.env`，并设置：
+
+```bash
+EPS_DATA_DIR=/path/to/your/data
+```
+
+数据目录结构：
+
+```
+<EPS_DATA_DIR>/
+├── workspace/     # PSD 模板、Excel/CSV、fonts.json、assets/
+├── export/        # 导出图片
+└── log.csv        # 导出日志（自动创建）
+```
+
+未设置 `EPS_DATA_DIR` 时，使用项目内 `demo/`。
+
 首次使用需要一些基本设置：
 
-1. 将 PSD 模板文件放在 `workspace/` 目录中。
+1. 将 PSD 模板文件放在数据目录的 `workspace/` 中（如 `demo/workspace/` 或 `$EPS_DATA_DIR/workspace/`）。
 2. 编辑 PSD 模板文件，按以下模式重命名所有可变图层或组：
     - 格式：`@Variable_name#Operation_Parameter`
     - 图层名称示例：`@badge#v`、`@description#t_p`、`@bg#i`
@@ -161,7 +180,7 @@ pip install -r requirements.txt
 python src/psd_renderer.py [Excel文件前缀] [输出格式] [输出目录(可选)]
 
 # 示例
-python src/psd_renderer.py 1 jpg                           # 默认输出到 export/ 目录
+python src/psd_renderer.py 1 jpg                           # 默认输出到 <数据目录>/export/
 python src/psd_renderer.py 1 jpg output/custom            # 自定义相对路径输出目录
 python src/psd_renderer.py 1 jpg /absolute/path/to/output # 自定义绝对路径输出目录
 ```
@@ -169,8 +188,8 @@ python src/psd_renderer.py 1 jpg /absolute/path/to/output # 自定义绝对路�
 **说明**：字体文件通过`workspace/fonts.json`配置。如未配置，将使用默认字体`workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
 
 **输出目录选项**：
-- 未指定输出目录时，图片保存到默认的 `export/` 目录
-- 提供相对路径（如 `output/custom`）时，路径相对于项目根目录
+- 未指定输出目录时，图片保存到 `<数据目录>/export/`（示例数据为 `demo/export/`）
+- 提供相对路径（如 `output/custom`）时，相对于当前工作目录解析
 - 提供绝对路径（如 `/Users/用户名/Desktop/rendered`）时，图片保存到该位置
 - 每次导出都会创建带时间戳的子目录以避免文件冲突（例如 `20260402_162657_1/`）
 
