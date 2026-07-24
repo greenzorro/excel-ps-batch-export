@@ -104,5 +104,3 @@ Run batch PSD→image export with Python on this machine (no Adobe Photoshop app
 - Do not require or automate a Photoshop GUI install—this stack is `psd-tools` + Pillow
 - Do not commit `.env` or client data directories
 - Layer naming, fonts, and transform contracts: see `notes.md` / `transform_guide.md` when exports look wrong
-
-For Chinese readers, see [README_ZH_CN.md](README_ZH_CN.md) (human-facing only).
