@@ -87,7 +87,7 @@ class TestExcelFileSelection:
         """Test when no Excel files are found"""
         mock_listdir.return_value = ['file1.txt', 'file2.pdf']
 
-        with pytest.raises(FileNotFoundError, match="workspace 中未找到 Excel 文件"):
+        with pytest.raises(FileNotFoundError, match="当前目录未找到Excel文件"):
             clipboard_importer.find_target_excel_file()
 
     @patch('os.listdir')
