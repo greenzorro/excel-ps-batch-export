@@ -2,9 +2,11 @@
 
 [🇬🇧 EN](https://github.com/greenzorro/excel-ps-batch-export/blob/main/README.md) | [🇨🇳 中文](https://github.com/greenzorro/excel-ps-batch-export/blob/main/README_ZH_CN.md)
 
-这是一个Python脚本，用于读取PSD模板并将电子表格中的内容应用于模板，导出大量图像，替代Photoshop的变量定义功能。
+用 Python 读取 PSD 模板，把电子表格内容套进去批量出图，替代 Photoshop「变量 → 定义」那套流程。
 
-📺 示例：从PSD模板创建Excel文件
+请让 Agent 按英文 README 的 `# For Agent` 在本机装好依赖并负责出图。你主要负责 **PSD 图层命名 + 表格数据**，再验收成品图。
+
+📺 示例：从 PSD 模板创建 Excel
 
 https://github.com/user-attachments/assets/a21f8b2d-310f-4f28-a873-6bd166c07955
 
@@ -12,190 +14,38 @@ https://github.com/user-attachments/assets/a21f8b2d-310f-4f28-a873-6bd166c07955
 
 https://github.com/user-attachments/assets/c52c6e05-1bc9-4a2b-ae4c-b283a25067f6
 
-📺 示例：监控Excel文件变化自动出图
+📺 示例：监控 Excel 自动出图
 
 https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
-在Photoshop[你得这么干](https://victor42.eth.limo/post/3650/)：
+在 Photoshop [你得这么干](https://victor42.eth.limo/post/3650/)：编辑表格 → 存 CSV → 定义变量 → 导入 → 导出一堆 PSD → 再批处理成 JPG/PNG。
 
-1. 在电子表格中编辑内容。
-2. 将电子表格保存为CSV文件。
-3. 在Photoshop中定义图层变量。
-4. 导入CSV文件。
-5. 导出数据组为文件，导出的都是.psd文件。
-6. 创建批处理将PSD保存为JPG或PNG。
-7. 使用批处理输出最终图像。
+用本项目：改好表格（模板只需设一次），让 Agent 跑渲染即可。
 
-用我的Python脚本，你只需要：
+## 模板怎么做（给你）
 
-1. 在电子表格中编辑内容。
-2. 运行src/psd_renderer.py。
+数据默认在 `demo/`，或 Agent 配好的自定义数据目录（`EPS_DATA_DIR`）。
 
-就这么简单，图就都出来了。你只需要有Python环境，装几个Python包。
+1. PSD 放进 `workspace/`。
+2. 可变图层/组按 `@变量名#操作_参数` 命名，如 `@badge#v`、`@description#t_p`、`@bg#i`：
+    - `@` 表示可变；`变量名` 对应表头列
+    - `#v` 可见性；`#t` 换文字（`_c`/`_r` 对齐，`_a角度` 旋转且 PSD 里保持水平，`_p` 段落，`_pm`/`_pb` 段内垂直对齐）
+    - `#i` 填图（`_cover`/`_contain`，九宫格 `_lt`…`_rb`）
+    - 可变文字**不要**用自由变换拉尺寸，只用字号；旋转只写在图层名里
+3. 让 Agent 跑生成器出好列后，在第一张表填数（或用公式引用别的表）。保留 `File_name` 列，空则默认 `image_1`…
+4. 字体放 `workspace/assets/fonts/`，其它素材放 `workspace/assets/`；表里的图片路径相对 `workspace/`。
+5. 可选 `workspace/fonts.json`：PSD 前缀 → 字体文件名。
 
-## 下载
+## 日常怎么用（给你）
 
-有两种下载方式：
-
-1. `git clone https://github.com/greenzorro/excel-ps-batch-export.git`
-2. 点击Code按钮，然后Download ZIP
-
-## 设置
-
-仓库自带 `demo/` 示例数据。未配置时，脚本默认使用 `demo/` 作为数据目录。
-
-若要使用自定义数据目录，复制 `.env.example` 为 `.env`，并设置：
-
-```bash
-EPS_DATA_DIR=/path/to/your/data
-```
-
-数据目录结构：
-
-```
-<EPS_DATA_DIR>/
-├── workspace/     # PSD 模板、Excel/CSV、fonts.json、assets/
-├── export/        # 导出图片
-└── log.csv        # 导出日志（自动创建）
-```
-
-未设置 `EPS_DATA_DIR` 时，使用项目内 `demo/`。
-
-首次使用需要一些基本设置：
-
-1. 将 PSD 模板文件放在数据目录的 `workspace/` 中（如 `demo/workspace/` 或 `$EPS_DATA_DIR/workspace/`）。
-2. 编辑 PSD 模板文件，按以下模式重命名所有可变图层或组：
-    - 格式：`@Variable_name#Operation_Parameter`
-    - 图层名称示例：`@badge#v`、`@description#t_p`、`@bg#i`
-    - `@`表示该图层是可变的，脚本将从电子表格中获取内容。
-    - `Variable_name`应出现在电子表格的列标题中。
-    - `#Operation_Parameter`告诉脚本对图层做什么操作。
-    - `#v`根据电子表格中的TRUE/FALSE设置可见性。
-    - `#t` 用电子表格数据替换文本图层内容，参数包括：
-        - 默认左上对齐
-        - `_c` 水平居中对齐
-        - `_r` 水平右对齐
-        - `_a[角度]` 按指定角度旋转文字（如 `_a15` 顺时针旋转15°，`_a-30` 逆时针旋转30°）
-        - `_p` 段落文本换行，在PSD中至少填满一行文本
-        - `_pm` / `_pb` 段落内垂直居中 / 底部对齐（需与 `_p` 组合，如 `#t_p_pm`、`#t_c_p_pb`）
-        - 这些参数可以组合使用，如 `#t_c_a15`、`#t_r_p`、`#t_p_pm`
-        - PSD里设置的对齐方向对结果没有影响，程序只认图层名
-    - `#i`用电子表格中的路径对应的图片填充图片图层，参数包括：
-        - 缩放模式：`_cover`（裁剪模式，默认）保持比例填满图层裁剪超出部分，`_contain`（留白模式）保持比例完整显示留白区域透明
-        - 对齐位置（九宫格）：`_lt`（左上）、`_ct`（上中）、`_rt`（右上）、`_lm`（中左）、`_cm`（居中，默认）、`_rm`（中右）、`_lb`（左下）、`_cb`（下中）、`_rb`（右下）
-        - 示例：
-            - `@产品图#i` - 默认：cover + 居中
-            - `@产品图#i_cover` - cover + 居中
-            - `@产品图#i_contain` - contain + 居中
-            - `@产品图#i_cover_rb` - cover + 右下
-            - `@产品图#i_contain_lt` - contain + 左上
-    - PSD制作建议：
-        - 文本图层尺寸通过字体大小属性调整，**避免使用自由变换（cmd/ctrl+T）**，以确保脚本正确读取字号
-        - 需要旋转的文字**在PSD中保持水平放置**，通过图层名参数（如 `#t_a15`）实现旋转效果
-3. 运行`xlsx_generator.py`。你的XLSX文件就创建完成了，所有的列都已准备好。
-4. 编辑XLSX文件。Python脚本默认读取第一张工作表，把你的数据放在这。也可以将数据放在另一张工作表中，并在第一张工作表中使用Excel公式读取和计算，特别适合切换图层可见性。请勿删除第一列`File_name`，留空会使用默认文件名格式（如image_1, image_2等）。
-5. 将模板所需的其他文件放入`workspace/assets`文件夹，包括字体放在`workspace/assets/fonts/`目录、背景图像等。确保图片资源的路径与电子表格中的数据匹配。Excel中的图片路径相对于workspace目录（如`assets/1_img/image.jpg`）。
-6. 配置字体文件（可选）。如果有多个PSD模板需要不同的字体，可以在workspace目录中创建`fonts.json`文件为每个模板指定字体：
-   ```json
-   {
-     "_comment": "字体配置文件 - 为每个PSD模板指定对应的字体文件",
-     "1": "AlibabaPuHuiTi-2-85-Bold.ttf",
-     "2": "SourceHanSansCN-Medium.otf",
-     "产品": "CustomFont.ttf"
-   }
-   ```
-   键名为PSD文件前缀（第一个`#`之前的部分），值为`workspace/assets/fonts/`目录中的字体文件名。如未配置，将使用默认字体`workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
-
-看起来非常复杂？相信我，用Photoshop做同样的事情要复杂得多。设置完成，你就高枕无忧了。
-
-## 导出
-
-导出时，事情无比简单：
-
-1. 在电子表格中粘贴内容。
-2. 运行src/psd_renderer.py。
-
-我甚至写了另一个脚本（src/file_monitor.py）监控电子表格，并在电子表格修改后自动导出图像。
-
-## 剪贴板导入器
-
-为了更快的工作流程，可以使用src/clipboard_importer.py脚本：
-
-1. 复制表格数据到剪贴板（从Excel、网页表格等）
-2. 运行 `python clipboard_importer.py`
-3. 选择目标Excel文件（如有多个）
-4. 数据自动写入Excel并生成图片
-
-这下，既不用打开Photoshop，也不用打开Excel了。
-
-## 多文件处理
-
-本工具支持用一个Excel文件处理多个PSD模板。工作原理如下：
-
-- **按前缀分组**：同一目录中的所有PSD文件按前缀分组。前缀定义为文件名中第一个井号（`#`）之前的部分。例如：
-  - `产品介绍#模板A.psd` 和 `产品介绍#模板B.psd` 共享相同的前缀 `产品介绍`
-- **共享Excel**：每组创建一个Excel文件（命名为`[前缀].xlsx`），包含组内所有PSD的变量。
-- **批量导出**：运行 `psd_renderer.py [前缀] ...` 时，脚本将处理组内所有PSD。Excel中的每一行将为组内每个PSD生成一张图片。输出图片文件名包含PSD的后缀（如 `image_1_模板A.jpg`）。
-
-示例：
-  - PSD文件：`活动#夏季版.psd`, `活动#冬季版.psd`
-  - Excel文件：`活动.xlsx`
-  - 命令：`python psd_renderer.py 活动 jpg`
-  - 输出：对于 `活动.xlsx` 中的每一行，生成两张图片：`image_1_夏季版.jpg`, `image_1_冬季版.jpg` 等（假设File_name列为空，否则使用File_name列的值）。
-
-## 高级功能
-
-### 数据变换规则
-
-对于需要复杂数据处理的模板，您可以使用基于 JSON 的数据变换规则。当 workspace 目录中存在与模板同名的 `.json` 文件时：
-
-**工作原理：**
-1. 编辑 `_raw.csv` 原始数据文件
-2. 系统自动应用 `.json` 中定义的变换规则
-3. 处理后的数据写入 `.xlsx` 供渲染使用
-
-**支持的变换类型：**
-- `direct` - 直接复制字段值
-- `conditional` - 仅当依赖字段非空时复制
-- `template` - 组合多个字段（如文件名生成）
-- `derived` - 基于其他字段的布尔值
-- `derived_raw` - 基于原始字段存在性的布尔值
-
-**示例：** 模板 1、2、3 包含变换规则。详细文档请查看 `transform_guide.md`。
-
-## 使用前提
-
-### 安装依赖
-
-使用 `requirements.txt` 文件安装所有依赖：
-
-```bash
-pip install -r requirements.txt
-```
-
-### 使用说明
-
-```bash
-# 基本命令格式
-python src/psd_renderer.py [Excel文件前缀] [输出格式] [输出目录(可选)]
-
-# 示例
-python src/psd_renderer.py 1 jpg                           # 默认输出到 <数据目录>/export/
-python src/psd_renderer.py 1 jpg output/custom            # 自定义相对路径输出目录
-python src/psd_renderer.py 1 jpg /absolute/path/to/output # 自定义绝对路径输出目录
-```
-
-**说明**：字体文件通过`workspace/fonts.json`配置。如未配置，将使用默认字体`workspace/assets/fonts/AlibabaPuHuiTi-2-85-Bold.ttf`。
-
-**输出目录选项**：
-- 未指定输出目录时，图片保存到 `<数据目录>/export/`（示例数据为 `demo/export/`）
-- 提供相对路径（如 `output/custom`）时，相对于当前工作目录解析
-- 提供绝对路径（如 `/Users/用户名/Desktop/rendered`）时，图片保存到该位置
-- 每次导出都会创建带时间戳的子目录以避免文件冲突（例如 `20260402_162657_1/`）
+- 改完表格行，让 Agent 出图（或让它开监控脚本）。
+- **剪贴板**：复制表格 → 让 Agent 跑剪贴板导入 → 如有多个簿再选目标 → 出图。
+- **多 PSD 共用一表**：文件名第一个 `#` 前相同则共用 `[前缀].xlsx`，一行出多张图。
+- **变换规则**：有 `workspace/<前缀>.json` 时改 `<前缀>_raw.csv`，详见 `transform_guide.md`。
 
 ## 感谢
 
-特别感谢 [psd-tools](https://github.com/psd-tools/psd-tools) 提供强大的API，使我能够结合Photoshop的图像编辑能力，同时发挥Excel/Python在数据处理方面的优势。
+感谢 [psd-tools](https://github.com/psd-tools/psd-tools)。
 
 ---
 
