@@ -59,6 +59,20 @@ Looks heavy? Doing the same with Photoshop Variables is worse. Once templates ex
 
 Special thanks to [psd-tools](https://github.com/psd-tools/psd-tools) for APIs that let Photoshop stay the design tool while Excel/Python own the data.
 
+## Manual CLI
+
+Same commands an agent would run—you can execute them yourself from the repo root (data dir = `demo/` or `EPS_DATA_DIR`):
+
+```bash
+python src/xlsx_generator.py
+python src/psd_renderer.py <prefix> <jpg|png> [output_dir]
+python src/clipboard_importer.py
+python src/file_monitor.py
+python src/transform.py   # usually invoked automatically when <prefix>.json exists
+```
+
+`psd_renderer.py` example: `python src/psd_renderer.py 1 jpg`
+
 ---
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
@@ -67,42 +81,55 @@ Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/a
 
 # For Agent
 
-Run batch PSD→image export with Python on this machine (no Adobe Photoshop app required). Use the bundled `demo/` data first, then point at a real data directory if the human provides one.
+Run batch PSD→image export with Python (no Adobe Photoshop app). After install, **operate** generators/renderers/importers when the human asks.
 
 ## Prerequisites
 
 - Python 3 + pip
 - `pip install -r requirements.txt`
-- Readable PSD/Excel (or CSV) inputs under the data directory’s `workspace/`
+- Readable PSD/Excel (or CSV) under the data directory’s `workspace/`
 
-## Steps
+## Install / first-time setup
 
-1. Clone the repo. Install dependencies from `requirements.txt`.
-2. Default data root is `demo/` (PSD templates, sample sheets, fonts). Confirm `demo/workspace/` exists.
-3. Optional custom data root: copy `.env.example` → `.env` and set `EPS_DATA_DIR` to an absolute path. Layout:
+1. Clone the repo; install `requirements.txt`.
+2. Default data root is `demo/`. Confirm `demo/workspace/` exists.
+3. Optional custom root: copy `.env.example` → `.env`, set `EPS_DATA_DIR` absolute. Layout:
    ```text
    <EPS_DATA_DIR>/
    ├── workspace/   # PSD, xlsx/csv, fonts.json, assets/
-   ├── export/      # outputs
-   └── log.csv      # auto-created
+   ├── export/
+   └── log.csv
    ```
-   If `EPS_DATA_DIR` is set but missing on disk, the tools will **not** fall back to `demo/`—fix the path or unset the variable.
-4. Smoke-test render (prefixes match files in `workspace/`, e.g. `1`):
-   ```bash
-   python src/psd_renderer.py 1 jpg
-   ```
-   Check a new timestamped folder under `<data-dir>/export/`.
-5. Other entry points when asked: `src/file_monitor.py` (watch), `src/clipboard_importer.py` (clipboard → sheet helpers), `src/transform.py` / `transform_guide.md` for rule JSON.
-6. Stop when sample or requested export succeeds. Filling business Excel content, designing PSD layer names, and picking production assets are human tasks unless they explicitly ask you to edit those files.
+   If `EPS_DATA_DIR` is set but missing on disk, tools will **not** fall back to `demo/`.
+
+## Usage
+
+Work from the repo root. Data paths come from `src/config.py` (`demo/` or `EPS_DATA_DIR`).
+
+| Entrypoint | Purpose |
+|------------|---------|
+| `python src/xlsx_generator.py` | Build/refresh XLSX columns from PSD `@…` layer names |
+| `python src/psd_renderer.py <prefix> <jpg|png> [output_dir]` | Batch render; default output `<data-dir>/export/` with timestamp subfolder |
+| `python src/clipboard_importer.py` | Clipboard table → Excel → render |
+| `python src/file_monitor.py` | Watch workspace spreadsheets and auto-export on change |
+| `python src/transform.py` / auto via renderer | Apply `workspace/<prefix>.json` rules from `_raw.csv` |
+
+Typical flows:
+
+1. Smoke-test: `python src/psd_renderer.py 1 jpg` → check `export/`.
+2. After human edits sheet: re-run `psd_renderer.py` for that prefix.
+3. Human copied a table: run `clipboard_importer.py` and follow prompts.
+4. Human wants hands-free: start `file_monitor.py` and leave it running.
+5. Stop when the requested export succeeds. PSD layer naming and business spreadsheet content stay human unless they ask you to edit those files.
 
 ## Hand off to the human
 
-- Authoring spreadsheet rows and PSD `@variable#ops` layer names
-- Choosing production `EPS_DATA_DIR` on their machine
-- Reviewing exported images for design QA
+- Authoring `@variable#ops` layer names and spreadsheet rows
+- Choosing production `EPS_DATA_DIR`
+- Visual QA of exported images
 
 ## Red lines
 
-- Do not require or automate a Photoshop GUI install—this stack is `psd-tools` + Pillow
+- Do not require Photoshop GUI—this stack is `psd-tools` + Pillow
 - Do not commit `.env` or client data directories
-- Layer naming, fonts, and transform contracts: see `notes.md` / `transform_guide.md` when exports look wrong
+- Contracts: `notes.md` / `transform_guide.md`
