@@ -63,6 +63,8 @@ Special thanks to [psd-tools](https://github.com/psd-tools/psd-tools) for APIs t
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
 
+---
+
 # For Agent
 
 Run batch PSD→image export with Python on this machine (no Adobe Photoshop app required). Use the bundled `demo/` data first, then point at a real data directory if the human provides one.
