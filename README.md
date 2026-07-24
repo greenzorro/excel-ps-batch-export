@@ -4,7 +4,7 @@
 
 Python script for reading a PSD template and applying contents in a spreadsheet to export plenty of images. It's an alternative to Photoshop Image > Variables > Define.
 
-Ask an agent to install dependencies and run exports on your machine (see `# For Agent`). Your job is mainly **authoring PSD layer names + spreadsheet data**, then reviewing the images.
+You author PSD layer names and spreadsheet data, then review the images. An agent on your machine handles install and export runs.
 
 📺 Example - Create spreadsheet
 
@@ -30,9 +30,9 @@ This is [what you do using Photoshop](https://victor42.eth.limo/post-en/3650/):
 
 With this project you edit the spreadsheet (and PSD once), then let the agent run the renderer. No Photoshop Variables / batch dance.
 
-## Authoring templates (human)
+## Authoring templates
 
-Data lives under `demo/` by default, or a custom data directory your agent configured (`EPS_DATA_DIR`).
+Data lives under `demo/` by default, or a custom data directory configured as `EPS_DATA_DIR`.
 
 1. Put PSD templates in `workspace/`.
 2. Rename changeable layers/groups with `@Variable_name#Operation_Parameter`, e.g. `@badge#v`, `@description#t_p`, `@bg#i`:
@@ -42,13 +42,13 @@ Data lives under `demo/` by default, or a custom data directory your agent confi
     - `#i` — fill pixels from an image path in the sheet; scale `_cover` (default) / `_contain`; 9-grid align `_lt` `_ct` `_rt` `_lm` `_cm` (default) `_rm` `_lb` `_cb` `_rb`
     - **Do not** free-transform (`Cmd/Ctrl+T`) changeable text layers—set size via font size only
     - For rotation, only use `#t_a…` in the name; keep the layer horizontal in the PSD
-3. Ask the agent to run `xlsx_generator` so column headers appear; edit the first sheet (or drive it with formulas from another sheet). Keep the `File_name` column (blank → default `image_1`, …).
+3. Have the agent run `xlsx_generator` so column headers appear; edit the first sheet (or drive it with formulas from another sheet). Keep the `File_name` column (blank → default `image_1`, …).
 4. Put fonts under `workspace/assets/fonts/` and other assets under `workspace/assets/`. Image paths in the sheet are relative to `workspace/` (e.g. `assets/1_img/image.jpg`).
 5. Optional `workspace/fonts.json` maps PSD prefix → font filename.
 
-Looks heavy? Doing the same with Photoshop Variables is worse. Once templates exist, daily work is “paste rows → ask agent to export”.
+Looks heavy? Doing the same with Photoshop Variables is worse. Once templates exist, daily work is “paste rows → ask the agent to export”.
 
-## Day-to-day use (human)
+## Day-to-day use
 
 - Paste or edit rows in the spreadsheet, then ask the agent to export (or to watch the file with the monitor script).
 - **Clipboard path:** copy a table (Excel/web) → ask the agent to run the clipboard importer → pick the target workbook if prompted → images generate.
@@ -67,7 +67,7 @@ Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/a
 
 # For Agent
 
-Run batch PSD→image export with Python (no Adobe Photoshop app). After install, **operate** generators/renderers/importers when the human asks.
+Run batch PSD→image export with Python (no Adobe Photoshop app). After install, operate generators/renderers/importers when asked.
 
 ## Prerequisites
 
@@ -107,10 +107,10 @@ Entrypoints:
 Typical flows:
 
 1. Smoke-test: `python src/psd_renderer.py 1 jpg` → check `export/`.
-2. After human edits sheet: re-run `psd_renderer.py` for that prefix.
-3. Human copied a table: run `clipboard_importer.py` and follow prompts.
-4. Human wants hands-free: start `file_monitor.py` and leave it running.
-5. Stop when the requested export succeeds. PSD layer naming and business spreadsheet content stay human unless they ask you to edit those files.
+2. After sheet edits: re-run `psd_renderer.py` for that prefix.
+3. Clipboard table ready: run `clipboard_importer.py` and follow prompts.
+4. Hands-free watch: start `file_monitor.py` and leave it running.
+5. Stop when the requested export succeeds. Leave PSD layer naming and business spreadsheet content alone unless asked to edit those files.
 
 ## Hand off to the human
 

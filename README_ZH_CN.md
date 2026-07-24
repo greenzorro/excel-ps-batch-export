@@ -4,7 +4,7 @@
 
 用 Python 读取 PSD 模板，把电子表格内容套进去批量出图，替代 Photoshop「图像 > 变量 > 定义」那套流程。
 
-请让 Agent 在本机安装依赖并负责出图（见英文 README 文末 `# For Agent`）。你主要负责 **PSD 图层命名 + 表格数据**，再验收成品图。
+你负责 PSD 图层命名和表格数据，并验收成品图；本机的安装依赖与出图交给 Agent。
 
 📺 示例：从 PSD 模板创建 Excel
 
@@ -30,9 +30,9 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 用本项目：改好表格（模板只需设一次），让 Agent 跑渲染即可。不用再走 Variables / 批处理那套。
 
-## 模板怎么做（给你）
+## 模板怎么做
 
-数据默认在 `demo/`，或 Agent 已配置的自定义数据目录（`EPS_DATA_DIR`）。
+数据默认在 `demo/`，或已配置的自定义数据目录（`EPS_DATA_DIR`）。
 
 1. 把 PSD 模板放进 `workspace/`。
 2. 可变图层/组按 `@Variable_name#Operation_Parameter` 命名，例如 `@badge#v`、`@description#t_p`、`@bg#i`：
@@ -48,7 +48,7 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 看起来复杂？用 Photoshop Variables 更折磨。模板设好后，日常就是「贴行 → 让 Agent 出图」。
 
-## 日常怎么用（给你）
+## 日常怎么用
 
 - 在表格里粘贴或改行，然后让 Agent 出图（或让它用监控脚本盯着文件）。
 - **剪贴板路径：** 从 Excel/网页复制表格 → 让 Agent 跑剪贴板导入 → 若有多个簿再选目标 → 出图。
