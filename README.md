@@ -59,20 +59,6 @@ Looks heavy? Doing the same with Photoshop Variables is worse. Once templates ex
 
 Special thanks to [psd-tools](https://github.com/psd-tools/psd-tools) for APIs that let Photoshop stay the design tool while Excel/Python own the data.
 
-## Manual CLI
-
-Same commands an agent would run—you can execute them yourself from the repo root (data dir = `demo/` or `EPS_DATA_DIR`):
-
-```bash
-python src/xlsx_generator.py
-python src/psd_renderer.py <prefix> <jpg|png> [output_dir]
-python src/clipboard_importer.py
-python src/file_monitor.py
-python src/transform.py   # usually invoked automatically when <prefix>.json exists
-```
-
-`psd_renderer.py` example: `python src/psd_renderer.py 1 jpg`
-
 ---
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)

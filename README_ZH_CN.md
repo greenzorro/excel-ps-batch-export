@@ -59,20 +59,6 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 感谢 [psd-tools](https://github.com/psd-tools/psd-tools)：设计仍用 Photoshop，数据与出图交给 Excel/Python。
 
-## 手动命令行
-
-Agent 会跑的命令你也可以自己在仓库根目录执行（数据目录为 `demo/` 或 `EPS_DATA_DIR`）：
-
-```bash
-python src/xlsx_generator.py
-python src/psd_renderer.py <前缀> <jpg|png> [输出目录]
-python src/clipboard_importer.py
-python src/file_monitor.py
-python src/transform.py
-```
-
-示例：`python src/psd_renderer.py 1 jpg`
-
 ---
 
 Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
