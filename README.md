@@ -53,7 +53,7 @@ Looks heavy? Doing the same with Photoshop Variables is worse. Once templates ex
 - Paste or edit rows in the spreadsheet, then ask the agent to export (or to watch the file with the monitor script).
 - **Clipboard path:** copy a table (Excel/web) → ask the agent to run the clipboard importer → pick the target workbook if prompted → images generate.
 - **Multi-PSD, one sheet:** files sharing a prefix before the first `#` (e.g. `campaign#summer.psd` + `campaign#winter.psd`) share `campaign.xlsx`. Each row yields one image per PSD; filenames include the suffix when `File_name` is empty.
-- **Transform rules:** if `workspace/<prefix>.json` exists, edit `<prefix>_raw.csv`; rules write the renderable `.xlsx`. Types: `direct`, `conditional`, `template`, `derived`, `derived_raw`. See `transform_guide.md`.
+- **Transform rules:** if `workspace/PREFIX.json` exists, edit `PREFIX_raw.csv`; rules write the renderable `.xlsx`. Types: `direct`, `conditional`, `template`, `derived`, `derived_raw`. See `transform_guide.md`.
 
 ## Thanks
 
@@ -79,26 +79,30 @@ Run batch PSD→image export with Python (no Adobe Photoshop app). After install
 
 1. Clone the repo; install `requirements.txt`.
 2. Default data root is `demo/`. Confirm `demo/workspace/` exists.
-3. Optional custom root: copy `.env.example` → `.env`, set `EPS_DATA_DIR` absolute. Layout:
-   ```text
-   <EPS_DATA_DIR>/
-   ├── workspace/   # PSD, xlsx/csv, fonts.json, assets/
-   ├── export/
-   └── log.csv
-   ```
-   If `EPS_DATA_DIR` is set but missing on disk, tools will **not** fall back to `demo/`.
+3. Optional custom root: copy `.env.example` → `.env`, set `EPS_DATA_DIR` to an absolute path.
+
+Layout when using a custom data root:
+
+```text
+EPS_DATA_DIR/
+├── workspace/   # PSD, xlsx/csv, fonts.json, assets/
+├── export/
+└── log.csv
+```
+
+If `EPS_DATA_DIR` is set but missing on disk, tools will **not** fall back to `demo/`.
 
 ## Usage
 
 Work from the repo root. Data paths come from `src/config.py` (`demo/` or `EPS_DATA_DIR`).
 
-| Entrypoint | Purpose |
-|------------|---------|
-| `python src/xlsx_generator.py` | Build/refresh XLSX columns from PSD `@…` layer names |
-| `python src/psd_renderer.py <prefix> <jpg|png> [output_dir]` | Batch render; default output `<data-dir>/export/` with timestamp subfolder |
-| `python src/clipboard_importer.py` | Clipboard table → Excel → render |
-| `python src/file_monitor.py` | Watch workspace spreadsheets and auto-export on change |
-| `python src/transform.py` / auto via renderer | Apply `workspace/<prefix>.json` rules from `_raw.csv` |
+Entrypoints:
+
+- `python src/xlsx_generator.py` — build/refresh XLSX columns from PSD `@Variable` layer names
+- `python src/psd_renderer.py PREFIX FORMAT [OUTPUT_DIR]` — batch render; `FORMAT` is `jpg` or `png`; default output is `DATA_DIR/export/` with a timestamp subfolder
+- `python src/clipboard_importer.py` — clipboard table → Excel → render
+- `python src/file_monitor.py` — watch workspace spreadsheets and auto-export on change
+- `python src/transform.py` (also auto via renderer) — apply `workspace/PREFIX.json` rules from `PREFIX_raw.csv`
 
 Typical flows:
 

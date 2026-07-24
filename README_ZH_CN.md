@@ -53,7 +53,7 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 - 在表格里粘贴或改行，然后让 Agent 出图（或让它用监控脚本盯着文件）。
 - **剪贴板路径：** 从 Excel/网页复制表格 → 让 Agent 跑剪贴板导入 → 若有多个簿再选目标 → 出图。
 - **多 PSD 共用一表：** 文件名第一个 `#` 前相同则共用一张表（如 `campaign#summer.psd` + `campaign#winter.psd` → `campaign.xlsx`）。每行给组内每个 PSD 各出一张图；`File_name` 为空时文件名会带上后缀。
-- **变换规则：** 若存在 `workspace/<前缀>.json`，编辑 `<前缀>_raw.csv`，规则会写出可渲染的 `.xlsx`。类型：`direct`、`conditional`、`template`、`derived`、`derived_raw`。详见 `transform_guide.md`。
+- **变换规则：** 若存在 `workspace/前缀.json`，编辑 `前缀_raw.csv`，规则会写出可渲染的 `.xlsx`。类型：`direct`、`conditional`、`template`、`derived`、`derived_raw`。详见 `transform_guide.md`。
 
 ## 感谢
 
