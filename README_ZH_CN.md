@@ -61,4 +61,4 @@ https://github.com/user-attachments/assets/bfd2d23f-84ec-4ea9-8874-523a298049be
 
 ---
 
-Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik)
+Created by [Victor42](https://victor42.work/) & [Agent Vik](https://github.com/agent-vik/about-me)
