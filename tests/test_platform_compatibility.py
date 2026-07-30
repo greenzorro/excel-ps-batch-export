@@ -413,7 +413,7 @@ class TestLongFilePaths:
         """验证psd_renderer在超长路径输入下不会产生内存或缓冲区错误"""
         script_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "psd_renderer.py"
+            "src", "psd_renderer.py"
         )
 
         long_dir = "a" * 100
@@ -426,6 +426,8 @@ class TestLongFilePaths:
             encoding='utf-8', errors='replace'
         )
 
+        # 脚本应实际执行（非 "can't open file" 路径错误），且不产生内存/缓冲区错误
+        assert "can't open file" not in result.stderr, "脚本路径错误，业务代码未执行"
         assert "MemoryError" not in result.stderr, "Should not get MemoryError for long paths"
         assert "BufferError" not in result.stderr, "Should not get BufferError for long paths"
 
@@ -503,7 +505,7 @@ class TestFilePathWithSpaces:
         """验证psd_renderer接收带空格的参数不会产生语法错误"""
         script_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "psd_renderer.py"
+            "src", "psd_renderer.py"
         )
 
         result = subprocess.run(
@@ -512,6 +514,8 @@ class TestFilePathWithSpaces:
             encoding='utf-8', errors='replace'
         )
 
+        # 脚本应实际执行（非 "can't open file" 路径错误），且不产生语法错误
+        assert "can't open file" not in result.stderr, "脚本路径错误，业务代码未执行"
         assert "SyntaxError" not in result.stderr, \
             f"Should not produce SyntaxError for spaced argument, got: {result.stderr}"
 

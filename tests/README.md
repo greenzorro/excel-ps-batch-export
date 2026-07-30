@@ -4,9 +4,9 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 
 ## Test Suite Status
 
-**364 passed** ✅
+**363 passed** ✅
 
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-07-30
 **Status**: All tests passing. No Excel application required.
 
 ## Test Files Description
@@ -221,8 +221,8 @@ This directory contains the comprehensive test suite for the excel-ps-batch-expo
 - [x] Large data processing capability verification
 
 #### Test Results
-- **Total Tests**: 361
-- **Passed**: 361 ✅
+- **Total Tests**: 363
+- **Passed**: 363 ✅
 - **Failed**: 0
 - **Performance**: Excellent
 - **Languages**: All test output in English
@@ -344,8 +344,8 @@ Tests automatically create temporary workspaces without affecting project files.
 
 ## Test Distribution
 
-- **Total Tests**: 361
-- **Passed**: 361 ✅
+- **Total Tests**: 363
+- **Passed**: 363 ✅
 - **Failed**: 0
 - **Test Breakdown**:
   - Boolean value handling: 67 tests

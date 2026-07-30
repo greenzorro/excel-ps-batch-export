@@ -40,7 +40,11 @@ class TestPreciseTextPosition:
     """精确的文本位置测试"""
 
     def test_precise_right_alignment_calculation(self, text_render_objects):
-        """测试精确的右对齐计算 - 修复原测试的宽松断言"""
+        """测试精确的右对齐计算 - 修复原测试的宽松断言。
+
+        合并了原 test_replacement_of_loose_assertions（verbatim 重复，唯一独有断言
+        x_pos > layer_width/4 = 50 被 x_pos > layer_width*0.3 = 60 严格覆盖）。
+        """
         text = "Hello World"
         layer_width = 200
         font_size = 20
@@ -48,12 +52,10 @@ class TestPreciseTextPosition:
         x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "right",
                                                 text_render_objects["draw"], text_render_objects["font"])
 
-        # 新算法使用真实字体度量，验证基本逻辑而不是具体数值
-        # 右对齐应该在右侧合理范围内（考虑真实字体度量）
         # Y位置应该是负数（文本基线偏移）
         assert y_pos < 0, f"Y位置应该是负数: 实际{y_pos}"
 
-        # 验证位置在合理范围内（根据真实字体度量调整）
+        # 右对齐应在右侧 30%~100% 区间（严格于原宽松断言 layer_width/4 = 50）
         assert x_pos > layer_width * 0.3, f"右对齐应该在右侧30%以上: {x_pos} > {layer_width * 0.3}"
         assert x_pos < layer_width, f"右对齐不应该超出图层边界: {x_pos} < {layer_width}"
 
@@ -175,33 +177,6 @@ class TestPreciseTextPosition:
 
 class TestImprovedTextPositionAssertions:
     """改进的文本位置断言测试"""
-
-    def test_replacement_of_loose_assertions(self, text_render_objects):
-        """替换宽松断言的测试"""
-        # 这是原测试中的宽松断言：
-        # assert x_pos > layer_width / 4  # 只要求大于1/4
-
-        # 新的精确断言应该适应真实字体度量：
-        text = "Hello World"
-        layer_width = 200
-        font_size = 20
-
-        x_pos, y_pos = calculate_text_position(text, layer_width, font_size, "right",
-                                                text_render_objects["draw"], text_render_objects["font"])
-
-        # 新算法使用真实字体度量，验证基本逻辑
-        # 验证Y位置是负数（文本基线偏移）
-        assert y_pos < 0, f"Y位置应该是负数: 实际{y_pos}"
-
-        # 验证X位置在合理范围内（右对齐，根据真实字体度量调整）
-        assert x_pos > layer_width * 0.3, f"右对齐应该在右侧30%以上: {x_pos} > {layer_width * 0.3}"
-        assert x_pos < layer_width, f"右对齐不应该超出边界: {x_pos} < {layer_width}"
-
-        # 验证比原宽松断言更严格
-        loose_requirement = layer_width / 4  # 50
-        assert x_pos > loose_requirement, f"满足宽松断言: {x_pos} > {loose_requirement}"
-        print(f"宽松断言要求: >{loose_requirement}, 实际: {x_pos:.1f}")
-        print(f"改进断言: 右对齐在右侧60%-100%范围内")
 
     def test_assertion_precision_improvement(self, text_render_objects):
         """测试断言精度的改进"""

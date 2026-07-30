@@ -251,13 +251,15 @@ class TestEndToEndSimple:
     def test_psd_renderer_basic_functionality(self):
         """测试批量导出的基本功能"""
         # 这个测试验证psd_renderer.py能够正常启动和执行基本功能
-        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "psd_renderer.py")
-        
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "psd_renderer.py")
+
         # 测试程序能够启动并且不会因为基本错误而崩溃
         result = subprocess.run([
-            sys.executable, script_path, "test", "nonexistent.ttf", "jpg"
+            sys.executable, script_path, "nonexistent.ttf", "jpg"
         ], capture_output=True, text=True, timeout=30, encoding='utf-8', errors='replace')
-        
+
+        # 脚本应实际执行（非 "can't open file" 路径错误）
+        assert "can't open file" not in result.stderr, "脚本路径错误，业务代码未执行"
         # 程序应该因为缺少文件而退出，但不应该因为代码错误而崩溃
         assert result.returncode != 0
         assert "ValueError" not in result.stderr
@@ -330,7 +332,7 @@ class TestEndToEndSimple:
         with redirect_stdout(buf):
             safe_print_message(special_msg)
         output = buf.getvalue()
-        assert len(output.strip()) > 0, "Output should not be empty for special chars input"
+        assert special_msg in output, f"Expected special chars preserved in output, got: {output!r}"
 
         # 测试中文消息
         buf = io.StringIO()
